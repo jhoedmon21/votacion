@@ -128,14 +128,16 @@ export default function MaterialShell({
       <div className="lg:pl-64">
         {/* Topbar */}
         <header className={`sticky top-0 z-20 border-b shadow-xs backdrop-blur ${
-          fa ? "border-[#3A1418] bg-[#1B0E11]/90" : "border-slate-200 bg-white/90"
+          fa
+            ? "border-[#7A1015] bg-gradient-to-r from-[#E02020] via-[#C41616] to-[#A01010]"
+            : "border-slate-200 bg-white/90"
         }`}>
           <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
             <button
               onClick={() => setAbierto(true)}
               aria-label="Abrir menú"
               className={`rounded-lg p-2 lg:hidden ${
-                fa ? "text-slate-300 hover:bg-white/10" : "text-slate-600 hover:bg-slate-100"
+                fa ? "text-white hover:bg-white/15" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               ☰
@@ -144,12 +146,12 @@ export default function MaterialShell({
               <h1 className={`truncate text-base font-black sm:text-lg ${fa ? "text-white" : "text-slate-900"}`}>
                 {titulo}
               </h1>
-              <p className={`truncate text-[11px] ${fa ? "text-slate-400" : "text-slate-500"}`}>{bajada}</p>
+              <p className={`truncate text-[11px] ${fa ? "text-white/75" : "text-slate-500"}`}>{bajada}</p>
             </div>
             <span className={`ml-auto hidden items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black sm:flex ${
-              fa ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-700"
+              fa ? "bg-white/15 text-white" : "bg-emerald-50 text-emerald-700"
             }`}>
-              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+              <span className={`h-2 w-2 animate-pulse rounded-full ${fa ? "bg-white" : "bg-emerald-500"}`} />
               EN VIVO
             </span>
           </div>
