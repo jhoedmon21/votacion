@@ -33,28 +33,28 @@ body {
 
 /* Tooltip oscuro del mapa de sala (DashboardDark). */
 .leaflet-tooltip.tooltip-dark {
-  background: #1B0E11;
-  border: 1px solid #3A1418;
-  color: #e2e8f0;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
   border-radius: 0.5rem;
   font-size: 11px;
   line-height: 1.5;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.18);
 }
 .leaflet-tooltip.tooltip-dark::before {
-  border-top-color: #3A1418;
+  border-top-color: #cbd5e1;
 }
 
 /* Scrollbar discreto para los paneles oscuros. */
 .scroll-dark {
   scrollbar-width: thin;
-  scrollbar-color: #3A1418 transparent;
+  scrollbar-color: #cbd5e1 transparent;
 }
 .scroll-dark::-webkit-scrollbar {
   width: 6px;
 }
 .scroll-dark::-webkit-scrollbar-thumb {
-  background: #3A1418;
+  background: #cbd5e1;
   border-radius: 9999px;
 }
 

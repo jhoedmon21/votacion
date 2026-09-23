@@ -22,9 +22,8 @@ import { api } from "./api";
 import type { ChoroplethDistrito, RankingEntry, Summary } from "./types";
 
 const ROJO = "#E02020";      /* Fuerza Arequipeña — base */
-const ROJO_CLARO = "#FF6B6B";/* hover de fronteras */
-const BORDE = "#4A1A20";     /* fronteras entre distritos (tinte FA) */
-const SIN_VOTOS = "#2A1216"; /* distrito sin votos */
+const BORDE = "#FFFFFF";     /* fronteras entre distritos (estilo coroplético claro) */
+const SIN_VOTOS = "#E2E8F0"; /* distrito sin votos */
 
 interface FeatureGeo {
   u: string;   /* ubigeo INEI */
@@ -229,7 +228,7 @@ export default function DashboardDark() {
     const sel = p.u === ubigeoSel;
     return {
       fillColor: s?.ganador?.color ?? SIN_VOTOS,
-      fillOpacity: sel ? 0.95 : 0.72,
+      fillOpacity: sel ? 0.9 : 0.82,
       color: sel ? ROJO : BORDE,
       weight: sel ? 2.5 : 0.7,
     };
@@ -242,7 +241,7 @@ export default function DashboardDark() {
       ? `<br/><span style="color:${s.ganador.color};font-weight:700">▲ ${s.ganador.name}: ${fmt(s.ganador.votes)} votos</span>`
       : "<br/><i>Sin votos registrados</i>";
     return (
-      `<b>${p.n}</b> <span style="color:#94A3B8">(${p.pvn ?? ""})</span>` +
+      `<b>${p.n}</b> <span style="color:#64748B">(${p.pvn ?? ""})</span>` +
       `<br/>Mesas: ${s.procesadas}/${s.mesas} · Avance ${s.avance}%` +
       `<br/>Observadas JEE: ${s.observadas} · Locales: ${s.locales}` +
       gan
@@ -251,9 +250,9 @@ export default function DashboardDark() {
 
   if (cargando) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center bg-[#12090B] text-slate-300">
+      <div className="flex min-h-[60vh] items-center justify-center text-slate-600">
         <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#3A1418] border-t-[#E02020]" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-[#E02020]" />
           <p className="mt-4 text-sm font-semibold">Cargando padrón y capas geográficas…</p>
         </div>
       </div>
@@ -262,10 +261,10 @@ export default function DashboardDark() {
 
   if (error || !geo) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center bg-[#12090B] text-slate-300">
-        <div className="max-w-md rounded-2xl border border-red-500/30 bg-[#12090B] p-6 text-center">
-          <h2 className="text-lg font-black text-red-400">No se pudo cargar el mapa</h2>
-          <p className="mt-2 text-sm text-slate-400">{error}</p>
+      <div className="flex min-h-[60vh] items-center justify-center text-slate-600">
+        <div className="max-w-md rounded-2xl border border-red-500/30 bg-white p-6 text-center shadow-md">
+          <h2 className="text-lg font-black text-red-600">No se pudo cargar el mapa</h2>
+          <p className="mt-2 text-sm text-slate-500">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-4 rounded-lg bg-[#E02020] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#A01010]"
@@ -280,38 +279,38 @@ export default function DashboardDark() {
   const objetivo = distritoSel?.geo ?? geo.region?.geo ?? null;
 
   return (
-    <div className="min-h-screen bg-[#12090B] text-slate-100">
-      {/* ================= HEADER GLOBAL ================= */}
-      <header className="sticky top-0 z-30 border-b-2 border-[#E02020]/60 bg-[#160A0D]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 lg:px-6">
+    <div className="text-slate-800">
+      {/* ============ HEADER GLOBAL — tarjeta clara como las demás vistas ============ */}
+      <header className="rounded-2xl border border-slate-200 border-t-[3px] border-t-[#E02020] bg-white px-5 py-4 shadow-xs">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           {/* Marca */}
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E02020] text-sm font-black text-white shadow-lg shadow-red-900/40">
               FA
             </span>
             <span>
-              <span className="block text-sm font-black tracking-wide">
+              <span className="block text-sm font-black tracking-wide text-slate-900">
                 Cómputo Electoral · Arequipa 2026
               </span>
-              <span className="block text-[11px] font-semibold text-slate-400">
-                Fuente: <span className="text-slate-200">Sistema de Cómputo</span> · Padrón oficial · Act. {horaAct}
+              <span className="block text-[11px] font-semibold text-slate-500">
+                Fuente: <span className="text-slate-700">Sistema de Cómputo</span> · Padrón oficial · Act. {horaAct}
               </span>
             </span>
           </div>
 
           {/* Métricas de conteo global */}
-          <div className="flex flex-1 flex-wrap items-center gap-x-5 gap-y-2">
-            <div className="min-w-40">
-              <span className="block text-[10px] font-black uppercase tracking-wider text-[#E58585]">
+          <div className="ml-auto flex flex-wrap items-center gap-x-7 gap-y-2">
+            <div className="w-44">
+              <span className="block text-[10px] font-black uppercase tracking-wider text-[#C41616]">
                 Actas procesadas
               </span>
               <span className="flex items-baseline gap-2">
-                <span className="font-mono text-xl font-black text-white">{pctProcesado}%</span>
-                <span className="font-mono text-[11px] text-slate-400">
+                <span className="font-mono text-xl font-black text-slate-900">{pctProcesado}%</span>
+                <span className="font-mono text-[11px] text-slate-500">
                   {fmt(mesasProc)}/{fmt(mesasTotal)}
                 </span>
               </span>
-              <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-[#221217]">
+              <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                 <span
                   className="block h-full rounded-full bg-gradient-to-r from-[#E02020] to-[#A01010] transition-all duration-700"
                   style={{ width: `${Math.min(100, pctProcesado)}%` }}
@@ -319,14 +318,14 @@ export default function DashboardDark() {
               </span>
             </div>
             {([
-              ["Observadas JEE", fmt(observadas), "text-amber-400"],
-              ["Locales", fmt(locales), "text-slate-200"],
-              ["Ámbito", nombreAmbito, "text-white"],
+              ["Observadas JEE", fmt(observadas), "text-amber-600"],
+              ["Locales", fmt(locales), "text-slate-800"],
+              ["Ámbito", nombreAmbito, "text-[#C41616]"],
             ] as const).map(([k, v, cls]) => (
-              <div key={k} className="min-w-20">
-              <span className="block text-[10px] font-black uppercase tracking-wider text-[#E58585]">
-                {k}
-              </span>
+              <div key={k} className="max-w-52">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-[#C41616]">
+                  {k}
+                </span>
                 <span className={`block truncate text-sm font-black ${cls}`}>{v}</span>
               </div>
             ))}
@@ -335,7 +334,7 @@ export default function DashboardDark() {
           {ubigeoSel && (
             <button
               onClick={() => setUbigeoSel("")}
-              className="rounded-lg border border-[#3A1418] bg-[#221217]/60 px-3 py-1.5 text-[11px] font-black text-slate-300 transition hover:border-[#E02020] hover:text-white"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-black text-slate-600 transition hover:border-[#E02020] hover:text-[#C41616]"
             >
               ✕ Ver toda la región
             </button>
@@ -345,7 +344,7 @@ export default function DashboardDark() {
 
       <main className="mx-auto max-w-[1600px] space-y-5 p-4 lg:p-6">
         {conEjemplo && (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-300">
+          <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-800">
             API no disponible: mostrando datos de ejemplo indexados por UBIGEO.
           </div>
         )}
@@ -353,7 +352,7 @@ export default function DashboardDark() {
         {/* ================= TOP CARDS (Top 2) ================= */}
         <section className="grid gap-4 md:grid-cols-2" aria-label="Top 2 de candidatos">
           {top2.length === 0 && (
-            <p className="col-span-2 rounded-2xl border border-[#3A1418]/50 bg-[#12090B]/60 p-8 text-center text-sm text-slate-400">
+            <p className="col-span-2 rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-xs">
               Sin votos contabilizados en este ámbito todavía.
             </p>
           )}
@@ -362,7 +361,7 @@ export default function DashboardDark() {
             return (
               <article
                 key={`${c.party}-${c.candidate_id}`}
-                className="overflow-hidden rounded-2xl border border-[#3A1418]/50 bg-[#12090B]/60 shadow-xl"
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md"
               >
                 <div
                   className="flex items-center gap-4 px-5 py-4"
@@ -375,7 +374,7 @@ export default function DashboardDark() {
                     <img
                       src={c.photo_url}
                       alt={c.name}
-                      className="h-16 w-16 shrink-0 rounded-full border-2 border-[#3A1418] object-cover"
+                      className="h-16 w-16 shrink-0 rounded-full border-2 border-slate-200 object-cover"
                     />
                   ) : (
                     <span
@@ -390,23 +389,23 @@ export default function DashboardDark() {
                       className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-white"
                       style={{ backgroundColor: c.color }}
                     >
-                      #{idx + 1} · {nombreAmbito}
+                      #{idx + 1} · {distritoSel ? distritoSel.n : "Región"}
                     </span>
-                    <h3 className="mt-1 truncate text-lg font-black text-white">{c.name}</h3>
-                    <p className="truncate text-xs font-bold uppercase tracking-wide text-slate-400">
+                    <h3 className="mt-1 truncate text-lg font-black text-slate-900">{c.name}</h3>
+                    <p className="truncate text-xs font-bold uppercase tracking-wide text-slate-500">
                       {c.party}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="font-mono text-3xl font-black tabular-nums text-white">
+                    <p className="font-mono text-3xl font-black tabular-nums text-slate-900">
                       {pct.toFixed(1)}
                       <span className="text-base">%</span>
                     </p>
-                    <p className="font-mono text-xs text-slate-400">{fmt(c.votes)} votos</p>
+                    <p className="font-mono text-xs text-slate-500">{fmt(c.votes)} votos</p>
                   </div>
                 </div>
                 <div className="px-5 pb-4">
-                  <div className="h-2 overflow-hidden rounded-full bg-[#221217]">
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                     <div
                       className="h-full rounded-full transition-all duration-700 ease-out"
                       style={{
@@ -424,12 +423,12 @@ export default function DashboardDark() {
         {/* ================= WORKSPACE 40 / 60 ================= */}
         <section className="grid gap-4 lg:grid-cols-[2fr_3fr]">
           {/* ---------- PANEL IZQUIERDO: lista de candidatos ---------- */}
-          <div className="flex flex-col overflow-hidden rounded-2xl border border-[#4A1A20] border-t-2 border-t-[#E02020] bg-[#160A0D]">
-            <div className="border-b border-[#3A1418]/50 px-4 py-3">
-              <h2 className="truncate text-sm font-black uppercase tracking-wider text-white">
+          <div className="flex flex-col overflow-hidden rounded-2xl border border-[#4A1A20] border-t-2 border-t-[#E02020] bg-white shadow-md">
+            <div className="border-b border-slate-100 px-4 py-3">
+              <h2 className="truncate text-sm font-black uppercase tracking-wider text-slate-900">
                 {nombreAmbito}
                 {provinciaSel && (
-                  <span className="ml-1 text-[11px] font-bold text-slate-400">
+                  <span className="ml-1 text-[11px] font-bold text-slate-500">
                     · {provinciaSel}
                   </span>
                 )}
@@ -445,7 +444,7 @@ export default function DashboardDark() {
                   value={ubigeoSel}
                   onChange={(e) => setUbigeoSel(e.target.value)}
                   aria-label="Seleccionar distrito"
-                  className="w-full rounded-lg border border-[#3A1418] bg-[#221217] px-3 py-2 text-xs font-bold text-slate-100 outline-none transition focus:border-[#E02020]"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none transition focus:border-[#E02020]"
                 >
                   <option value="">Toda la región (109 distritos)</option>
                   {distritosPorProvincia.map(([pv, items]) => (
@@ -459,7 +458,7 @@ export default function DashboardDark() {
                   ))}
                 </select>
                 <div
-                  className="flex overflow-hidden rounded-lg border border-[#3A1418]"
+                  className="flex overflow-hidden rounded-lg border border-slate-200"
                   role="group"
                   aria-label="Nivel de elección"
                 >
@@ -473,7 +472,7 @@ export default function DashboardDark() {
                       className={`flex-1 px-2 py-1.5 text-[11px] font-black uppercase tracking-wide transition ${
                         scope === n.id
                           ? "bg-[#E02020] text-white"
-                          : "bg-[#221217]/60 text-slate-400 hover:text-slate-200"
+                          : "bg-white text-slate-500 hover:bg-slate-50"
                       }`}
                     >
                       {n.etiqueta}
@@ -495,17 +494,17 @@ export default function DashboardDark() {
                 return (
                   <li
                     key={`${c.party}-${c.candidate_id}`}
-                    className="rounded-xl px-2.5 py-2.5 transition-colors hover:bg-[#221217]/60"
+                    className="rounded-xl px-2.5 py-2.5 transition-colors hover:bg-slate-50"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-6 shrink-0 text-center font-mono text-xs font-black text-[#E58585]">
+                      <span className="w-6 shrink-0 text-center font-mono text-xs font-black text-[#C41616]">
                         {String(idx + 1).padStart(2, "0")}
                       </span>
                       {c.photo_url ? (
                         <img
                           src={c.photo_url}
                           alt={c.name}
-                          className="h-10 w-10 shrink-0 rounded-full border border-[#3A1418] object-cover"
+                          className="h-10 w-10 shrink-0 rounded-full border border-slate-200 object-cover"
                         />
                       ) : (
                         <span
@@ -516,19 +515,19 @@ export default function DashboardDark() {
                         </span>
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-slate-100">{c.name}</p>
+                        <p className="truncate text-sm font-bold text-slate-800">{c.name}</p>
                         <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                           {c.party}
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="font-mono text-sm font-black tabular-nums text-white">
+                        <p className="font-mono text-sm font-black tabular-nums text-slate-900">
                           {pct.toFixed(1)}%
                         </p>
-                        <p className="font-mono text-[11px] text-slate-400">{fmt(c.votes)}</p>
+                        <p className="font-mono text-[11px] text-slate-500">{fmt(c.votes)}</p>
                       </div>
                     </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#221217]">
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
                       <div
                         className="h-full rounded-full transition-all duration-700 ease-out"
                         style={{
@@ -544,11 +543,11 @@ export default function DashboardDark() {
           </div>
 
           {/* ---------- PANEL DERECHO: mapa vectorial 60% ---------- */}
-          <div className="relative overflow-hidden rounded-2xl border border-[#4A1A20] border-t-2 border-t-[#E02020] bg-[#160A0D]">
+          <div className="relative overflow-hidden rounded-2xl border border-[#4A1A20] border-t-2 border-t-[#E02020] bg-white shadow-md">
             <MapContainer
               center={[-16.25, -71.7]}
               zoom={8}
-              style={{ height: "640px", width: "100%", background: "#12090B" }}
+              style={{ height: "640px", width: "100%", background: "#F1F5F9" }}
               scrollWheelZoom={false}
               attributionControl={false}
             >
@@ -573,15 +572,15 @@ export default function DashboardDark() {
                     click: () => setUbigeoSel(p.u === ubigeoSel ? "" : p.u),
                     mouseover: (e) => {
                       (e.target as L.Path)
-                        .setStyle({ weight: 2.5, color: ROJO_CLARO, fillOpacity: 0.95 })
+                        .setStyle({ weight: 2.5, color: ROJO, fillOpacity: 0.9 })
                         .bringToFront();
                     },
                     mouseout: (e) => {
                       const sel = p.u === ubigeoSel;
                       (e.target as L.Path).setStyle({
-                        weight: sel ? 2.5 : 0.7,
+                        weight: sel ? 2.5 : 0.8,
                         color: sel ? ROJO : BORDE,
-                        fillOpacity: sel ? 0.95 : 0.72,
+                        fillOpacity: sel ? 0.9 : 0.82,
                       });
                     },
                   });
@@ -590,8 +589,8 @@ export default function DashboardDark() {
             </MapContainer>
 
             {/* Leyenda */}
-            <div className="absolute bottom-3 left-3 z-[400] max-w-60 rounded-xl border border-[#4A1A20] border-t-2 border-t-[#E02020] bg-[#160A0D]/95 px-3 py-2.5 shadow-xl">
-              <p className="mb-1.5 text-[10px] font-black uppercase tracking-wider text-[#FCA5A5]">
+            <div className="absolute bottom-3 left-3 z-[400] max-w-60 rounded-xl border border-slate-200 border-t-2 border-t-[#E02020] bg-white/95 px-3 py-2.5 shadow-xl">
+              <p className="mb-1.5 text-[10px] font-black uppercase tracking-wider text-[#C41616]">
                 Ganador distrital
               </p>
               <div className="flex flex-wrap gap-x-3 gap-y-1">
@@ -603,7 +602,7 @@ export default function DashboardDark() {
                   .sort((a, b) => b.votes - a.votes)
                   .slice(0, 6)
                   .map((g) => (
-                    <span key={g.name} className="flex items-center gap-1.5 text-[10px] font-bold text-slate-300">
+                    <span key={g.name} className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600">
                       <span className="h-2.5 w-2.5 rounded-sm" style={{ background: g.color }} />
                       {g.name.split(" ").slice(0, 2).join(" ")}
                     </span>
@@ -613,15 +612,15 @@ export default function DashboardDark() {
                 )}
               </div>
               <span className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
-                <span className="h-2.5 w-2.5 rounded-sm border border-slate-600" style={{ background: SIN_VOTOS }} />
+                <span className="h-2.5 w-2.5 rounded-sm border border-slate-300" style={{ background: SIN_VOTOS }} />
                 Sin votos registrados
               </span>
             </div>
 
             {/* Contador del ámbito */}
-            <span className="absolute right-3 top-3 z-[400] rounded-lg border border-[#4A1A20] bg-[#160A0D]/95 px-3 py-1.5 text-[11px] font-black text-white shadow-lg">
+            <span className="absolute right-3 top-3 z-[400] rounded-lg border border-slate-200 bg-white/95 px-3 py-1.5 text-[11px] font-black text-white shadow-lg">
               <span className="text-[#E02020]">{fmt(mesasProc)}</span>
-              <span className="text-slate-400">/{fmt(mesasTotal)} actas · 109 distritos</span>
+              <span className="text-slate-500">/{fmt(mesasTotal)} actas · 109 distritos</span>
             </span>
           </div>
         </section>

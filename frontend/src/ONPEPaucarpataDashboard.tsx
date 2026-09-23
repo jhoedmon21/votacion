@@ -350,7 +350,7 @@ export default function ONPEPaucarpataDashboard() {
     panel: ["Panel principal", `${etiquetaAmbito} · Regionales y Municipales 2026 · ${fechaHoy()}`],
     actas: ["Gestión de Actas", "Registro, revisión y validación"],
     computo: ["Cómputo Electoral", "KPIs y resultados en vivo"],
-    salacomputo: ["Sala de Cómputo", "Mapa de ganadores por distrito — vista oscura"],
+    salacomputo: ["Sala de Cómputo", "Mapa de ganadores por distrito"],
     personeros: ["Personeros en Campo", "Equipo, cobertura y check-ins"],
     usuarios: ["Gestión de Usuarios", "Alta y alcance por rol"],
     credenciales: ["Credenciales FA", "Fotochecks Fuerza Arequipeña + QR"],
@@ -393,7 +393,6 @@ export default function ONPEPaucarpataDashboard() {
       nav={nav}
       titulo={tituloVista}
       bajada={bajadaVista}
-      tema={vistaActual === "salacomputo" ? "fa" : "claro"}
       usuario={sesionGuardada()?.usuario.nombre_completo ?? ""}
       insignia={ROL_CORTO[miRol] ?? miRol}
       colorInsignia={ROL_BADGE[miRol] ?? "bg-slate-500"}
