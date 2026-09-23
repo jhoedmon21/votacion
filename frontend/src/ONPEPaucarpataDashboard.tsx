@@ -825,41 +825,17 @@ export default function ONPEPaucarpataDashboard() {
               </div>
             </div>
           </section>
-          </>
-          )}
 
-          {/* ============ SECCIÓN PERSONEROS ============ */}
-          {seccion === "personeros" && (
-          <>
-          {/* Acceso directo a la gestión del equipo */}
-          <button
-            onClick={() => irA("personeros")}
-            className="mb-6 flex w-full min-h-[64px] items-center justify-between gap-3 rounded-2xl border-2 border-[#E02020] bg-red-50 px-5 py-3 text-left transition hover:bg-red-100 active:scale-[0.99]"
-          >
-            <span>
-              <span className="block text-sm font-black text-[#E02020]">
-                🦺 Gestionar personeros y asignaciones
-              </span>
-              <span className="block text-[11px] text-slate-500">
-                Equipo de campo, mesas asignadas y check-ins del día
-              </span>
-            </span>
-            <span className="text-xl font-black text-[#E02020]">→</span>
-          </button>
-
-          {/* Semáforo de cobertura */}
-          <CoberturaPanel />
-
-          {/* MAPA DE LOCALES */}
+          {/* MAPA ELECTORAL — ganadores por distrito (herencia de la Sala de Cómputo) */}
           <section>
             <div className="flex flex-col items-center justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
               <div className="mb-4 w-full border-b border-slate-100 pb-2 text-left">
                 <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E02020]">
                   <MapPin className="h-4 w-4" />
-                   <span>Ubicación Electoral: {etiquetaAmbito}</span>
+                   <span>Mapa Electoral: ganadores por distrito — {etiquetaAmbito}</span>
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  Locales y mesas reales del padrón ONPE de Arequipa
+                  Siluetas INEI por UBIGEO sobre el padrón real ONPE de Arequipa
                 </p>
               </div>
 
@@ -896,6 +872,7 @@ export default function ONPEPaucarpataDashboard() {
                     ubigeoSel={ubigeoSel}
                     onSelectUbigeo={(u) => setUbigeoSel(u)}
                     alto="24rem"
+                    modoInicial="ganador"
                   />
                 ) : (
                   <MapView ubigeo={ubigeoSel || undefined} alto="24rem" />
@@ -904,13 +881,37 @@ export default function ONPEPaucarpataDashboard() {
 
               <div className="w-full text-center text-[11px] font-medium text-slate-400">
                 {vistaMapa === "coropletico"
-                  ? "Siluetas oficiales INEI coloreadas por avance de actas (o ganador distrital). " +
-                    "El clic sobre un distrito o provincia enfoca su silueta y recalcula KPIs y ranking."
+                  ? "Siluetas oficiales INEI coloreadas por ganador distrital (o avance de actas). " +
+                    "El clic sobre un distrito o provincia enfoca su silueta y recalcula KPIs, Top 2 y ranking."
                   : "Locales reales del padrón ONPE de Arequipa. Cada marcador se ubica " +
                     "en el centro de su distrito: el padrón no publica coordenadas por local."}
               </div>
             </div>
           </section>
+          </>
+          )}
+
+          {/* ============ SECCIÓN PERSONEROS ============ */}
+          {seccion === "personeros" && (
+          <>
+          {/* Acceso directo a la gestión del equipo */}
+          <button
+            onClick={() => irA("personeros")}
+            className="mb-6 flex w-full min-h-[64px] items-center justify-between gap-3 rounded-2xl border-2 border-[#E02020] bg-red-50 px-5 py-3 text-left transition hover:bg-red-100 active:scale-[0.99]"
+          >
+            <span>
+              <span className="block text-sm font-black text-[#E02020]">
+                🦺 Gestionar personeros y asignaciones
+              </span>
+              <span className="block text-[11px] text-slate-500">
+                Equipo de campo, mesas asignadas y check-ins del día
+              </span>
+            </span>
+            <span className="text-xl font-black text-[#E02020]">→</span>
+          </button>
+
+          {/* Semáforo de cobertura */}
+          <CoberturaPanel />
           </>
           )}
 
