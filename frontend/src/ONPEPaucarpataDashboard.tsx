@@ -337,6 +337,14 @@ export default function ONPEPaucarpataDashboard() {
   const totalValidVotes = porPartido.reduce((sum, p) => sum + p.votes, 0);
   const sorted = [...(summary.ranking ?? [])].sort((a, b) => b.votes - a.votes);
   const topTwo = sorted.slice(0, 2);
+  /* Brecha del Top 2: votos y puntos porcentuales entre el 1º y el 2º. */
+  const brechaVotos = topTwo.length === 2 ? topTwo[0].votes - topTwo[1].votes : 0;
+  const brechaPp = topTwo.length === 2
+    ? Math.abs(
+        (totalValidVotes > 0 ? (100 * topTwo[0].votes) / totalValidVotes : 0) -
+        (totalValidVotes > 0 ? (100 * topTwo[1].votes) / totalValidVotes : 0)
+      )
+    : 0;
   const processed = summary.processed_tables ?? 0;
   const observed = summary.review_tables ?? 0;
   const pending = Math.max(0, (summary.total_tables ?? 0) - processed - observed);
@@ -608,10 +616,19 @@ export default function ONPEPaucarpataDashboard() {
             </div>
           </section>
 
-          {/* TOP 2 — tarjetas estilo Material con logo del partido */}
-          <div className="mb-6 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E02020]">
-            <PieChart className="h-4 w-4" />
-            <span>Primeros Lugares (Top 2 Candidatos)</span>
+          {/* TOP 2 — tarjetas con brecha en vivo entre el 1º y el 2º */}
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E02020]">
+              <PieChart className="h-4 w-4" />
+              <span>Primeros Lugares (Top 2 Candidatos)</span>
+            </div>
+            {topTwo.length === 2 && totalValidVotes > 0 && (
+              <span className="flex items-center gap-2 rounded-full border border-[#E02020]/25 bg-red-50 px-3.5 py-1.5 text-[11px] font-black text-[#C41616]">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-[#E02020]" />
+                Brecha: +{formatVotes(brechaVotos)} votos ({brechaPp.toFixed(1)} pp) para{" "}
+                {topTwo[0].name.split(" ")[0]}
+              </span>
+            )}
           </div>
 
           {!summary ? (
@@ -635,25 +652,32 @@ export default function ONPEPaucarpataDashboard() {
                         background: `linear-gradient(135deg, ${base}1A 0%, transparent 70%)`,
                       }}
                     >
-                      {c.photo_url ? (
-                        <img
-                          src={c.photo_url}
-                          alt={c.name}
-                          className="h-16 w-16 shrink-0 rounded-full border-2 border-slate-200 object-cover"
-                        />
-                      ) : (
-                        <span
-                          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-black text-white"
-                          style={{ backgroundColor: base }}
-                        >
-                          {(c.name ?? "?").charAt(0)}
-                        </span>
-                      )}
+                      {/* Avatar con anillo del color del partido */}
+                      <span
+                        className="shrink-0 rounded-full p-[3px] shadow-md"
+                        style={{ background: `linear-gradient(135deg, ${base}, ${sombrear(base, 0.6)})` }}
+                      >
+                        {c.photo_url ? (
+                          <img
+                            src={c.photo_url}
+                            alt={c.name}
+                            className="h-16 w-16 rounded-full border-2 border-white object-cover"
+                          />
+                        ) : (
+                          <span
+                            className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white text-xl font-black text-white"
+                            style={{ backgroundColor: base }}
+                          >
+                            {(c.name ?? "?").charAt(0)}
+                          </span>
+                        )}
+                      </span>
                       <div className="min-w-0 flex-1">
                         <span
-                          className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-white"
+                          className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xs"
                           style={{ backgroundColor: base }}
                         >
+                          {idx === 0 && <span aria-hidden>👑</span>}
                           #{idx + 1} · {etiquetaAmbito}
                         </span>
                         <h3 className="mt-1 truncate text-lg font-black text-slate-900">
@@ -668,10 +692,15 @@ export default function ONPEPaucarpataDashboard() {
                           {pctValidos.toFixed(1)}
                           <span className="text-base">%</span>
                         </p>
-                        <p className="font-mono text-xs text-slate-500">{formatVotes(c.votes)} votos</p>
+                        <p className="font-mono text-xs font-bold text-slate-700">
+                          {formatVotes(c.votes)} votos
+                        </p>
+                        <p className="font-mono text-[10px] text-slate-400">
+                          de {formatVotes(totalValidVotes)} válidos
+                        </p>
                       </div>
                     </div>
-                    {/* Logo del partido + barra de progreso */}
+                    {/* Logo del partido + barra + lectura de ventaja */}
                     <div className="flex items-center gap-4 px-5 pb-5">
                       {c.symbol ? (
                         <img
@@ -689,14 +718,23 @@ export default function ONPEPaucarpataDashboard() {
                           {(c.party ?? "?").charAt(0)}
                         </span>
                       )}
-                      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${Math.min(100, pctValidos)}%`,
-                            background: `linear-gradient(90deg, ${base}, ${sombrear(base, 0.7)})`,
-                          }}
-                        />
+                      <div className="flex-1">
+                        <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full transition-all duration-700 ease-out"
+                            style={{
+                              width: `${Math.min(100, pctValidos)}%`,
+                              background: `linear-gradient(90deg, ${base}, ${sombrear(base, 0.7)})`,
+                            }}
+                          />
+                        </div>
+                        {topTwo.length === 2 && totalValidVotes > 0 && (
+                          <p className="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            {idx === 0
+                              ? `Ventaja de ${formatVotes(brechaVotos)} votos sobre el 2º lugar`
+                              : `A ${formatVotes(brechaVotos)} votos del primer lugar`}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </article>
