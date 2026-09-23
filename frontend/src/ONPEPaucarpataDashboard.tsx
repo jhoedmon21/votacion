@@ -705,9 +705,9 @@ export default function ONPEPaucarpataDashboard() {
             </section>
           )}
 
-          {/* BAR CHART (sección votos) */}
-          <section>
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+          {/* RESULTADOS + MAPA lado a lado (3:2) */}
+          <section className="grid gap-4 lg:grid-cols-5 items-start">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs lg:col-span-3">
               <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E02020]">
                   <BarChart3 className="h-4 w-4" />
@@ -824,11 +824,9 @@ export default function ONPEPaucarpataDashboard() {
                 })}
               </div>
             </div>
-          </section>
 
-          {/* MAPA ELECTORAL — ganadores por distrito (herencia de la Sala de Cómputo) */}
-          <section>
-            <div className="flex flex-col items-center justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+            {/* MAPA ELECTORAL — ganadores por distrito (herencia de la Sala de Cómputo) */}
+            <div className="flex w-full flex-col items-center justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs lg:col-span-2">
               <div className="mb-4 w-full border-b border-slate-100 pb-2 text-left">
                 <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E02020]">
                   <MapPin className="h-4 w-4" />
@@ -866,16 +864,16 @@ export default function ONPEPaucarpataDashboard() {
                 )}
               </div>
 
-              <div className="my-4 h-96 w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
+              <div className="my-4 h-[30rem] w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
                 {vistaMapa === "coropletico" ? (
                   <ChoroplethMap
                     ubigeoSel={ubigeoSel}
                     onSelectUbigeo={(u) => setUbigeoSel(u)}
-                    alto="24rem"
+                    alto="30rem"
                     modoInicial="ganador"
                   />
                 ) : (
-                  <MapView ubigeo={ubigeoSel || undefined} alto="24rem" />
+                  <MapView ubigeo={ubigeoSel || undefined} alto="30rem" />
                 )}
               </div>
 
