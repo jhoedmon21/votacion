@@ -1,0 +1,56 @@
+{
+  "referencia": "D:\\alcaldia\\jne-scraper\\data\\arequipa",
+  "ambitos_comparados": 110,
+  "ambitos_recorridos": 110,
+  "ambitos_fallidos": 8,
+  "errores": [
+    "distrital:040101: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])",
+    "distrital:040201: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])",
+    "distrital:040301: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])",
+    "distrital:040401: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])",
+    "distrital:040501: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])",
+    "distrital:040601: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])",
+    "distrital:040701: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])",
+    "distrital:040801: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])"
+  ],
+  "fuera_del_plan": [],
+  "sin_verificar": [],
+  "resumen": {
+    "datos_cambiados": 1,
+    "organizacion_retirada": 1,
+    "candidato_nuevo": 1
+  },
+  "criticos": 1,
+  "cambios": [
+    {
+      "tipo": "datos_cambiados",
+      "ambito": "distrital:040119",
+      "organizacion": "AHORA NACION - AN",
+      "cargo": "ALCALDE_DISTRITAL",
+      "anterior": "RETIRO",
+      "nuevo": "RETIRO",
+      "detalle": "DNI '29483030' -> '(vacío)'; nombre 'EDGAR CHOQUE RODRIGUEZ' -> '(vacío)'",
+      "critico": false
+    },
+    {
+      "tipo": "organizacion_retirada",
+      "ambito": "regional:040000",
+      "organizacion": "VISION PERU",
+      "cargo": null,
+      "anterior": null,
+      "nuevo": null,
+      "detalle": "2 candidatos que ya no se publican",
+      "critico": true
+    },
+    {
+      "tipo": "candidato_nuevo",
+      "ambito": "regional:040000",
+      "organizacion": "RENOVACION POPULAR PERU",
+      "cargo": "VICE_GOBERNADOR",
+      "anterior": null,
+      "nuevo": "IMPROCEDENTE",
+      "detalle": "(sin nombre) · IMPROCEDENTE · n.º 2",
+      "critico": false
+    }
+  ]
+}

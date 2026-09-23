@@ -1,0 +1,247 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://computoarequipa.gob.pe/schemas/ingesta-jornada-v1.json",
+  "title": "Ingesta oficial de la jornada electoral — nómina y distribución (Arequipa)",
+  "description": "Contrato de ingesta que recibe el backend (POST /api/ingesta/jornada) con la información oficial del organismo electoral antes de la jornada. Un solo documento consolida (a) la NÓMINA de organizaciones políticas y candidatos inscritos por ámbito —que construye el acta digital dinámica de los tres niveles (Distrital/Provincial/Regional)— y (b) la DISTRIBUCIÓN de locales de votación y mesas de sufragio con su padrón de electores hábiles. Es el superset de docs/schemas/crawler-onpe-v1.schema.json (nómina) más la distribución que hoy viaja en CSV del onpe-scraper. El ubigeo es INEI (canónico); se guarda también el RENIEC donde difiere.",
+  "type": "object",
+  "required": ["jornada", "nomina", "distribucion"],
+  "additionalProperties": false,
+  "properties": {
+    "jornada": {
+      "type": "object",
+      "description": "Cabecera de la ingesta: elección y procedencia oficial.",
+      "required": ["fecha", "departamento", "ubigeo_departamento", "fuentes"],
+      "additionalProperties": false,
+      "properties": {
+        "fecha": {
+          "type": "string",
+          "format": "date",
+          "description": "Fecha del sufragio (ISO 8601, solo la fecha)."
+        },
+        "departamento": {
+          "type": "string",
+          "const": "AREQUIPA"
+        },
+        "ubigeo_departamento": {
+          "type": "string",
+          "pattern": "^04[0-9]{4}$",
+          "description": "Ubigeo INEI del departamento: 040000."
+        },
+        "generada_en": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp UTC de generación del documento."
+        },
+        "fuentes": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Organismos que proveen cada bloque (trazabilidad de la ingesta).",
+          "items": {
+            "type": "object",
+            "required": ["organismo", "bloque", "fecha_extraccion"],
+            "additionalProperties": false,
+            "properties": {
+              "organismo": {
+                "type": "string",
+                "enum": ["JNE", "ONPE", "RENIEC"]
+              },
+              "bloque": {
+                "type": "string",
+                "enum": ["NOMINA", "DISTRIBUCION", "PADRON"]
+              },
+              "fecha_extraccion": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "url": {
+                "type": ["string", "null"],
+                "format": "uri"
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "nomina": {
+      "type": "object",
+      "description": "Nómina oficial: agrupaciones políticas y candidatos inscritos, por ámbito. El orden de organizaciones del array es el orden físico de la columna del acta (numero).",
+      "required": ["ambitos"],
+      "additionalProperties": false,
+      "properties": {
+        "ambitos": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Un documento por ámbito electoral: departamento (REGIONAL), provincia (PROVINCIAL) o distrito (DISTRITAL).",
+          "items": { "$ref": "#/definitions/ambitoNomina" }
+        }
+      }
+    },
+
+    "distribucion": {
+      "type": "object",
+      "description": "Distribución oficial de locales y mesas (padrón de infraestructura electoral).",
+      "required": ["locales"],
+      "additionalProperties": false,
+      "properties": {
+        "locales": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/localVotacion" }
+        }
+      }
+    }
+  },
+
+  "definitions": {
+    "ambitoNomina": {
+      "type": "object",
+      "required": ["tipo_eleccion", "ubigeo", "organizaciones"],
+      "additionalProperties": false,
+      "properties": {
+        "tipo_eleccion": {
+          "type": "string",
+          "enum": ["REGIONAL", "PROVINCIAL", "DISTRITAL"]
+        },
+        "ubigeo": {
+          "type": "string",
+          "pattern": "^[0-9]{6}$",
+          "description": "Ubigeo INEI del ámbito: 040000 para REGIONAL, provincia para PROVINCIAL, distrito para DISTRITAL."
+        },
+        "ubigeo_reniec": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9]{6}$",
+          "description": "Código RENIEC cuando difiere del INEI (en Arequipa 85 de 109 distritos difieren; p. ej. Paucarpata 040112 INEI = 040109 RENIEC)."
+        },
+        "provincia": { "type": ["string", "null"] },
+        "distrito": { "type": ["string", "null"] },
+        "organizaciones": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Agrupaciones políticas que compiten en el ámbito, en orden oficial del acta.",
+          "items": { "$ref": "#/definitions/organizacion" }
+        }
+      }
+    },
+
+    "organizacion": {
+      "type": "object",
+      "required": ["numero", "organizacionPolitica", "idOrganizacionPolitica"],
+      "additionalProperties": false,
+      "properties": {
+        "numero": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Posición en la columna del acta (fila física)."
+        },
+        "organizacionPolitica": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nombreCorto": { "type": ["string", "null"] },
+        "idOrganizacionPolitica": {
+          "type": "integer",
+          "description": "ID estable en el JNE: deduplica organizaciones_politicas entre ámbitos."
+        },
+        "tipo": {
+          "type": "string",
+          "enum": ["PARTIDO_NACIONAL", "MOVIMIENTO_REGIONAL", "ALIANZA_ELECTORAL"]
+        },
+        "logo_url": { "type": ["string", "null"], "format": "uri" },
+        "color_hex": {
+          "type": ["string", "null"],
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "candidatos": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Candidatos de la lista: el primero (numero=1) es el candidato principal (gobernador/alcalde); el resto, regidores o consejeros.",
+          "items": { "$ref": "#/definitions/candidato" }
+        }
+      }
+    },
+
+    "candidato": {
+      "type": "object",
+      "required": ["numero", "dni", "nombres", "apellidos", "cargo", "estado"],
+      "additionalProperties": false,
+      "properties": {
+        "numero": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Posición en la lista (1 = principal)."
+        },
+        "dni": {
+          "type": "string",
+          "pattern": "^[0-9]{8}$",
+          "description": "Clave natural: deduplica candidatos a lo largo de la ingesta."
+        },
+        "nombres": { "type": "string", "minLength": 1 },
+        "apellidos": { "type": "string", "minLength": 1 },
+        "nombre_completo": { "type": "string" },
+        "cargo": {
+          "type": "string",
+          "enum": [
+            "GOBERNADOR", "VICE_GOBERNADOR", "CONSEJERO_REGIONAL",
+            "ALCALDE_PROVINCIAL", "REGIDOR_PROVINCIAL",
+            "ALCALDE_DISTRITAL", "REGIDOR_DISTRITAL"
+          ]
+        },
+        "estado": {
+          "type": "string",
+          "enum": ["INSCRITO", "RENUNCIA", "EXCLUIDO", "FALLECIDO", "SUSPENDIDO", "RETIRADO"]
+        },
+        "foto_url": { "type": ["string", "null"], "format": "uri" },
+        "hoja_vida_url": { "type": ["string", "null"], "format": "uri" }
+      }
+    },
+
+    "localVotacion": {
+      "type": "object",
+      "required": ["codigo_local", "ubigeo", "nombre", "mesas"],
+      "additionalProperties": false,
+      "properties": {
+        "codigo_local": { "type": "string", "minLength": 1 },
+        "ubigeo": {
+          "type": "string",
+          "pattern": "^[0-9]{6}$",
+          "description": "Ubigeo INEI del distrito donde está el local."
+        },
+        "nombre": { "type": "string", "minLength": 1 },
+        "direccion": { "type": ["string", "null"] },
+        "referencia": { "type": ["string", "null"] },
+        "latitud": { "type": ["number", "null"], "minimum": -19, "maximum": 0 },
+        "longitud": { "type": ["number", "null"], "minimum": -82, "maximum": -68 },
+        "mesas": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/mesaSufragio" }
+        }
+      }
+    },
+
+    "mesaSufragio": {
+      "type": "object",
+      "required": ["numero_mesa", "electores_habiles"],
+      "additionalProperties": false,
+      "properties": {
+        "numero_mesa": {
+          "type": "string",
+          "pattern": "^[0-9]{6}$",
+          "description": "Código de 6 dígitos del acta y la cartilla (texto, preserva ceros a la izquierda)."
+        },
+        "electores_habiles": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Padrón de electores hábiles: tope de la regla R2_TOPE_ELECTORES."
+        },
+        "pabellon": { "type": ["string", "null"] },
+        "piso": { "type": ["string", "null"] },
+        "numero_orden": {
+          "type": ["integer", "null"],
+          "description": "Orden físico de la mesa dentro del local."
+        }
+      }
+    }
+  }
+}

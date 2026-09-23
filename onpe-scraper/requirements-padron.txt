@@ -1,0 +1,18 @@
+# ETL del padrón ONPE de Arequipa (locales + mesas a BD relacional).
+# Instalación:
+#     python -m pip install -r onpe-scraper/requirements-padron.txt
+#
+# Núcleo (obligatorio):
+requests>=2.31          # HTTP con reintentos/backoff (catálogo y recursos)
+beautifulsoup4>=4.12    # parseo HTML/XML de fichas del catálogo (html.parser stdlib)
+SQLAlchemy>=2.0         # ORM + engine; UPSERT portable y ON CONFLICT nativo en PG
+psycopg2-binary>=2.9    # driver PostgreSQL (DATABASE_URL=postgresql+psycopg2://...)
+python-dotenv>=1.0      # carga onpe-scraper/.env (opcional pero recomendado)
+
+# Rendimiento (opcional: el ETL degrada a stdlib si faltan):
+pandas>=2.0             # lectura rápida de CSV/XLSX grandes
+openpyxl>=3.1           # motor Excel para pandas (archivos .xlsx oficiales)
+lxml>=5.0               # parser rápido para BeautifulSoup (fallback: html.parser)
+
+# Desarrollo / verificación:
+#   sqlite3 viene con Python (DATABASE_URL=sqlite:///./padron_arequipa.db)

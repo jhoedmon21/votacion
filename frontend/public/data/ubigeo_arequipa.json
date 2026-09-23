@@ -1,0 +1,1926 @@
+{
+  "departamento": "Arequipa",
+  "ubigeo_departamento": "04",
+  "nota_codificacion": "ubigeo=INEI, ubigeo_reniec=RENIEC; jne.dep/pro/dis usan la codificación RENIEC que espera la API de Voto Informado del JNE",
+  "total_provincias": 8,
+  "total_distritos": 109,
+  "provincias": [
+    {
+      "codigo": "01",
+      "ubigeo": "040100",
+      "nombre": "Arequipa",
+      "distritos": [
+        {
+          "codigo": "01",
+          "ubigeo": "040101",
+          "ubigeo_reniec": "040101",
+          "nombre": "Arequipa",
+          "capital": "Arequipa",
+          "latitude": -16.393333,
+          "longitude": -71.528889,
+          "altitude": 2429,
+          "superficie_km2": 2.8,
+          "densidad_pob_2020": 33021.785714,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "01"
+          }
+        },
+        {
+          "codigo": "02",
+          "ubigeo": "040102",
+          "ubigeo_reniec": "040128",
+          "nombre": "Alto Selva Alegre",
+          "capital": "Selva Alegre",
+          "latitude": -16.38,
+          "longitude": -71.521111,
+          "altitude": 2510,
+          "superficie_km2": 6.98,
+          "densidad_pob_2020": 13422.063037,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "28"
+          }
+        },
+        {
+          "codigo": "03",
+          "ubigeo": "040103",
+          "ubigeo_reniec": "040102",
+          "nombre": "Cayma",
+          "capital": "Cayma",
+          "latitude": -16.3625,
+          "longitude": -71.544167,
+          "altitude": 2531,
+          "superficie_km2": 246.31,
+          "densidad_pob_2020": 437.339125,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "02"
+          }
+        },
+        {
+          "codigo": "04",
+          "ubigeo": "040104",
+          "ubigeo_reniec": "040103",
+          "nombre": "Cerro Colorado",
+          "capital": "La Libertad",
+          "latitude": -16.376389,
+          "longitude": -71.560833,
+          "altitude": 2441,
+          "superficie_km2": 174.9,
+          "densidad_pob_2020": 1125.260149,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "03"
+          }
+        },
+        {
+          "codigo": "05",
+          "ubigeo": "040105",
+          "ubigeo_reniec": "040104",
+          "nombre": "Characato",
+          "capital": "Characato",
+          "latitude": -16.468611,
+          "longitude": -71.484444,
+          "altitude": 2506,
+          "superficie_km2": 86.0,
+          "densidad_pob_2020": 137.72093,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "04"
+          }
+        },
+        {
+          "codigo": "06",
+          "ubigeo": "040106",
+          "ubigeo_reniec": "040105",
+          "nombre": "Chiguata",
+          "capital": "Chiguata",
+          "latitude": -16.403611,
+          "longitude": -71.391667,
+          "altitude": 3006,
+          "superficie_km2": 460.81,
+          "densidad_pob_2020": 10.15386,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "05"
+          }
+        },
+        {
+          "codigo": "07",
+          "ubigeo": "040107",
+          "ubigeo_reniec": "040127",
+          "nombre": "Jacobo Hunter",
+          "capital": "Jacobo Hunter",
+          "latitude": -16.441389,
+          "longitude": -71.558611,
+          "altitude": 2309,
+          "superficie_km2": 20.37,
+          "densidad_pob_2020": 2736.917035,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "27"
+          }
+        },
+        {
+          "codigo": "08",
+          "ubigeo": "040108",
+          "ubigeo_reniec": "040106",
+          "nombre": "La Joya",
+          "capital": "La Joya",
+          "latitude": -16.423056,
+          "longitude": -71.818333,
+          "altitude": 1640,
+          "superficie_km2": 670.22,
+          "densidad_pob_2020": 49.480768,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "06"
+          }
+        },
+        {
+          "codigo": "09",
+          "ubigeo": "040109",
+          "ubigeo_reniec": "040126",
+          "nombre": "Mariano Melgar",
+          "capital": "Mariano Melgar",
+          "latitude": -16.407222,
+          "longitude": -71.505556,
+          "altitude": 2459,
+          "superficie_km2": 29.83,
+          "densidad_pob_2020": 2318.974187,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "26"
+          }
+        },
+        {
+          "codigo": "10",
+          "ubigeo": "040110",
+          "ubigeo_reniec": "040107",
+          "nombre": "Miraflores",
+          "capital": "Miraflores",
+          "latitude": -16.394722,
+          "longitude": -71.5225,
+          "altitude": 2450,
+          "superficie_km2": 28.68,
+          "densidad_pob_2020": 2372.90795,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "07"
+          }
+        },
+        {
+          "codigo": "11",
+          "ubigeo": "040111",
+          "ubigeo_reniec": "040108",
+          "nombre": "Mollebaya",
+          "capital": "Mollebaya",
+          "latitude": -16.487222,
+          "longitude": -71.466944,
+          "altitude": 2515,
+          "superficie_km2": 26.7,
+          "densidad_pob_2020": 130.898876,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "08"
+          }
+        },
+        {
+          "codigo": "12",
+          "ubigeo": "040112",
+          "ubigeo_reniec": "040109",
+          "nombre": "Paucarpata",
+          "capital": "Paucarpata",
+          "latitude": -16.432778,
+          "longitude": -71.504722,
+          "altitude": 2453,
+          "superficie_km2": 31.07,
+          "densidad_pob_2020": 5052.494368,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "09"
+          }
+        },
+        {
+          "codigo": "13",
+          "ubigeo": "040113",
+          "ubigeo_reniec": "040110",
+          "nombre": "Pocsi",
+          "capital": "Pocsi",
+          "latitude": -16.517778,
+          "longitude": -71.389722,
+          "altitude": 3045,
+          "superficie_km2": 172.48,
+          "densidad_pob_2020": 6.238404,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "10"
+          }
+        },
+        {
+          "codigo": "14",
+          "ubigeo": "040114",
+          "ubigeo_reniec": "040111",
+          "nombre": "Polobaya",
+          "capital": "Polobaya Grande",
+          "latitude": -16.565833,
+          "longitude": -71.368333,
+          "altitude": 3116,
+          "superficie_km2": 441.61,
+          "densidad_pob_2020": 3.131723,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "11"
+          }
+        },
+        {
+          "codigo": "15",
+          "ubigeo": "040115",
+          "ubigeo_reniec": "040112",
+          "nombre": "Quequeña",
+          "capital": "Quequeña",
+          "latitude": -16.557222,
+          "longitude": -71.451389,
+          "altitude": 2561,
+          "superficie_km2": 34.93,
+          "densidad_pob_2020": 60.177498,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "12"
+          }
+        },
+        {
+          "codigo": "16",
+          "ubigeo": "040116",
+          "ubigeo_reniec": "040113",
+          "nombre": "Sabandia",
+          "capital": "Sabandia",
+          "latitude": -16.456944,
+          "longitude": -71.494722,
+          "altitude": 2441,
+          "superficie_km2": 36.63,
+          "densidad_pob_2020": 148.812449,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "13"
+          }
+        },
+        {
+          "codigo": "17",
+          "ubigeo": "040117",
+          "ubigeo_reniec": "040114",
+          "nombre": "Sachaca",
+          "capital": "Sachaca",
+          "latitude": -16.424444,
+          "longitude": -71.566389,
+          "altitude": 2300,
+          "superficie_km2": 26.63,
+          "densidad_pob_2020": 1279.346602,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "14"
+          }
+        },
+        {
+          "codigo": "18",
+          "ubigeo": "040118",
+          "ubigeo_reniec": "040115",
+          "nombre": "San Juan De Siguas",
+          "capital": "San Juan de Siguas",
+          "latitude": -16.346111,
+          "longitude": -72.128333,
+          "altitude": 1281,
+          "superficie_km2": 93.31,
+          "densidad_pob_2020": 12.763905,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "15"
+          }
+        },
+        {
+          "codigo": "19",
+          "ubigeo": "040119",
+          "ubigeo_reniec": "040116",
+          "nombre": "San Juan De Tarucani",
+          "capital": "Tarucani",
+          "latitude": -16.183611,
+          "longitude": -71.061944,
+          "altitude": 4217,
+          "superficie_km2": 2264.59,
+          "densidad_pob_2020": 0.742739,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "16"
+          }
+        },
+        {
+          "codigo": "20",
+          "ubigeo": "040120",
+          "ubigeo_reniec": "040117",
+          "nombre": "Santa Isabel De Siguas",
+          "capital": "Santa Isabel de Siguas",
+          "latitude": -16.320833,
+          "longitude": -72.098889,
+          "altitude": 1390,
+          "superficie_km2": 187.98,
+          "densidad_pob_2020": 4.426003,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "17"
+          }
+        },
+        {
+          "codigo": "21",
+          "ubigeo": "040121",
+          "ubigeo_reniec": "040118",
+          "nombre": "Santa Rita De Siguas",
+          "capital": "Santa Rita de Siguas",
+          "latitude": -16.493611,
+          "longitude": -72.094722,
+          "altitude": 1283,
+          "superficie_km2": 370.16,
+          "densidad_pob_2020": 19.326778,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "18"
+          }
+        },
+        {
+          "codigo": "22",
+          "ubigeo": "040122",
+          "ubigeo_reniec": "040119",
+          "nombre": "Socabaya",
+          "capital": "Socabaya",
+          "latitude": -16.4675,
+          "longitude": -71.528611,
+          "altitude": 2352,
+          "superficie_km2": 18.64,
+          "densidad_pob_2020": 3909.7103,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "19"
+          }
+        },
+        {
+          "codigo": "23",
+          "ubigeo": "040123",
+          "ubigeo_reniec": "040120",
+          "nombre": "Tiabaya",
+          "capital": "Tiabaya",
+          "latitude": -16.449444,
+          "longitude": -71.591667,
+          "altitude": 2218,
+          "superficie_km2": 31.62,
+          "densidad_pob_2020": 662.776724,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "20"
+          }
+        },
+        {
+          "codigo": "24",
+          "ubigeo": "040124",
+          "ubigeo_reniec": "040121",
+          "nombre": "Uchumayo",
+          "capital": "Uchumayo",
+          "latitude": -16.425278,
+          "longitude": -71.6725,
+          "altitude": 1976,
+          "superficie_km2": 227.14,
+          "densidad_pob_2020": 86.470899,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "21"
+          }
+        },
+        {
+          "codigo": "25",
+          "ubigeo": "040125",
+          "ubigeo_reniec": "040122",
+          "nombre": "Vitor",
+          "capital": "Vítor",
+          "latitude": -16.465833,
+          "longitude": -71.935833,
+          "altitude": 1189,
+          "superficie_km2": 1543.5,
+          "densidad_pob_2020": 2.229349,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "22"
+          }
+        },
+        {
+          "codigo": "26",
+          "ubigeo": "040126",
+          "ubigeo_reniec": "040123",
+          "nombre": "Yanahuara",
+          "capital": "Yanahuara",
+          "latitude": -16.381944,
+          "longitude": -71.536389,
+          "altitude": 2402,
+          "superficie_km2": 2.2,
+          "densidad_pob_2020": 16662.272727,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "23"
+          }
+        },
+        {
+          "codigo": "27",
+          "ubigeo": "040127",
+          "ubigeo_reniec": "040124",
+          "nombre": "Yarabamba",
+          "capital": "Yarabamba",
+          "latitude": -16.546667,
+          "longitude": -71.475556,
+          "altitude": 2467,
+          "superficie_km2": 492.2,
+          "densidad_pob_2020": 5.802519,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "24"
+          }
+        },
+        {
+          "codigo": "28",
+          "ubigeo": "040128",
+          "ubigeo_reniec": "040125",
+          "nombre": "Yura",
+          "capital": "Yura",
+          "latitude": -16.246944,
+          "longitude": -71.706389,
+          "altitude": 2495,
+          "superficie_km2": 1942.9,
+          "densidad_pob_2020": 15.749138,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "25"
+          }
+        },
+        {
+          "codigo": "29",
+          "ubigeo": "040129",
+          "ubigeo_reniec": "040129",
+          "nombre": "Jose Luis Bustamante Y Rivero",
+          "capital": "Ciudad Satélite",
+          "latitude": -16.426667,
+          "longitude": -71.523889,
+          "altitude": 2389,
+          "superficie_km2": 10.83,
+          "densidad_pob_2020": 7899.445983,
+          "jne": {
+            "dep": "04",
+            "pro": "01",
+            "dis": "29"
+          }
+        }
+      ],
+      "jne_pro": "01"
+    },
+    {
+      "codigo": "02",
+      "ubigeo": "040200",
+      "nombre": "Camana",
+      "distritos": [
+        {
+          "codigo": "01",
+          "ubigeo": "040201",
+          "ubigeo_reniec": "040301",
+          "nombre": "Camana",
+          "capital": "Camaná",
+          "latitude": -16.624722,
+          "longitude": -72.711389,
+          "altitude": 20,
+          "superficie_km2": 11.67,
+          "densidad_pob_2020": 1554.755784,
+          "jne": {
+            "dep": "04",
+            "pro": "03",
+            "dis": "01"
+          }
+        },
+        {
+          "codigo": "02",
+          "ubigeo": "040202",
+          "ubigeo_reniec": "040302",
+          "nombre": "Jose Maria Quimper",
+          "capital": "El Cardo",
+          "latitude": -16.601944,
+          "longitude": -72.727222,
+          "altitude": 35,
+          "superficie_km2": 16.72,
+          "densidad_pob_2020": 310.586124,
+          "jne": {
+            "dep": "04",
+            "pro": "03",
+            "dis": "02"
+          }
+        },
+        {
+          "codigo": "03",
+          "ubigeo": "040203",
+          "ubigeo_reniec": "040303",
+          "nombre": "Mariano Nicolas Valcarcel",
+          "capital": "Urasqui",
+          "latitude": -16.031389,
+          "longitude": -73.174444,
+          "altitude": 362,
+          "superficie_km2": 557.74,
+          "densidad_pob_2020": 7.668448,
+          "jne": {
+            "dep": "04",
+            "pro": "03",
+            "dis": "03"
+          }
+        },
+        {
+          "codigo": "04",
+          "ubigeo": "040204",
+          "ubigeo_reniec": "040304",
+          "nombre": "Mariscal Caceres",
+          "capital": "San José",
+          "latitude": -16.619722,
+          "longitude": -72.736111,
+          "altitude": 18,
+          "superficie_km2": 579.31,
+          "densidad_pob_2020": 13.213996,
+          "jne": {
+            "dep": "04",
+            "pro": "03",
+            "dis": "04"
+          }
+        },
+        {
+          "codigo": "05",
+          "ubigeo": "040205",
+          "ubigeo_reniec": "040305",
+          "nombre": "Nicolas De Pierola",
+          "capital": "San Gregorio",
+          "latitude": -16.573056,
+          "longitude": -72.715833,
+          "altitude": 71,
+          "superficie_km2": 391.84,
+          "densidad_pob_2020": 20.824826,
+          "jne": {
+            "dep": "04",
+            "pro": "03",
+            "dis": "05"
+          }
+        },
+        {
+          "codigo": "06",
+          "ubigeo": "040206",
+          "ubigeo_reniec": "040306",
+          "nombre": "Ocoña",
+          "capital": "Ocoña",
+          "latitude": -16.431667,
+          "longitude": -73.105,
+          "altitude": 16,
+          "superficie_km2": 1414.8,
+          "densidad_pob_2020": 3.257704,
+          "jne": {
+            "dep": "04",
+            "pro": "03",
+            "dis": "06"
+          }
+        },
+        {
+          "codigo": "07",
+          "ubigeo": "040207",
+          "ubigeo_reniec": "040307",
+          "nombre": "Quilca",
+          "capital": "Quilca",
+          "latitude": -16.716944,
+          "longitude": -72.425556,
+          "altitude": 82,
+          "superficie_km2": 912.25,
+          "densidad_pob_2020": 1.22883,
+          "jne": {
+            "dep": "04",
+            "pro": "03",
+            "dis": "07"
+          }
+        },
+        {
+          "codigo": "08",
+          "ubigeo": "040208",
+          "ubigeo_reniec": "040308",
+          "nombre": "Samuel Pastor",
+          "capital": "La Pampa",
+          "latitude": -16.613611,
+          "longitude": -72.699167,
+          "altitude": 21,
+          "superficie_km2": 113.4,
+          "densidad_pob_2020": 154.409171,
+          "jne": {
+            "dep": "04",
+            "pro": "03",
+            "dis": "08"
+          }
+        }
+      ],
+      "jne_pro": "03"
+    },
+    {
+      "codigo": "03",
+      "ubigeo": "040300",
+      "nombre": "Caraveli",
+      "distritos": [
+        {
+          "codigo": "01",
+          "ubigeo": "040301",
+          "ubigeo_reniec": "040401",
+          "nombre": "Caraveli",
+          "capital": "Caravelí",
+          "latitude": -15.7725,
+          "longitude": -73.365833,
+          "altitude": 1811,
+          "superficie_km2": 727.68,
+          "densidad_pob_2020": 5.088775,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "01"
+          }
+        },
+        {
+          "codigo": "02",
+          "ubigeo": "040302",
+          "ubigeo_reniec": "040402",
+          "nombre": "Acari",
+          "capital": "Acarí",
+          "latitude": -15.435556,
+          "longitude": -74.616389,
+          "altitude": 171,
+          "superficie_km2": 799.21,
+          "densidad_pob_2020": 5.768196,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "02"
+          }
+        },
+        {
+          "codigo": "03",
+          "ubigeo": "040303",
+          "ubigeo_reniec": "040403",
+          "nombre": "Atico",
+          "capital": "Atico",
+          "latitude": -16.208333,
+          "longitude": -73.623611,
+          "altitude": 101,
+          "superficie_km2": 3146.24,
+          "densidad_pob_2020": 1.551376,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "03"
+          }
+        },
+        {
+          "codigo": "04",
+          "ubigeo": "040304",
+          "ubigeo_reniec": "040404",
+          "nombre": "Atiquipa",
+          "capital": "Atiquipa",
+          "latitude": -15.796111,
+          "longitude": -74.363611,
+          "altitude": 330,
+          "superficie_km2": 423.55,
+          "densidad_pob_2020": 1.522843,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "04"
+          }
+        },
+        {
+          "codigo": "05",
+          "ubigeo": "040305",
+          "ubigeo_reniec": "040405",
+          "nombre": "Bella Union",
+          "capital": "Bella Unión",
+          "latitude": -15.450556,
+          "longitude": -74.658333,
+          "altitude": 218,
+          "superficie_km2": 1588.41,
+          "densidad_pob_2020": 1.597824,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "05"
+          }
+        },
+        {
+          "codigo": "06",
+          "ubigeo": "040306",
+          "ubigeo_reniec": "040406",
+          "nombre": "Cahuacho",
+          "capital": "Cahuacho",
+          "latitude": -15.502778,
+          "longitude": -73.479722,
+          "altitude": 3423,
+          "superficie_km2": 1412.1,
+          "densidad_pob_2020": 0.564408,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "06"
+          }
+        },
+        {
+          "codigo": "07",
+          "ubigeo": "040307",
+          "ubigeo_reniec": "040407",
+          "nombre": "Chala",
+          "capital": "Chala",
+          "latitude": -15.865556,
+          "longitude": -74.2475,
+          "altitude": 21,
+          "superficie_km2": 378.38,
+          "densidad_pob_2020": 20.521698,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "07"
+          }
+        },
+        {
+          "codigo": "08",
+          "ubigeo": "040308",
+          "ubigeo_reniec": "040408",
+          "nombre": "Chaparra",
+          "capital": "Achanizo",
+          "latitude": -15.805278,
+          "longitude": -73.966944,
+          "altitude": 611,
+          "superficie_km2": 1473.19,
+          "densidad_pob_2020": 1.747908,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "08"
+          }
+        },
+        {
+          "codigo": "09",
+          "ubigeo": "040309",
+          "ubigeo_reniec": "040409",
+          "nombre": "Huanuhuanu",
+          "capital": "Tocota",
+          "latitude": -15.658889,
+          "longitude": -74.091389,
+          "altitude": 972,
+          "superficie_km2": 708.52,
+          "densidad_pob_2020": 2.618134,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "09"
+          }
+        },
+        {
+          "codigo": "10",
+          "ubigeo": "040310",
+          "ubigeo_reniec": "040410",
+          "nombre": "Jaqui",
+          "capital": "Jaqui",
+          "latitude": -15.479167,
+          "longitude": -74.443611,
+          "altitude": 271,
+          "superficie_km2": 424.73,
+          "densidad_pob_2020": 3.882467,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "10"
+          }
+        },
+        {
+          "codigo": "11",
+          "ubigeo": "040311",
+          "ubigeo_reniec": "040411",
+          "nombre": "Lomas",
+          "capital": "Lomas",
+          "latitude": -15.569722,
+          "longitude": -74.851389,
+          "altitude": 26,
+          "superficie_km2": 452.7,
+          "densidad_pob_2020": 2.91142,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "11"
+          }
+        },
+        {
+          "codigo": "12",
+          "ubigeo": "040312",
+          "ubigeo_reniec": "040412",
+          "nombre": "Quicacha",
+          "capital": "Quicacha",
+          "latitude": -15.625,
+          "longitude": -73.798333,
+          "altitude": 1836,
+          "superficie_km2": 1048.42,
+          "densidad_pob_2020": 1.860895,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "12"
+          }
+        },
+        {
+          "codigo": "13",
+          "ubigeo": "040313",
+          "ubigeo_reniec": "040413",
+          "nombre": "Yauca",
+          "capital": "Yauca",
+          "latitude": -15.661944,
+          "longitude": -74.527222,
+          "altitude": 31,
+          "superficie_km2": 556.3,
+          "densidad_pob_2020": 3.384864,
+          "jne": {
+            "dep": "04",
+            "pro": "04",
+            "dis": "13"
+          }
+        }
+      ],
+      "jne_pro": "04"
+    },
+    {
+      "codigo": "04",
+      "ubigeo": "040400",
+      "nombre": "Castilla",
+      "distritos": [
+        {
+          "codigo": "01",
+          "ubigeo": "040401",
+          "ubigeo_reniec": "040501",
+          "nombre": "Aplao",
+          "capital": "Aplao",
+          "latitude": -16.076111,
+          "longitude": -72.492222,
+          "altitude": 625,
+          "superficie_km2": 640.04,
+          "densidad_pob_2020": 15.606837,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "01"
+          }
+        },
+        {
+          "codigo": "02",
+          "ubigeo": "040402",
+          "ubigeo_reniec": "040502",
+          "nombre": "Andagua",
+          "capital": "Andagua",
+          "latitude": -15.498889,
+          "longitude": -72.356111,
+          "altitude": 3594,
+          "superficie_km2": 480.74,
+          "densidad_pob_2020": 2.279819,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "02"
+          }
+        },
+        {
+          "codigo": "03",
+          "ubigeo": "040403",
+          "ubigeo_reniec": "040503",
+          "nombre": "Ayo",
+          "capital": "Ayo",
+          "latitude": -15.682778,
+          "longitude": -72.271944,
+          "altitude": 2003,
+          "superficie_km2": 327.97,
+          "densidad_pob_2020": 1.146446,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "03"
+          }
+        },
+        {
+          "codigo": "04",
+          "ubigeo": "040404",
+          "ubigeo_reniec": "040504",
+          "nombre": "Chachas",
+          "capital": "Chachas",
+          "latitude": -15.501389,
+          "longitude": -72.270556,
+          "altitude": 3117,
+          "superficie_km2": 1190.49,
+          "densidad_pob_2020": 1.75978,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "04"
+          }
+        },
+        {
+          "codigo": "05",
+          "ubigeo": "040405",
+          "ubigeo_reniec": "040505",
+          "nombre": "Chilcaymarca",
+          "capital": "Chilcaymarca",
+          "latitude": -15.286111,
+          "longitude": -72.376667,
+          "altitude": 3867,
+          "superficie_km2": 181.37,
+          "densidad_pob_2020": 6.390252,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "05"
+          }
+        },
+        {
+          "codigo": "06",
+          "ubigeo": "040406",
+          "ubigeo_reniec": "040506",
+          "nombre": "Choco",
+          "capital": "Choco",
+          "latitude": -15.576667,
+          "longitude": -72.128889,
+          "altitude": 2418,
+          "superficie_km2": 904.33,
+          "densidad_pob_2020": 1.161081,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "06"
+          }
+        },
+        {
+          "codigo": "07",
+          "ubigeo": "040407",
+          "ubigeo_reniec": "040507",
+          "nombre": "Huancarqui",
+          "capital": "Huancarqui",
+          "latitude": -16.096111,
+          "longitude": -72.472222,
+          "altitude": 620,
+          "superficie_km2": 803.65,
+          "densidad_pob_2020": 2.274622,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "07"
+          }
+        },
+        {
+          "codigo": "08",
+          "ubigeo": "040408",
+          "ubigeo_reniec": "040508",
+          "nombre": "Machaguay",
+          "capital": "Machaguay",
+          "latitude": -15.650278,
+          "longitude": -72.506111,
+          "altitude": 3131,
+          "superficie_km2": 246.89,
+          "densidad_pob_2020": 2.701608,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "08"
+          }
+        },
+        {
+          "codigo": "09",
+          "ubigeo": "040409",
+          "ubigeo_reniec": "040509",
+          "nombre": "Orcopampa",
+          "capital": "Orcopampa",
+          "latitude": -15.2625,
+          "longitude": -72.341944,
+          "altitude": 3818,
+          "superficie_km2": 724.37,
+          "densidad_pob_2020": 7.447851,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "09"
+          }
+        },
+        {
+          "codigo": "10",
+          "ubigeo": "040410",
+          "ubigeo_reniec": "040510",
+          "nombre": "Pampacolca",
+          "capital": "Pampacolca",
+          "latitude": -15.713333,
+          "longitude": -72.573889,
+          "altitude": 2922,
+          "superficie_km2": 205.19,
+          "densidad_pob_2020": 11.70135,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "10"
+          }
+        },
+        {
+          "codigo": "11",
+          "ubigeo": "040411",
+          "ubigeo_reniec": "040511",
+          "nombre": "Tipan",
+          "capital": "Tipán",
+          "latitude": -15.723056,
+          "longitude": -72.501944,
+          "altitude": 1939,
+          "superficie_km2": 57.68,
+          "densidad_pob_2020": 7.871012,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "11"
+          }
+        },
+        {
+          "codigo": "12",
+          "ubigeo": "040412",
+          "ubigeo_reniec": "040513",
+          "nombre": "Uñon",
+          "capital": "Uñón",
+          "latitude": -15.728611,
+          "longitude": -72.432222,
+          "altitude": 2727,
+          "superficie_km2": 296.93,
+          "densidad_pob_2020": 0.744283,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "13"
+          }
+        },
+        {
+          "codigo": "13",
+          "ubigeo": "040413",
+          "ubigeo_reniec": "040512",
+          "nombre": "Uraca",
+          "capital": "Corire",
+          "latitude": -16.223889,
+          "longitude": -72.469722,
+          "altitude": 452,
+          "superficie_km2": 713.83,
+          "densidad_pob_2020": 9.975765,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "12"
+          }
+        },
+        {
+          "codigo": "14",
+          "ubigeo": "040414",
+          "ubigeo_reniec": "040514",
+          "nombre": "Viraco",
+          "capital": "Viraco",
+          "latitude": -15.658333,
+          "longitude": -72.525,
+          "altitude": 3210,
+          "superficie_km2": 141.0,
+          "densidad_pob_2020": 9.695035,
+          "jne": {
+            "dep": "04",
+            "pro": "05",
+            "dis": "14"
+          }
+        }
+      ],
+      "jne_pro": "05"
+    },
+    {
+      "codigo": "05",
+      "ubigeo": "040500",
+      "nombre": "Caylloma",
+      "distritos": [
+        {
+          "codigo": "01",
+          "ubigeo": "040501",
+          "ubigeo_reniec": "040201",
+          "nombre": "Chivay",
+          "capital": "Chivay",
+          "latitude": -15.640278,
+          "longitude": -71.603611,
+          "altitude": 3683,
+          "superficie_km2": 240.64,
+          "densidad_pob_2020": 28.469914,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "01"
+          }
+        },
+        {
+          "codigo": "02",
+          "ubigeo": "040502",
+          "ubigeo_reniec": "040202",
+          "nombre": "Achoma",
+          "capital": "Achoma",
+          "latitude": -15.66,
+          "longitude": -71.703611,
+          "altitude": 3524,
+          "superficie_km2": 393.54,
+          "densidad_pob_2020": 3.122935,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "02"
+          }
+        },
+        {
+          "codigo": "03",
+          "ubigeo": "040503",
+          "ubigeo_reniec": "040203",
+          "nombre": "Cabanaconde",
+          "capital": "Cabanaconde",
+          "latitude": -15.62,
+          "longitude": -71.981944,
+          "altitude": 3295,
+          "superficie_km2": 460.55,
+          "densidad_pob_2020": 5.200304,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "03"
+          }
+        },
+        {
+          "codigo": "04",
+          "ubigeo": "040504",
+          "ubigeo_reniec": "040205",
+          "nombre": "Callalli",
+          "capital": "Callalli",
+          "latitude": -15.506389,
+          "longitude": -71.444722,
+          "altitude": 3887,
+          "superficie_km2": 1485.1,
+          "densidad_pob_2020": 1.358158,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "05"
+          }
+        },
+        {
+          "codigo": "05",
+          "ubigeo": "040505",
+          "ubigeo_reniec": "040204",
+          "nombre": "Caylloma",
+          "capital": "Caylloma",
+          "latitude": -15.188889,
+          "longitude": -71.773333,
+          "altitude": 4361,
+          "superficie_km2": 1499.0,
+          "densidad_pob_2020": 2.873916,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "04"
+          }
+        },
+        {
+          "codigo": "06",
+          "ubigeo": "040506",
+          "ubigeo_reniec": "040206",
+          "nombre": "Coporaque",
+          "capital": "Coporaque",
+          "latitude": -15.627222,
+          "longitude": -71.646111,
+          "altitude": 3600,
+          "superficie_km2": 111.98,
+          "densidad_pob_2020": 10.314342,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "06"
+          }
+        },
+        {
+          "codigo": "07",
+          "ubigeo": "040507",
+          "ubigeo_reniec": "040207",
+          "nombre": "Huambo",
+          "capital": "Huambo",
+          "latitude": -15.729444,
+          "longitude": -72.109722,
+          "altitude": 3309,
+          "superficie_km2": 705.79,
+          "densidad_pob_2020": 1.27375,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "07"
+          }
+        },
+        {
+          "codigo": "08",
+          "ubigeo": "040508",
+          "ubigeo_reniec": "040208",
+          "nombre": "Huanca",
+          "capital": "Huanca",
+          "latitude": -16.033611,
+          "longitude": -71.878056,
+          "altitude": 3073,
+          "superficie_km2": 391.16,
+          "densidad_pob_2020": 3.862869,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "08"
+          }
+        },
+        {
+          "codigo": "09",
+          "ubigeo": "040509",
+          "ubigeo_reniec": "040209",
+          "nombre": "Ichupampa",
+          "capital": "Ichupampa",
+          "latitude": -15.65,
+          "longitude": -71.686667,
+          "altitude": 3422,
+          "superficie_km2": 74.89,
+          "densidad_pob_2020": 11.683803,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "09"
+          }
+        },
+        {
+          "codigo": "10",
+          "ubigeo": "040510",
+          "ubigeo_reniec": "040210",
+          "nombre": "Lari",
+          "capital": "Lari",
+          "latitude": -15.618333,
+          "longitude": -71.7725,
+          "altitude": 3373,
+          "superficie_km2": 384.02,
+          "densidad_pob_2020": 3.317536,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "10"
+          }
+        },
+        {
+          "codigo": "11",
+          "ubigeo": "040511",
+          "ubigeo_reniec": "040211",
+          "nombre": "Lluta",
+          "capital": "Lluta",
+          "latitude": -16.015556,
+          "longitude": -72.013889,
+          "altitude": 3031,
+          "superficie_km2": 1226.46,
+          "densidad_pob_2020": 1.182264,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "11"
+          }
+        },
+        {
+          "codigo": "12",
+          "ubigeo": "040512",
+          "ubigeo_reniec": "040212",
+          "nombre": "Maca",
+          "capital": "Maca",
+          "latitude": -15.641389,
+          "longitude": -71.768333,
+          "altitude": 3287,
+          "superficie_km2": 227.48,
+          "densidad_pob_2020": 4.277299,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "12"
+          }
+        },
+        {
+          "codigo": "13",
+          "ubigeo": "040513",
+          "ubigeo_reniec": "040213",
+          "nombre": "Madrigal",
+          "capital": "Madrigal",
+          "latitude": -15.608333,
+          "longitude": -71.8075,
+          "altitude": 3300,
+          "superficie_km2": 160.09,
+          "densidad_pob_2020": 5.184584,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "13"
+          }
+        },
+        {
+          "codigo": "14",
+          "ubigeo": "040514",
+          "ubigeo_reniec": "040214",
+          "nombre": "San Antonio De Chuca",
+          "capital": "San Antonio de Chuca",
+          "latitude": -15.838889,
+          "longitude": -71.090556,
+          "altitude": 4470,
+          "superficie_km2": 1531.27,
+          "densidad_pob_2020": 0.775827,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "14"
+          }
+        },
+        {
+          "codigo": "15",
+          "ubigeo": "040515",
+          "ubigeo_reniec": "040215",
+          "nombre": "Sibayo",
+          "capital": "Sibayo",
+          "latitude": -15.486111,
+          "longitude": -71.456944,
+          "altitude": 3836,
+          "superficie_km2": 286.03,
+          "densidad_pob_2020": 3.240919,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "15"
+          }
+        },
+        {
+          "codigo": "16",
+          "ubigeo": "040516",
+          "ubigeo_reniec": "040216",
+          "nombre": "Tapay",
+          "capital": "Tapay",
+          "latitude": -15.5775,
+          "longitude": -71.939722,
+          "altitude": 3011,
+          "superficie_km2": 420.17,
+          "densidad_pob_2020": 2.21339,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "16"
+          }
+        },
+        {
+          "codigo": "17",
+          "ubigeo": "040517",
+          "ubigeo_reniec": "040217",
+          "nombre": "Tisco",
+          "capital": "Tisco",
+          "latitude": -15.346944,
+          "longitude": -71.446389,
+          "altitude": 4195,
+          "superficie_km2": 1445.02,
+          "densidad_pob_2020": 1.26019,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "17"
+          }
+        },
+        {
+          "codigo": "18",
+          "ubigeo": "040518",
+          "ubigeo_reniec": "040218",
+          "nombre": "Tuti",
+          "capital": "Tuti",
+          "latitude": -15.533056,
+          "longitude": -71.553056,
+          "altitude": 3831,
+          "superficie_km2": 241.89,
+          "densidad_pob_2020": 3.964612,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "18"
+          }
+        },
+        {
+          "codigo": "19",
+          "ubigeo": "040519",
+          "ubigeo_reniec": "040219",
+          "nombre": "Yanque",
+          "capital": "Yanque",
+          "latitude": -15.648333,
+          "longitude": -71.660833,
+          "altitude": 3468,
+          "superficie_km2": 1108.58,
+          "densidad_pob_2020": 2.386837,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "19"
+          }
+        },
+        {
+          "codigo": "20",
+          "ubigeo": "040520",
+          "ubigeo_reniec": "040220",
+          "nombre": "Majes",
+          "capital": "El Pedregal",
+          "latitude": -16.353333,
+          "longitude": -72.247222,
+          "altitude": 1392,
+          "superficie_km2": 1625.8,
+          "densidad_pob_2020": 43.68311,
+          "jne": {
+            "dep": "04",
+            "pro": "02",
+            "dis": "20"
+          }
+        }
+      ],
+      "jne_pro": "02"
+    },
+    {
+      "codigo": "06",
+      "ubigeo": "040600",
+      "nombre": "Condesuyos",
+      "distritos": [
+        {
+          "codigo": "01",
+          "ubigeo": "040601",
+          "ubigeo_reniec": "040601",
+          "nombre": "Chuquibamba",
+          "capital": "Chuquibamba",
+          "latitude": -15.839444,
+          "longitude": -72.651667,
+          "altitude": 2916,
+          "superficie_km2": 1255.04,
+          "densidad_pob_2020": 2.939349,
+          "jne": {
+            "dep": "04",
+            "pro": "06",
+            "dis": "01"
+          }
+        },
+        {
+          "codigo": "02",
+          "ubigeo": "040602",
+          "ubigeo_reniec": "040602",
+          "nombre": "Andaray",
+          "capital": "Andaray",
+          "latitude": -15.797222,
+          "longitude": -72.860833,
+          "altitude": 3047,
+          "superficie_km2": 847.56,
+          "densidad_pob_2020": 0.768087,
+          "jne": {
+            "dep": "04",
+            "pro": "06",
+            "dis": "02"
+          }
+        },
+        {
+          "codigo": "03",
+          "ubigeo": "040603",
+          "ubigeo_reniec": "040603",
+          "nombre": "Cayarani",
+          "capital": "Cayarani",
+          "latitude": -14.671944,
+          "longitude": -72.021944,
+          "altitude": 3951,
+          "superficie_km2": 1395.67,
+          "densidad_pob_2020": 2.196794,
+          "jne": {
+            "dep": "04",
+            "pro": "06",
+            "dis": "03"
+          }
+        },
+        {
+          "codigo": "04",
+          "ubigeo": "040604",
+          "ubigeo_reniec": "040604",
+          "nombre": "Chichas",
+          "capital": "Chichas",
+          "latitude": -15.547778,
+          "longitude": -72.918611,
+          "altitude": 2174,
+          "superficie_km2": 392.16,
+          "densidad_pob_2020": 1.792636,
+          "jne": {
+            "dep": "04",
+            "pro": "06",
+            "dis": "04"
+          }
+        },
+        {
+          "codigo": "05",
+          "ubigeo": "040605",
+          "ubigeo_reniec": "040605",
+          "nombre": "Iray",
+          "capital": "Iray",
+          "latitude": -15.853611,
+          "longitude": -72.63,
+          "altitude": 2469,
+          "superficie_km2": 247.62,
+          "densidad_pob_2020": 3.113642,
+          "jne": {
+            "dep": "04",
+            "pro": "06",
+            "dis": "05"
+          }
+        },
+        {
+          "codigo": "06",
+          "ubigeo": "040606",
+          "ubigeo_reniec": "040608",
+          "nombre": "Rio Grande",
+          "capital": "Iquipi",
+          "latitude": -15.94,
+          "longitude": -73.131111,
+          "altitude": 484,
+          "superficie_km2": 527.48,
+          "densidad_pob_2020": 4.891181,
+          "jne": {
+            "dep": "04",
+            "pro": "06",
+            "dis": "08"
+          }
+        },
+        {
+          "codigo": "07",
+          "ubigeo": "040607",
+          "ubigeo_reniec": "040606",
+          "nombre": "Salamanca",
+          "capital": "Salamanca",
+          "latitude": -15.504444,
+          "longitude": -72.834444,
+          "altitude": 3226,
+          "superficie_km2": 1235.8,
+          "densidad_pob_2020": 0.718563,
+          "jne": {
+            "dep": "04",
+            "pro": "06",
+            "dis": "06"
+          }
+        },
+        {
+          "codigo": "08",
+          "ubigeo": "040608",
+          "ubigeo_reniec": "040607",
+          "nombre": "Yanaquihua",
+          "capital": "Yanaquihua",
+          "latitude": -15.775556,
+          "longitude": -72.876389,
+          "altitude": 3006,
+          "superficie_km2": 1057.07,
+          "densidad_pob_2020": 3.652549,
+          "jne": {
+            "dep": "04",
+            "pro": "06",
+            "dis": "07"
+          }
+        }
+      ],
+      "jne_pro": "06"
+    },
+    {
+      "codigo": "07",
+      "ubigeo": "040700",
+      "nombre": "Islay",
+      "distritos": [
+        {
+          "codigo": "01",
+          "ubigeo": "040701",
+          "ubigeo_reniec": "040701",
+          "nombre": "Mollendo",
+          "capital": "Mollendo",
+          "latitude": -17.029167,
+          "longitude": -72.016389,
+          "altitude": 73,
+          "superficie_km2": 960.83,
+          "densidad_pob_2020": 29.2622,
+          "jne": {
+            "dep": "04",
+            "pro": "07",
+            "dis": "01"
+          }
+        },
+        {
+          "codigo": "02",
+          "ubigeo": "040702",
+          "ubigeo_reniec": "040702",
+          "nombre": "Cocachacra",
+          "capital": "Cocachacra",
+          "latitude": -17.091111,
+          "longitude": -71.773889,
+          "altitude": 114,
+          "superficie_km2": 1536.96,
+          "densidad_pob_2020": 6.512857,
+          "jne": {
+            "dep": "04",
+            "pro": "07",
+            "dis": "02"
+          }
+        },
+        {
+          "codigo": "03",
+          "ubigeo": "040703",
+          "ubigeo_reniec": "040703",
+          "nombre": "Dean Valdivia",
+          "capital": "La Curva",
+          "latitude": -17.145,
+          "longitude": -71.826667,
+          "altitude": 16,
+          "superficie_km2": 134.08,
+          "densidad_pob_2020": 54.721062,
+          "jne": {
+            "dep": "04",
+            "pro": "07",
+            "dis": "03"
+          }
+        },
+        {
+          "codigo": "04",
+          "ubigeo": "040704",
+          "ubigeo_reniec": "040704",
+          "nombre": "Islay",
+          "capital": "Islay (Matarani)",
+          "latitude": -17.000833,
+          "longitude": -72.0975,
+          "altitude": 110,
+          "superficie_km2": 383.78,
+          "densidad_pob_2020": 14.044505,
+          "jne": {
+            "dep": "04",
+            "pro": "07",
+            "dis": "04"
+          }
+        },
+        {
+          "codigo": "05",
+          "ubigeo": "040705",
+          "ubigeo_reniec": "040705",
+          "nombre": "Mejia",
+          "capital": "Mejía",
+          "latitude": -17.101111,
+          "longitude": -71.9075,
+          "altitude": 9,
+          "superficie_km2": 100.78,
+          "densidad_pob_2020": 14.933519,
+          "jne": {
+            "dep": "04",
+            "pro": "07",
+            "dis": "05"
+          }
+        },
+        {
+          "codigo": "06",
+          "ubigeo": "040706",
+          "ubigeo_reniec": "040706",
+          "nombre": "Punta De Bombon",
+          "capital": "Punta de Bombón",
+          "latitude": -17.156111,
+          "longitude": -71.784722,
+          "altitude": 138,
+          "superficie_km2": 769.6,
+          "densidad_pob_2020": 9.68815,
+          "jne": {
+            "dep": "04",
+            "pro": "07",
+            "dis": "06"
+          }
+        }
+      ],
+      "jne_pro": "07"
+    },
+    {
+      "codigo": "08",
+      "ubigeo": "040800",
+      "nombre": "La Union",
+      "distritos": [
+        {
+          "codigo": "01",
+          "ubigeo": "040801",
+          "ubigeo_reniec": "040801",
+          "nombre": "Cotahuasi",
+          "capital": "Cotahuasi",
+          "latitude": -15.212778,
+          "longitude": -72.889444,
+          "altitude": 2696,
+          "superficie_km2": 166.5,
+          "densidad_pob_2020": 16.606607,
+          "jne": {
+            "dep": "04",
+            "pro": "08",
+            "dis": "01"
+          }
+        },
+        {
+          "codigo": "02",
+          "ubigeo": "040802",
+          "ubigeo_reniec": "040802",
+          "nombre": "Alca",
+          "capital": "Alca",
+          "latitude": -15.134167,
+          "longitude": -72.765,
+          "altitude": 2759,
+          "superficie_km2": 193.42,
+          "densidad_pob_2020": 11.198428,
+          "jne": {
+            "dep": "04",
+            "pro": "08",
+            "dis": "02"
+          }
+        },
+        {
+          "codigo": "03",
+          "ubigeo": "040803",
+          "ubigeo_reniec": "040803",
+          "nombre": "Charcana",
+          "capital": "Charcana",
+          "latitude": -15.240556,
+          "longitude": -73.070556,
+          "altitude": 3432,
+          "superficie_km2": 165.27,
+          "densidad_pob_2020": 4.138682,
+          "jne": {
+            "dep": "04",
+            "pro": "08",
+            "dis": "03"
+          }
+        },
+        {
+          "codigo": "04",
+          "ubigeo": "040804",
+          "ubigeo_reniec": "040804",
+          "nombre": "Huaynacotas",
+          "capital": "Taurisma",
+          "latitude": -15.174722,
+          "longitude": -72.849722,
+          "altitude": 2612,
+          "superficie_km2": 932.64,
+          "densidad_pob_2020": 2.578701,
+          "jne": {
+            "dep": "04",
+            "pro": "08",
+            "dis": "04"
+          }
+        },
+        {
+          "codigo": "05",
+          "ubigeo": "040805",
+          "ubigeo_reniec": "040805",
+          "nombre": "Pampamarca",
+          "capital": "Mungui",
+          "latitude": -15.1825,
+          "longitude": -72.905278,
+          "altitude": 2649,
+          "superficie_km2": 782.17,
+          "densidad_pob_2020": 2.214352,
+          "jne": {
+            "dep": "04",
+            "pro": "08",
+            "dis": "05"
+          }
+        },
+        {
+          "codigo": "06",
+          "ubigeo": "040806",
+          "ubigeo_reniec": "040806",
+          "nombre": "Puyca",
+          "capital": "Puyca",
+          "latitude": -15.059167,
+          "longitude": -72.691667,
+          "altitude": 3675,
+          "superficie_km2": 1501.2,
+          "densidad_pob_2020": 2.142286,
+          "jne": {
+            "dep": "04",
+            "pro": "08",
+            "dis": "06"
+          }
+        },
+        {
+          "codigo": "07",
+          "ubigeo": "040807",
+          "ubigeo_reniec": "040807",
+          "nombre": "Quechualla",
+          "capital": "Velinga",
+          "latitude": -15.273889,
+          "longitude": -73.022222,
+          "altitude": 1964,
+          "superficie_km2": 138.37,
+          "densidad_pob_2020": 2.948616,
+          "jne": {
+            "dep": "04",
+            "pro": "08",
+            "dis": "07"
+          }
+        },
+        {
+          "codigo": "08",
+          "ubigeo": "040808",
+          "ubigeo_reniec": "040808",
+          "nombre": "Sayla",
+          "capital": "Sayla",
+          "latitude": -15.32,
+          "longitude": -73.221944,
+          "altitude": 3544,
+          "superficie_km2": 66.55,
+          "densidad_pob_2020": 6.671675,
+          "jne": {
+            "dep": "04",
+            "pro": "08",
+            "dis": "08"
+          }
+        },
+        {
+          "codigo": "09",
+          "ubigeo": "040809",
+          "ubigeo_reniec": "040809",
+          "nombre": "Tauria",
+          "capital": "Tauria",
+          "latitude": -15.354167,
+          "longitude": -73.2325,
+          "altitude": 2850,
+          "superficie_km2": 314.68,
+          "densidad_pob_2020": 1.121775,
+          "jne": {
+            "dep": "04",
+            "pro": "08",
+            "dis": "09"
+          }
+        },
+        {
+          "codigo": "10",
+          "ubigeo": "040810",
+          "ubigeo_reniec": "040810",
+          "nombre": "Tomepampa",
+          "capital": "Tomepampa",
+          "latitude": -15.173056,
+          "longitude": -72.830278,
+          "altitude": 2644,
+          "superficie_km2": 94.16,
+          "densidad_pob_2020": 8.135089,
+          "jne": {
+            "dep": "04",
+            "pro": "08",
+            "dis": "10"
+          }
+        },
+        {
+          "codigo": "11",
+          "ubigeo": "040811",
+          "ubigeo_reniec": "040811",
+          "nombre": "Toro",
+          "capital": "Toro",
+          "latitude": -15.264444,
+          "longitude": -72.928333,
+          "altitude": 2987,
+          "superficie_km2": 391.44,
+          "densidad_pob_2020": 1.609442,
+          "jne": {
+            "dep": "04",
+            "pro": "08",
+            "dis": "11"
+          }
+        }
+      ],
+      "jne_pro": "08"
+    }
+  ]
+}

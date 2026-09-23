@@ -1,0 +1,12 @@
+ubigeo,distrito,local_codigo,local_nombre,local_direccion,mesa,electores
+# fixtura HOSTIL: cada fila debe ser rechazada o advertida por el normalizador.
+# Sirve para comprobar que no se publican datos que no puedan defenderse.
+040112,PAUCARPATA,023001,I.E. Valida,Av. Arequipa 123,023001,250
+040112,PAUCARPATA,023001,I.E. Valida,Av. Arequipa 123,023001,250
+040112,PAUCARPATA,023005,I.E. Repetida,Calle Grau 456,023001,250
+040099,PAUCARPATA,023009,I.E. Ubigeo Inexistente,Calle Falsa 1,023009,250
+150101,LIMA,023010,I.E. De Otro Departamento,Av. Lima 1,023010,250
+040126,YANAHUARA,023101,I.E. Mesa Corta,Calle San Jose 111,231,250
+040126,YANAHUARA,023102,I.E. Mesa No Numerica,Calle San Jose 112,ABCDEF,250
+040501,CHIVAY,028001,I.E. Sin Electores,Av. Grau 10,028001,
+040501,CHIVAY,028002,I.E. Electores Basura,Av. Grau 11,028002,muchos

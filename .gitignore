@@ -1,0 +1,34 @@
+# Dependencias
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Entorno y secretos
+.env
+*.local
+
+# Bases de datos y respaldos
+*.db
+*.db.*.bak
+*.sqlite3
+
+# Logs
+*.log
+
+# Cachés y artefactos temporales
+backend/tmp/
+.respaldo_orden/
+.freebuff/
+.DS_Store
+
+# Caché cruda del scraper JNE (las fotos servidas viven en backend/storage)
+jne-scraper/media/
+
+# Build
+frontend/dist/
+nextjs-partidos/.next/
+
+# Proyecto embebido con su propio git (repo aparte)
+nextjs-partidos/

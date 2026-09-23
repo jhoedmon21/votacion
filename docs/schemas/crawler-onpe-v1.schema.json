@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://computoarequipa.gob.pe/schemas/crawler-onpe-v1.json",
+  "title": "Ingesta del Crawler ONPE/JNE — Nómina electoral por ámbito",
+  "description": "Payload que entrega el crawler (jne-scraper/crawler_arequipa.py) al endpoint de ingesta del backend. Un documento por ámbito electoral: departamento (regional), provincia (provincial) o distrito (distrital). Los campos espejan la respuesta real de la API pública del JNE (stovotoinformado).",
+  "type": "object",
+  "required": ["departamento", "tipoEleccion", "ubigeo", "organizaciones"],
+  "additionalProperties": false,
+  "properties": {
+    "departamento": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nombre del departamento en mayúsculas (siempre AREQUIPA en este sistema).",
+      "examples": ["AREQUIPA"]
+    },
+    "provincia": {
+      "type": ["string", "null"],
+      "description": "Provincia del ámbito. NULL en la lista regional.",
+      "examples": ["AREQUIPA", "CAMANA", null]
+    },
+    "distrito": {
+      "type": ["string", "null"],
+      "description": "Distrito del ámbito. NULL en las listas regional y provincial.",
+      "examples": ["PAUCARPATA", "CERRO COLORADO", null]
+    },
+    "ubigeo": {
+      "type": "string",
+      "pattern": "^[0-9]{6}$",
+      "description": "Código ubigeo RENIEC que usa la API del JNE. OJO: no siempre coincide con el INEI (Paucarpata: RENIEC 040109 vs INEI 040112); el backend resuelve ambos en la tabla ubigeo.",
+      "examples": ["040109", "040100", "040000"]
+    },
+    "tipoEleccion": {
+      "type": "string",
+      "enum": ["REGIONAL", "MUNICIPAL PROVINCIAL", "MUNICIPAL DISTRITAL"],
+      "description": "Nivel de la elección que corresponen los candidatos de este documento."
+    },
+    "fechaCrawleo": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Momento de la extracción (UTC). Lo agrega el crawler, no viene del JNE."
+    },
+    "organizaciones": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Organizaciones políticas que compiten en el ámbito, en el orden oficial del acta (numero = posición en la columna del acta).",
+      "items": { "$ref": "#/definitions/organizacion" }
+    }
+  },
+  "definitions": {
+    "organizacion": {
+      "type": "object",
+      "required": ["organizacionPolitica", "idOrganizacionPolitica", "alcalde"],
+      "additionalProperties": false,
+      "properties": {
+        "organizacionPolitica": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Nombre oficial de la organización (partido nacional, movimiento regional o alianza).",
+          "examples": ["ACCION POPULAR", "AHORA NACION - AN", "FUERZA AREQUIPEÑA"]
+        },
+        "idOrganizacionPolitica": {
+          "type": "integer",
+          "description": "ID de la organización en el JNE (estable entre ámbitos: sirve para deduplicar organizaciones_politicas).",
+          "examples": [4]
+        },
+        "logo": {
+          "type": ["string", "null"],
+          "description": "Nombre de archivo local del logo descargado.",
+          "examples": ["partido_accion_popular.jpg"]
+        },
+        "logo_url": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "description": "URL original del logo en el blob storage del JNE."
+        },
+        "codigoExpediente": {
+          "type": ["string", "null"],
+          "description": "Expediente de inscripción ante el JNE.",
+          "examples": ["ERM.2026014624"]
+        },
+        "planGobierno": { "type": ["string", "null"] },
+        "planGobierno_url": { "type": ["string", "null"], "format": "uri" },
+        "alcalde": {
+          "description": "Candidato principal: alcalde (provincial/distrital) o gobernador (regional).",
+          "$ref": "#/definitions/candidato"
+        },
+        "regidores": {
+          "type": "array",
+          "description": "Lista de regidores (o consejeros regionales en la lista REGIONAL). Vacía si la organización sólo presenta al principal.",
+          "items": { "$ref": "#/definitions/candidato" }
+        }
+      }
+    },
+    "candidato": {
+      "type": "object",
+      "required": ["numero", "nombres", "dni", "cargo", "estado"],
+      "additionalProperties": false,
+      "properties": {
+        "numero": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Número de orden en la organización (1 = alcalde/ gobernador; 2..N = regidores)."
+        },
+        "posicion": {
+          "type": ["integer", "null"],
+          "description": "Posición en la lista de regidores (NULL en el candidato principal)."
+        },
+        "nombres": { "type": "string", "minLength": 1 },
+        "apellidoPaterno": { "type": ["string", "null"] },
+        "apellidoMaterno": { "type": ["string", "null"] },
+        "dni": {
+          "type": "string",
+          "pattern": "^[0-9]{8}$",
+          "description": "DNI del candidato: clave natural para deduplicar (un consejero regional aparece en un solo ámbito; un candidato a regidor, en uno)."
+        },
+        "cargo": {
+          "type": "string",
+          "enum": [
+            "GOBERNADOR REGIONAL", "VICE GOBERNADOR REGIONAL", "CONSEJERO REGIONAL",
+            "ALCALDE PROVINCIAL", "REGIDOR PROVINCIAL",
+            "ALCALDE DISTRITAL", "REGIDOR DISTRITAL"
+          ]
+        },
+        "estado": {
+          "type": "string",
+          "enum": ["INSCRITO", "RENUNCIA", "EXCLUIDO", "FALLECIDO", "SUSPENDIDO", "RETIRADO"],
+          "description": "Sólo los INSCRITOS se cargan como oferta votable; el resto se guarda con estado para trazabilidad."
+        },
+        "hojaVida": { "type": ["string", "null"] },
+        "idHojaVida": { "type": ["string", "null"] },
+        "foto": { "type": ["string", "null"] },
+        "foto_local": {
+          "type": ["string", "null"],
+          "description": "Archivo local descargado a storage/candidatos/.",
+          "examples": ["candidato_29460883.jpg"]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+# Crawler/ETL ONPE — dependencias de crawler_onpe.py (doble enfoque).
+# Instalación:
+#     python -m pip install -r onpe-scraper/requirements.txt
+#
+# Núcleo (obligatorio para ambos enfoques):
+requests>=2.31            # HTTP con reintentos/backoff y descargas por streaming
+SQLAlchemy>=2.0           # ORM, engines PostgreSQL/MySQL/SQLite y UPSERT
+python-dotenv>=1.0        # carga onpe-scraper/.env (opcional pero recomendado)
+beautifulsoup4>=4.12      # parseo HTML del catálogo DKAN (con fallback a regex)
+
+# Enfoque B sobre Excel y CSV grandes (opcional: sin esto usa stdlib):
+pandas>=2.0               # read_csv/read_excel rápidos
+openpyxl>=3.1             # motor .xlsx para pandas
+
+# Drivers de base de datos (instale el de su motor):
+psycopg2-binary>=2.9      # PostgreSQL → DATABASE_URL=postgresql+psycopg2://...
+pymysql>=1.1              # MySQL → DATABASE_URL=mysql+pymysql://...
+# SQLite viene con Python → DATABASE_URL=sqlite:///./padron_arequipa.db

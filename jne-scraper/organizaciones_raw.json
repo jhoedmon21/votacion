@@ -1,0 +1,681 @@
+{
+  "success": true,
+  "type": 1,
+  "message": "Consulta realizada correctamente.",
+  "data": [
+    {
+      "idTipoEleccion": 4,
+      "tipoEleccion": "REGIONAL",
+      "organizaciones": [
+        {
+          "idOrganizacionPolitica": 4,
+          "organizacionPolitica": "ACCION POPULAR",
+          "URLlogoOP": "4.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38382,
+              "codigoExpediente": "ERM.2026021376",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "dd669d49-b4fb-441f-b9cc-9b8e89046800.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": true
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2980,
+          "organizacionPolitica": "AHORA NACION - AN",
+          "URLlogoOP": "2980.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38797,
+              "codigoExpediente": "ERM.2026020267",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "019a4684-877a-45a4-bd17-24beffd4f8d7.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": true
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 3028,
+          "organizacionPolitica": "ALIANZA ELECTORAL VENCEREMOS",
+          "URLlogoOP": "3028.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38939,
+              "codigoExpediente": "ERM.2026032776",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "501205dc-0b2d-4226-b91e-c3ea5365f87c.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": true
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 1257,
+          "organizacionPolitica": "ALIANZA PARA EL PROGRESO",
+          "URLlogoOP": "1257.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38427,
+              "codigoExpediente": "ERM.2026013498",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "96d851d0-cdf6-44d6-a249-20e8142c753a.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": true
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 142,
+          "organizacionPolitica": "AREQUIPA, TRADICION Y FUTURO",
+          "URLlogoOP": "142.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38422,
+              "codigoExpediente": "ERM.2026016937",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "c89e2e14-b91d-45ef-8b3d-ff7bcc4e8c8b.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": true
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2982,
+          "organizacionPolitica": "COALICION TRANSFORMADORA TIERRA VERDE",
+          "URLlogoOP": "2982.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38818,
+              "codigoExpediente": "ERM.2026032594",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "a921d4ac-f484-4ee5-acd4-9c94d39ee5d0.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": false
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2901,
+          "organizacionPolitica": "FRENTE POPULAR AGRICOLA FIA DEL PERU",
+          "URLlogoOP": "2901.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38594,
+              "codigoExpediente": "ERM.2026019467",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "835fdca9-1a28-45e9-b8bf-b29b55af1551.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": false
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 1393,
+          "organizacionPolitica": "FUERZA AREQUIPEÑA",
+          "URLlogoOP": "1393.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38477,
+              "codigoExpediente": "ERM.2026022778",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "fbafa1f8-144e-4926-b288-79d879b3cf66.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": true
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2307,
+          "organizacionPolitica": "MOVIMIENTO REGIONAL AREQUIPA AVANCEMOS",
+          "URLlogoOP": "2307.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38504,
+              "codigoExpediente": "ERM.2026016142",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "c483333f-8e6b-428f-b708-91b24ba98043.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": true
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2930,
+          "organizacionPolitica": "PARTIDO APRISTA PERUANO",
+          "URLlogoOP": "2930.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38644,
+              "codigoExpediente": "ERM.2026019984",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "2b8069ba-ddcb-4001-a35b-f2a89095b19d.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": true
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2941,
+          "organizacionPolitica": "PARTIDO CIVICO OBRAS",
+          "URLlogoOP": "2941.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38701,
+              "codigoExpediente": "ERM.2026033246",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "49ca50d5-15f1-4629-aed5-0118f1a77e00.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": false
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 14,
+          "organizacionPolitica": "PARTIDO DEMOCRATICO SOMOS PERU",
+          "URLlogoOP": "14.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38402,
+              "codigoExpediente": "ERM.2026017756",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "9841206b-653c-4ec1-9d2a-063473f30af1.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": true
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 3040,
+          "organizacionPolitica": "RENOVACION POPULAR PERU",
+          "URLlogoOP": "3040.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38989,
+              "codigoExpediente": "ERM.2026015460",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "13d9f4b1-746d-4005-a4de-b79ff1301842.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": false
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2927,
+          "organizacionPolitica": "SALVEMOS AL PERU",
+          "URLlogoOP": "2927.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38637,
+              "codigoExpediente": "ERM.2026027524",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "da3297d0-bab7-49bb-a6fd-bb16fd220f7b.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": false
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2988,
+          "organizacionPolitica": "VISION PERU",
+          "URLlogoOP": "2988.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38864,
+              "codigoExpediente": "ERM.2026018728",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "a04bf4f3-407a-4e18-b8b7-cf7dff200d45.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": false
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2744,
+          "organizacionPolitica": "YO AREQUIPA",
+          "URLlogoOP": "2744.png",
+          "listas": [
+            {
+              "idSolicitudLista": 38524,
+              "codigoExpediente": "ERM.2026013938",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "9ad1317d-bba9-481f-8d35-b252fa01af7d.pdf",
+              "tieneGobernadores": true,
+              "tieneConsejeros": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "idTipoEleccion": 5,
+      "tipoEleccion": "MUNICIPAL PROVINCIAL",
+      "organizaciones": [
+        {
+          "idOrganizacionPolitica": 4,
+          "organizacionPolitica": "ACCION POPULAR",
+          "URLlogoOP": "4.png",
+          "listas": [
+            {
+              "idSolicitudLista": 39029,
+              "codigoExpediente": "ERM.2026022055",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "cd13ca81-739a-4351-9d4f-c55b129c6c57.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2980,
+          "organizacionPolitica": "AHORA NACION - AN",
+          "URLlogoOP": "2980.png",
+          "listas": [
+            {
+              "idSolicitudLista": 40779,
+              "codigoExpediente": "ERM.2026014207",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "9534f8f3-d908-498d-bcf1-a92158cd890b.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 1257,
+          "organizacionPolitica": "ALIANZA PARA EL PROGRESO",
+          "URLlogoOP": "1257.png",
+          "listas": [
+            {
+              "idSolicitudLista": 39300,
+              "codigoExpediente": "ERM.2026016049",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "aefa2d61-9513-4044-97fb-cb23865bef62.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 142,
+          "organizacionPolitica": "AREQUIPA, TRADICION Y FUTURO",
+          "URLlogoOP": "142.png",
+          "listas": [
+            {
+              "idSolicitudLista": 39254,
+              "codigoExpediente": "ERM.2026018440",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "cce94186-de68-401e-9a44-c7f7d544d623.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 1393,
+          "organizacionPolitica": "FUERZA AREQUIPEÑA",
+          "URLlogoOP": "1393.png",
+          "listas": [
+            {
+              "idSolicitudLista": 39533,
+              "codigoExpediente": "ERM.2026022892",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "bafcdf05-27b8-492a-bf94-a91c30b51357.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2307,
+          "organizacionPolitica": "MOVIMIENTO REGIONAL AREQUIPA AVANCEMOS",
+          "URLlogoOP": "2307.png",
+          "listas": [
+            {
+              "idSolicitudLista": 39630,
+              "codigoExpediente": "ERM.2026015994",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "4b5341b8-ea43-41f6-ab0b-7e8b42ed339e.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2930,
+          "organizacionPolitica": "PARTIDO APRISTA PERUANO",
+          "URLlogoOP": "2930.png",
+          "listas": [
+            {
+              "idSolicitudLista": 40253,
+              "codigoExpediente": "ERM.2026014686",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "de425604-3125-44c9-8852-0a8db5df903e.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2961,
+          "organizacionPolitica": "PARTIDO DEL BUEN GOBIERNO",
+          "URLlogoOP": "2961.png",
+          "listas": [
+            {
+              "idSolicitudLista": 40579,
+              "codigoExpediente": "ERM.2026031344",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "4964ead7-64e2-4a31-902e-0bffce229936.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 14,
+          "organizacionPolitica": "PARTIDO DEMOCRATICO SOMOS PERU",
+          "URLlogoOP": "14.png",
+          "listas": [
+            {
+              "idSolicitudLista": 39134,
+              "codigoExpediente": "ERM.2026017621",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "271b5ee5-a8b7-4d74-8a9c-7a48db17c631.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2857,
+          "organizacionPolitica": "PARTIDO FRENTE DE LA ESPERANZA 2021",
+          "URLlogoOP": "2857.png",
+          "listas": [
+            {
+              "idSolicitudLista": 39814,
+              "codigoExpediente": "ERM.2026022028",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "4fc1759b-eecb-4ed9-b8f3-d22a14575aee.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2925,
+          "organizacionPolitica": "PARTIDO POLITICO PERU PRIMERO",
+          "URLlogoOP": "2925.png",
+          "listas": [
+            {
+              "idSolicitudLista": 40103,
+              "codigoExpediente": "ERM.2026018485",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "d73ea39e-a8a7-448b-8369-cb0a7642c8fa.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 3001,
+          "organizacionPolitica": "PARTIDO POLITICO PUEBLO CONSCIENTE",
+          "URLlogoOP": "3001.png",
+          "listas": [
+            {
+              "idSolicitudLista": 41085,
+              "codigoExpediente": "ERM.2026020011",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "c28bd85e-fe4a-4c01-b517-28a7f91997fe.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2943,
+          "organizacionPolitica": "PARTIDO POPULAR CRISTIANO - PPC",
+          "URLlogoOP": "2943.png",
+          "listas": [
+            {
+              "idSolicitudLista": 40450,
+              "codigoExpediente": "ERM.2026017260",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "30300ac4-a0f9-48fd-9617-7199c533e8f7.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2731,
+          "organizacionPolitica": "PODEMOS PERU",
+          "URLlogoOP": "2731.png",
+          "listas": [
+            {
+              "idSolicitudLista": 39672,
+              "codigoExpediente": "ERM.2026019178",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "9b70acef-d1c3-4ae6-a2db-c1325539cb89.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2931,
+          "organizacionPolitica": "PRIMERO LA GENTE - COMUNIDAD, ECOLOGIA, LIBERTAD Y PROGRESO",
+          "URLlogoOP": "2931.png",
+          "listas": [
+            {
+              "idSolicitudLista": 40309,
+              "codigoExpediente": "ERM.2026023145",
+              "idTipoDocumentoPlanGobierno": null,
+              "rutaPlanGobierno": null
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2967,
+          "organizacionPolitica": "PROGRESEMOS",
+          "URLlogoOP": "2967.png",
+          "listas": [
+            {
+              "idSolicitudLista": 40637,
+              "codigoExpediente": "ERM.2026021096",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "d6b4d59b-ea45-42bf-8d33-ddbf41ac3d73.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 3040,
+          "organizacionPolitica": "RENOVACION POPULAR PERU",
+          "URLlogoOP": "3040.png",
+          "listas": [
+            {
+              "idSolicitudLista": 41478,
+              "codigoExpediente": "ERM.2026017742",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "c0b050fb-6b5c-4765-9706-6607e905c57d.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2744,
+          "organizacionPolitica": "YO AREQUIPA",
+          "URLlogoOP": "2744.png",
+          "listas": [
+            {
+              "idSolicitudLista": 39780,
+              "codigoExpediente": "ERM.2026013952",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "9e3323c0-b9c9-4479-bfee-3f64f8f9dd73.pdf"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "idTipoEleccion": 6,
+      "tipoEleccion": "MUNICIPAL DISTRITAL",
+      "organizaciones": [
+        {
+          "idOrganizacionPolitica": 4,
+          "organizacionPolitica": "ACCION POPULAR",
+          "URLlogoOP": "4.png",
+          "listas": [
+            {
+              "idSolicitudLista": 41733,
+              "codigoExpediente": "ERM.2026014624",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "e41045ca-78a7-404d-b431-d03310769f55.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2980,
+          "organizacionPolitica": "AHORA NACION - AN",
+          "URLlogoOP": "2980.png",
+          "listas": [
+            {
+              "idSolicitudLista": 50481,
+              "codigoExpediente": "ERM.2026017010",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "dde576bf-3e28-487b-90be-0187d19179e9.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 1257,
+          "organizacionPolitica": "ALIANZA PARA EL PROGRESO",
+          "URLlogoOP": "1257.png",
+          "listas": [
+            {
+              "idSolicitudLista": 43630,
+              "codigoExpediente": "ERM.2026013403",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "83742a5a-f48d-44a2-b331-2986ca182c23.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 142,
+          "organizacionPolitica": "AREQUIPA, TRADICION Y FUTURO",
+          "URLlogoOP": "142.png",
+          "listas": [
+            {
+              "idSolicitudLista": 43303,
+              "codigoExpediente": "ERM.2026020988",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "809161fc-1390-47fe-b7dc-e5a5ebcbcdb4.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2984,
+          "organizacionPolitica": "BATALLA PERU",
+          "URLlogoOP": "2984.png",
+          "listas": [
+            {
+              "idSolicitudLista": 51167,
+              "codigoExpediente": "ERM.2026021622",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "bcc5df2b-ff89-4d56-993c-3b59d8145942.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 1393,
+          "organizacionPolitica": "FUERZA AREQUIPEÑA",
+          "URLlogoOP": "1393.png",
+          "listas": [
+            {
+              "idSolicitudLista": 45078,
+              "codigoExpediente": "ERM.2026016878",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "46707612-bee5-4457-aa5e-b85749e56079.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 1264,
+          "organizacionPolitica": "JUNTOS POR EL PERU",
+          "URLlogoOP": "1264.png",
+          "listas": [
+            {
+              "idSolicitudLista": 44537,
+              "codigoExpediente": "ERM.2026021401",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "7187cfc1-18ad-47bb-883d-3b8a33cc4432.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2307,
+          "organizacionPolitica": "MOVIMIENTO REGIONAL AREQUIPA AVANCEMOS",
+          "URLlogoOP": "2307.png",
+          "listas": [
+            {
+              "idSolicitudLista": 45530,
+              "codigoExpediente": "ERM.2026014532",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "e89e83be-83c2-43e5-abb4-b6c45fa35a5f.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2961,
+          "organizacionPolitica": "PARTIDO DEL BUEN GOBIERNO",
+          "URLlogoOP": "2961.png",
+          "listas": [
+            {
+              "idSolicitudLista": 49861,
+              "codigoExpediente": "ERM.2026031699",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "62e75652-412f-468d-8c5d-cd59756d0609.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 14,
+          "organizacionPolitica": "PARTIDO DEMOCRATICO SOMOS PERU",
+          "URLlogoOP": "14.png",
+          "listas": [
+            {
+              "idSolicitudLista": 42437,
+              "codigoExpediente": "ERM.2026020957",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "6e551bfa-2d86-4073-bb1f-f1c74b71f4fc.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2840,
+          "organizacionPolitica": "PARTIDO MORADO",
+          "URLlogoOP": "2840.png",
+          "listas": [
+            {
+              "idSolicitudLista": 46587,
+              "codigoExpediente": "ERM.2026020896",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "b15dde7d-3997-45af-b950-cebe132c5f1e.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2218,
+          "organizacionPolitica": "PARTIDO POLITICO NACIONAL PERU LIBRE",
+          "URLlogoOP": "2218.png",
+          "listas": [
+            {
+              "idSolicitudLista": 45430,
+              "codigoExpediente": "ERM.2026015487",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "c15f46b8-ddf2-420b-baec-86604d4b2e38.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 3040,
+          "organizacionPolitica": "RENOVACION POPULAR PERU",
+          "URLlogoOP": "3040.png",
+          "listas": [
+            {
+              "idSolicitudLista": 52207,
+              "codigoExpediente": "ERM.2026016236",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "dda91d44-4b99-46d5-9f75-2dba8b18c3f6.pdf"
+            }
+          ]
+        },
+        {
+          "idOrganizacionPolitica": 2744,
+          "organizacionPolitica": "YO AREQUIPA",
+          "URLlogoOP": "2744.png",
+          "listas": [
+            {
+              "idSolicitudLista": 46547,
+              "codigoExpediente": "ERM.2026014101",
+              "idTipoDocumentoPlanGobierno": 19,
+              "rutaPlanGobierno": "9b657c78-1ffb-4740-8212-9211cd4166ed.pdf"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

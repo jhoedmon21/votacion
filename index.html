@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cómputo Electoral Arequipa 2026 | Dashboard Regional</title>
+<base href="/">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-pro@5/css/index.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4/dist/chart.umd.min.js"></script>
+<script src="/js/electoral_logic.js"></script>
+<style>
+:root { --onpe: #002B66; --onpe-light: #EAF1FB; --sidebar-dark: #001A4A; }
+body { font-family: 'Source Sans Pro', sans-serif; background: #F1F3F6; }
+.main-header.navbar { border-bottom: 2px solid var(--onpe); background: #fff !important; }
+.brand-link { background: var(--sidebar-dark) !important; }
+.layout-navbar-fixed .brand-link { border-bottom: 1px solid rgba(255,255,255,.1); }
+.sidebar-dark-primary { background: var(--sidebar-dark) !important; }
+.nav-sidebar .nav-item .nav-link.active { background: var(--onpe) !important; }
+.info-box { border-radius: 10px; border: none; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.info-box-icon { border-radius: 10px 0 0 10px; }
+.small-box { border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.card { border: none; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.card-header { background: #fff; border-bottom: 1px solid #EDF0F4; font-weight: 700; }
+.progress-bar { transition: width 1s ease; }
+.filtro-select { max-width: 100%; }
+.onpe-badge { background: var(--onpe); color: #fff; padding: 2px 10px; border-radius: 4px; font-weight: 800; letter-spacing: .5px; }
+.table-ranking td { vertical-align: middle; }
+.cand-foto { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+.org-logo { width: 28px; height: 28px; object-fit: contain; }
+.estado-ok { color: #067647; }
+.estado-mal { color: #B42318; }
+.punto { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+#login-overlay { position: fixed; inset: 0; z-index: 9999; background: linear-gradient(160deg,#0B2E6B,#123F8F); display: flex; align-items: center; justify-content: center; }
+#login-overlay .card { width: 380px; }
+@media (max-width: 768px) {
+    .info-box { margin-bottom: 10px; }
+    .small-box h3 { font-size: 1.5rem; }
+}
+</style>
+</head>
+<body class="hold-transition layout-navbar-fixed sidebar-mini layout-fixed">
+<div id="login-overlay">
+    <div class="card p-4 shadow-lg">
+        <div class="text-center mb-3"><span class="onpe-badge fs-5 px-3 py-1">ONPE</span></div>
+        <h5 class="fw-bold text-center">Cómputo Regional Arequipa 2026</h5>
+        <p class="text-secondary text-center small">Acceso restringido a personal autorizado</p>
+        <div class="mb-3">
+            <label class="form-label small fw-semibold">Correo institucional</label>
+            <input type="email" class="form-control" id="login-email" placeholder="usuario@computoarequipa.gob.pe" autocomplete="username">
+        </div>
+        <div class="mb-3">
+            <label class="form-label small fw-semibold">Contraseña</label>
+            <input type="password" class="form-control" id="login-clave" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div id="login-error" class="small estado-mal mb-2" style="min-height:20px"></div>
+        <button class="btn btn-primary w-100 fw-semibold" id="btn-login" style="background:var(--onpe);border:none;">Ingresar</button>
+        <div class="text-center mt-3"><span class="badge bg-warning text-dark px-3 py-1" id="demo-badge">Demo</span></div>
+    </div>
+</div>
+
+<div class="wrapper">
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item"><a class="nav-link" data-widget="pushmenu" href="#"><i class="bi bi-list"></i></a></li>
+        </ul>
+        <div class="navbar-nav ms-auto d-flex align-items-center gap-3 px-3">
+            <span class="badge onpe-badge">ONPE</span>
+            <span class="fw-semibold small" style="color:var(--onpe);" id="header-usuario"></span>
+            <button class="btn btn-sm btn-outline-secondary" id="btn-salir" style="display:none;">Salir</button>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="#" class="brand-link"><span class="brand-text fw-bold">Cómputo Arequipa 2026</span></a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview">
+                    <li class="nav-item"><a href="#" class="nav-link active" data-panel="dashboard"><i class="bi bi-speedometer2 nav-icon"></i> Dashboard</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link" data-panel="actas"><i class="bi bi-file-text nav-icon"></i> Actas</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link" data-panel="ranking"><i class="bi bi-trophy nav-icon"></i> Ranking</a></li>
+                    <li class="nav-item"><a href="#" class="nav-link" data-panel="mapa"><i class="bi bi-map nav-icon"></i> Mapa</a></li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h5 class="fw-bold m-0" id="page-title">Dashboard Regional — Arequipa</h5>
+                    </div>
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right small">
+                            <li class="breadcrumb-item"><a href="#">Inicio</a></li>
+                            <li class="breadcrumb-item active" id="breadcrumb-ubicacion">Arequipa</li>
+                        </ol>
+                    </div>
+                </div>
+                <!-- Filtros jerárquicos -->
+                <div class="card mb-3">
+                    <div class="card-body py-2">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small fw-semibold mb-0">Elección</label>
+                                <select class="form-select form-select-sm" id="filtro-tipo">
+                                    <option value="regional">Regional</option>
+                                    <option value="provincial">Provincial</option>
+                                    <option value="distrital" selected>Distrital</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small fw-semibold mb-0">Provincia</label>
+                                <select class="form-select form-select-sm" id="filtro-provincia"></select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small fw-semibold mb-0">Distrito</label>
+                                <select class="form-select form-select-sm" id="filtro-distrito"></select>
+                            </div>
+                            <div class="col-6 col-md-3 d-grid">
+                                <button class="btn btn-primary btn-sm" id="btn-aplicar" style="background:var(--onpe);border:none;">
+                                    <i class="bi bi-funnel"></i> Aplicar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="content">
+            <div class="container-fluid" id="panel-dashboard">
+                <!-- Métricas -->
+                <div class="row">
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-primary" style="background:var(--onpe)!important;">
+                            <div class="inner"><h3 id="metric-mesas">0</h3><p>Mesas Procesadas</p></div>
+                            <div class="icon"><i class="bi bi-check-circle-fill"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-success">
+                            <div class="inner"><h3 id="metric-participacion">0%</h3><p>Participación</p></div>
+                            <div class="icon"><i class="bi bi-people-fill"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-warning">
+                            <div class="inner"><h3 id="metric-blancos">0</h3><p>Votos Nulos/Blancos</p></div>
+                            <div class="icon"><i class="bi bi-x-circle-fill"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-danger">
+                            <div class="inner"><h3 id="metric-observadas">0</h3><p>Actas Observadas</p></div>
+                            <div class="icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">Conteo de Votos por Organización Política</div>
+                            <div class="card-body"><canvas id="chart-barras" style="height:340px"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">Distribución de Votos</div>
+                            <div class="card-body"><canvas id="chart-donut" style="height:340px"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de posiciones -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Tabla de Posiciones — Avance Electoral</span>
+                        <span class="badge bg-primary" id="badge-avance">0% procesado</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 table-ranking" id="tabla-ranking">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-center" style="width:50px">#</th>
+                                        <th>Organización / Candidato</th>
+                                        <th class="text-end" style="width:120px">Votos</th>
+                                        <th class="text-end" style="width:200px">% Votos Válidos</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cuerpo-ranking"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Actas -->
+            <div class="container-fluid" id="panel-actas" style="display:none;">
+                <div class="card">
+                    <div class="card-header">Registro de Actas — Digitación Móvil</div>
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-phone fs-1 text-secondary"></i>
+                        <p class="mt-2">Use el formulario móvil dedicado para la carga de actas:</p>
+                        <a href="/registro_acta.html" class="btn btn-primary" style="background:var(--onpe);border:none;" target="_blank">
+                            <i class="bi bi-send"></i> Ir al formulario de carga
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Ranking -->
+            <div class="container-fluid" id="panel-ranking" style="display:none;">
+                <div class="card">
+                    <div class="card-header">Ranking Electoral Detallado</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 table-ranking" id="tabla-ranking-full">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:50px">#</th>
+                                        <th>Organización Política</th>
+                                        <th>Candidato</th>
+                                        <th class="text-end">Votos</th>
+                                        <th class="text-end">% Válidos</th>
+                                        <th class="text-end">% General</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cuerpo-ranking-full"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Mapa -->
+            <div class="container-fluid" id="panel-mapa" style="display:none;">
+                <div class="card">
+                    <div class="card-header">Mapa Electoral — Avance por Distrito</div>
+                    <div class="card-body">
+                        <div id="mapa-avance" class="d-flex flex-wrap gap-2 justify-content-center"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="main-footer">
+        <div class="float-right d-none d-sm-block"><span class="badge onpe-badge">ONPE</span></div>
+        <strong>Sistema de Cómputo Electoral — Región Arequipa 2026</strong>
+    </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+<script>
+/* ==========================================================================
+ * DASHBOARD ADMINLTE — Sistema de Cómputo Electoral Arequipa 2026
+ * ========================================================================== */
+'use strict';
+
+const CLAVE_SESION = 'sesion_computo';
+
+/* ---- Autenticación ---- */
+function sesionGuardada() {
+    try {
+        const s = JSON.parse(localStorage.getItem(CLAVE_SESION) || 'null');
+        if (!s || !s.token || (s.expira_at && new Date(s.expira_at) <= new Date())) return null;
+        return s;
+    } catch { return null; }
+}
+
+function headersAuth() {
+    const s = sesionGuardada();
+    return { 'Content-Type': 'application/json', ...(s ? { Authorization: 'Bearer ' + s.token } : {}) };
+}
+
+document.getElementById('btn-login').addEventListener('click', async function () {
+    const email = document.getElementById('login-email').value.trim();
+    const clave = document.getElementById('login-clave').value;
+    const err = document.getElementById('login-error');
+    err.textContent = '';
+    if (!email || !clave) { err.textContent = 'Ingrese correo y contraseña.'; return; }
+    try {
+        const r = await fetch('/api/auth/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, contrasena: clave }),
+        });
+        const data = await r.json();
+        if (!r.ok) { err.textContent = data.detail || 'Credenciales inválidas.'; return; }
+        localStorage.setItem(CLAVE_SESION, JSON.stringify(data));
+        document.getElementById('login-overlay').remove();
+        document.getElementById('header-usuario').textContent = data.usuario.nombre_completo + ' · ' + data.usuario.rol;
+        document.getElementById('btn-salir').style.display = '';
+        cargarPanel('dashboard');
+    } catch { err.textContent = 'Sin conexión con el servidor.'; }
+});
+document.getElementById('login-clave').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-login').click(); });
+document.getElementById('btn-salir').addEventListener('click', async function () {
+    try { await fetch('/api/auth/logout', { method: 'POST', headers: headersAuth() }); } catch {}
+    localStorage.removeItem(CLAVE_SESION);
+    location.reload();
+});
+
+const sesion = sesionGuardada();
+if (sesion) {
+    fetch('/api/auth/me', { headers: headersAuth() }).then(r => {
+        if (r.ok) {
+            document.getElementById('login-overlay').remove();
+            return r.json();
+        }
+        localStorage.removeItem(CLAVE_SESION);
+    }).then(u => {
+        if (u) {
+            document.getElementById('header-usuario').textContent = u.nombre_completo + ' · ' + u.rol;
+            document.getElementById('btn-salir').style.display = '';
+        }
+    }).catch(() => { document.getElementById('login-overlay').remove(); });
+}
+
+/* ---- Navegación por paneles ---- */
+document.querySelectorAll('.nav-sidebar a').forEach(a => {
+    a.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.querySelectorAll('.nav-sidebar .nav-link').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+        cargarPanel(this.dataset.panel);
+    });
+});
+
+function cargarPanel(panel) {
+    document.querySelectorAll('.content-wrapper section .container-fluid').forEach(p => p.style.display = 'none');
+    document.getElementById('panel-' + panel).style.display = '';
+    const titulos = { dashboard: 'Dashboard Regional — Arequipa', actas: 'Actas Electorales', ranking: 'Ranking Electoral', mapa: 'Mapa Electoral' };
+    document.getElementById('page-title').textContent = titulos[panel] || 'Dashboard';
+}
+
+/* ---- Catálogos territoriales ---- */
+async function cargarUbigeo() {
+    const r = await fetch('/data/ubigeo_arequipa.json');
+    return await r.json();
+}
+
+let UBIGEO = null;
+const U = {};
+
+U.cargar = async function () {
+    UBIGEO = await cargarUbigeo();
+    const selProv = document.getElementById('filtro-provincia');
+    selProv.innerHTML = '<option value="">Todas</option>' +
+        UBIGEO.provincias.map(p => `<option value="${p.ubigeo}">${p.nombre}</option>`).join('');
+    selProv.dispatchEvent(new Event('change'));
+};
+
+U.filtrarDistritos = function (ubigeoProv) {
+    const sel = document.getElementById('filtro-distrito');
+    if (!ubigeoProv) {
+        sel.innerHTML = '<option value="">Todos</option>';
+        return;
+    }
+    const prov = UBIGEO.provincias.find(p => p.ubigeo === ubigeoProv);
+    sel.innerHTML = '<option value="">Todos</option>' +
+        (prov ? prov.distritos.map(d => `<option value="${d.ubigeo}">${d.nombre}</option>`).join('') : '');
+};
+
+document.getElementById('filtro-provincia').addEventListener('change', function () {
+    U.filtrarDistritos(this.value);
+});
+
+document.getElementById('filtro-tipo').addEventListener('change', function () {
+    const esRegional = this.value === 'regional';
+    document.getElementById('filtro-provincia').disabled = esRegional;
+    document.getElementById('filtro-distrito').disabled = esRegional || this.value === 'provincial';
+    if (esRegional) {
+        document.getElementById('filtro-provincia').value = '';
+        document.getElementById('filtro-distrito').value = '';
+        U.filtrarDistritos('');
+    }
+});
+
+/* ---- Dashboard ---- */
+async function cargarDashboard(tipo, provincia, distrito) {
+    const candidatos = window.ELECTORAL && ELECTORAL.candidatos.data;
+    if (!candidatos) return;
+
+    let ambitos;
+    if (tipo === 'regional') {
+        ambitos = candidatos.ambitos.filter(a => a.nivel === 'regional');
+    } else if (tipo === 'provincial') {
+        ambitos = candidatos.ambitos.filter(a => a.nivel === 'provincial' && (!provincia || a.ubigeo === provincia));
+    } else {
+        ambitos = candidatos.ambitos.filter(a => a.nivel === 'distrital' && (!provincia || a.ubigeo.startsWith(provincia.slice(0,4))) && (!distrito || a.ubigeo === distrito));
+    }
+
+    const totalCandidatos = ambitos.reduce((s, a) => s + a.total_candidatos, 0);
+    const totalOrg = ambitos.reduce((s, a) => s + a.total_organizaciones, 0);
+    const orgMap = {};
+    ambitos.forEach(a => (a.organizaciones || []).forEach(o => {
+        const candCount = (o.candidatos || []).length;
+        if (!orgMap[o.organizacionPolitica]) orgMap[o.organizacionPolitica] = { nombre: o.organizacionPolitica, logo: o.logo_url, votos: 0, candidatos: 0 };
+        orgMap[o.organizacionPolitica].candidatos += candCount;
+    }));
+
+    /* Simular conteo de votos (distribución realista) */
+    const orgs = Object.values(orgMap);
+    if (orgs.length === 0) {
+        document.getElementById('metric-mesas').textContent = '0';
+        document.getElementById('metric-participacion').textContent = '0%';
+        document.getElementById('metric-blancos').textContent = '0';
+        document.getElementById('metric-observadas').textContent = '0';
+        document.getElementById('cuerpo-ranking').innerHTML = '<tr><td colspan="4" class="text-center text-secondary">No hay datos para este ámbito.</td></tr>';
+        return;
+    }
+    const totalVotosSimulados = orgs.length * 1500 + Math.floor(Math.random() * 5000);
+    const MAX = 10000;
+    orgs.forEach(o => { o.votos = Math.floor(Math.random() * MAX) + 500; });
+    const totalValidos = orgs.reduce((s, o) => s + o.votos, 0);
+    orgs.forEach(o => { o.porcentaje = totalValidos > 0 ? o.votos / totalValidos * 100 : 0; });
+    orgs.sort((a, b) => b.votos - a.votos);
+
+    const blancos = Math.floor(totalVotosSimulados * 0.035);
+    const nulos = Math.floor(totalVotosSimulados * 0.025);
+    const impugnados = Math.floor(totalVotosSimulados * 0.005);
+    const totalVotos = totalValidos + blancos + nulos + impugnados;
+    const participacion = 78 + Math.random() * 12;
+    const mesasProcesadas = Math.floor(Math.random() * 200) + 300;
+    const actasObs = Math.floor(Math.random() * 20);
+
+    document.getElementById('metric-mesas').textContent = mesasProcesadas;
+    document.getElementById('metric-participacion').textContent = participacion.toFixed(1) + '%';
+    document.getElementById('metric-blancos').textContent = (blancos + nulos).toLocaleString('es-PE');
+    document.getElementById('metric-observadas').textContent = actasObs;
+    document.getElementById('badge-avance').textContent = (participacion * 0.85).toFixed(1) + '% procesado';
+
+    /* Ranking */
+    document.getElementById('cuerpo-ranking').innerHTML = orgs.map((o, i) => {
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
+        return `<tr>
+            <td class="text-center fw-bold">${medal}</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    ${o.logo ? `<img src="${o.logo}" class="org-logo" alt="" onerror="this.style.display='none'">` : ''}
+                    <span class="fw-semibold">${o.nombre}</span>
+                </div>
+            </td>
+            <td class="text-end fw-bold">${o.votos.toLocaleString('es-PE')}</td>
+            <td class="text-end">
+                <div class="progress" style="height:20px;">
+                    <div class="progress-bar" role="progressbar" style="width:${Math.min(o.porcentaje, 100)}%;background:${['#002B66','#0056B3','#12B76A','#F79009','#F04438','#8B5CF6','#EC4899','#06B6D4','#84CC16','#D946EF','#F97316','#64748B'][i % 12]}">${o.porcentaje.toFixed(1)}%</div>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+
+    /* Ranking completo */
+    document.getElementById('cuerpo-ranking-full').innerHTML = orgs.flatMap(o =>
+        [{ org: o.nombre, logo: o.logo, cand: o.nombre, votos: o.votos, pct: o.porcentaje }]
+    ).map((item, i) => `<tr>
+        <td class="fw-bold text-center">${i + 1}</td>
+        <td><div class="d-flex align-items-center gap-2">${item.logo ? `<img src="${item.logo}" class="org-logo" alt="" onerror="this.style.display='none'">` : ''}${item.org}</div></td>
+        <td>${item.cand}</td>
+        <td class="text-end fw-bold">${item.votos.toLocaleString('es-PE')}</td>
+        <td class="text-end">${item.pct.toFixed(1)}%</td>
+        <td class="text-end">${(item.pct * 0.85).toFixed(1)}%</td>
+    </tr>`).join('');
+
+    /* Gráficos */
+    if (window.ELECTORAL && ELECTORAL.graficos) {
+        ['chart-barras', 'chart-donut'].forEach(id => {
+            const old = document.getElementById(id);
+            if (old && old._chart) { old._chart.destroy(); }
+        });
+        ELECTORAL.graficos.crearBarChart('chart-barras', orgs, 12);
+        ELECTORAL.graficos.crearDonutChart('chart-donut', [
+            { label: 'Votos Válidos', value: totalValidos, color: '#12B76A' },
+            { label: 'Blancos', value: blancos, color: '#F79009' },
+            { label: 'Nulos', value: nulos, color: '#F04438' },
+            { label: 'Impugnados', value: impugnados, color: '#475569' },
+        ].filter(d => d.value > 0));
+    }
+}
+
+/* ---- Mapa de avance ---- */
+function cargarMapa(tipo, provincia) {
+    const cont = document.getElementById('mapa-avance');
+    cont.innerHTML = '';
+    const distritos = tipo === 'regional' && provincia
+        ? (UBIGEO.provincias.find(p => p.ubigeo === provincia)?.distritos || [])
+        : tipo === 'provincial' && provincia
+            ? (UBIGEO.provincias.find(p => p.ubigeo === provincia)?.distritos || [])
+            : tipo === 'distrital'
+                ? (UBIGEO.provincias.flatMap(p => p.distritos))
+                : [];
+
+    if (!distritos.length && tipo === 'regional') {
+        cont.innerHTML = '<div class="text-secondary p-3">Seleccione provincia para ver el mapa de avance distrital.</div>';
+        return;
+    }
+    distritos.forEach(d => {
+        const avance = Math.floor(Math.random() * 100);
+        const color = avance > 80 ? '#12B76A' : avance > 40 ? '#F79009' : '#F04438';
+        cont.innerHTML += `<div class="border rounded p-2 text-center" style="width:100px;font-size:.75rem;background:#fff;">
+            <div style="font-weight:600;font-size:.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.nombre}</div>
+            <div class="fw-bold" style="color:${color}">${avance}%</div>
+            <div class="progress" style="height:4px;"><div class="progress-bar" style="width:${avance}%;background:${color}"></div></div>
+        </div>`;
+    });
+}
+
+/* ---- Aplicar filtros ---- */
+document.getElementById('btn-aplicar').addEventListener('click', function () {
+    const tipo = document.getElementById('filtro-tipo').value;
+    const prov = document.getElementById('filtro-provincia').value;
+    const dist = document.getElementById('filtro-distrito').value;
+    const provNombre = prov ? (UBIGEO.provincias.find(p => p.ubigeo === prov)?.nombre || '') : 'TODAS';
+    document.getElementById('breadcrumb-ubicacion').textContent = `${tipo.toUpperCase()} — ${provNombre}`;
+    cargarDashboard(tipo, prov, dist);
+    cargarMapa(tipo, prov);
+});
+
+/* ---- Inicio ---- */
+(async function init() {
+    await U.cargar();
+    cargarDashboard('distrital', '', '');
+    cargarMapa('distrital', '');
+})();
+</script>
+</body>
+</html>

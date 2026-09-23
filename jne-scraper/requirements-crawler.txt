@@ -1,0 +1,14 @@
+# Dependencias del crawler del JNE (Voto Informado) y de las herramientas del ubigeo.
+#
+# El crawler usa HTTP directo (httpx) con reintentos y backoff exponencial. La
+# API interna del JNE acepta un POST JSON abierto —`POST
+# /api/v1/candidatos/organizaciones` con `{dep, pro, dis}`— sin cookies, sesión
+# de navegador ni cabeceras de origen, que es exactamente la petición que hace
+# el propio portal. Por eso NO se necesita Playwright ni descargar un navegador.
+#
+# Instalación:
+#     pip install -r requirements-crawler.txt
+#
+# tools/build_ubigeo.py y tools/comparar_crawl.py sólo usan la librería estándar.
+
+httpx>=0.27,<1.0

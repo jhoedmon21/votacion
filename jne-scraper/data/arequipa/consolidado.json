@@ -1,0 +1,166 @@
+{
+  "generado_at": "2026-09-16T13:39:28.123570+00:00",
+  "total_ambitos_esperados": 118,
+  "niveles": {
+    "regional": {
+      "esperados": 1,
+      "crawleados": 1,
+      "faltantes": 0,
+      "organizaciones": 16,
+      "candidatos": 185,
+      "por_cargo": {
+        "CONSEJERO_REGIONAL": 154,
+        "GOBERNADOR": 16,
+        "VICE_GOBERNADOR": 15
+      },
+      "fotos_descargadas": 184,
+      "fotos_pendientes": 1,
+      "logos_descargados": 16,
+      "logos_pendientes": 0
+    },
+    "provincial": {
+      "esperados": 8,
+      "crawleados": 8,
+      "faltantes": 0,
+      "organizaciones": 80,
+      "candidatos": 879,
+      "por_cargo": {
+        "ALCALDE": 80,
+        "REGIDOR_PROVINCIAL": 799
+      },
+      "fotos_descargadas": 875,
+      "fotos_pendientes": 0,
+      "logos_descargados": 11,
+      "logos_pendientes": 69
+    },
+    "distrital": {
+      "esperados": 109,
+      "crawleados": 101,
+      "faltantes": 8,
+      "organizaciones": 503,
+      "candidatos": 3827,
+      "por_cargo": {
+        "ALCALDE": 503,
+        "REGIDOR_DISTRITAL": 3324
+      },
+      "fotos_descargadas": 3804,
+      "fotos_pendientes": 1,
+      "logos_descargados": 13,
+      "logos_pendientes": 490
+    }
+  },
+  "fallos": [
+    {
+      "nivel": "distrital",
+      "ubigeo": "040101",
+      "error": "sin datos (no crawleado o falló)"
+    },
+    {
+      "nivel": "distrital",
+      "ubigeo": "040201",
+      "error": "sin datos (no crawleado o falló)"
+    },
+    {
+      "nivel": "distrital",
+      "ubigeo": "040301",
+      "error": "sin datos (no crawleado o falló)"
+    },
+    {
+      "nivel": "distrital",
+      "ubigeo": "040401",
+      "error": "sin datos (no crawleado o falló)"
+    },
+    {
+      "nivel": "distrital",
+      "ubigeo": "040501",
+      "error": "sin datos (no crawleado o falló)"
+    },
+    {
+      "nivel": "distrital",
+      "ubigeo": "040601",
+      "error": "sin datos (no crawleado o falló)"
+    },
+    {
+      "nivel": "distrital",
+      "ubigeo": "040701",
+      "error": "sin datos (no crawleado o falló)"
+    },
+    {
+      "nivel": "distrital",
+      "ubigeo": "040801",
+      "error": "sin datos (no crawleado o falló)"
+    }
+  ],
+  "fallos_log": [
+    {
+      "timestamp": "2026-09-15T17:04:55.999496+00:00",
+      "nivel": "distrital",
+      "ubigeo": "040112",
+      "error": "PAUCARPATA: RuntimeError: API del JNE no respondió tras 2 intentos: 'APIResponse' object has no attribute 'raise_for_status'"
+    },
+    {
+      "timestamp": "2026-09-15T17:05:39.838794+00:00",
+      "nivel": "regional",
+      "ubigeo": "040000",
+      "error": "AREQUIPA: RuntimeError: el JNE no devolvió el bloque 'GOBIERNO REGIONAL'"
+    },
+    {
+      "timestamp": "2026-09-15T19:56:03.236721+00:00",
+      "nivel": "distrital",
+      "ubigeo": "040101",
+      "error": "AREQUIPA: RuntimeError: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])"
+    },
+    {
+      "timestamp": "2026-09-15T20:03:29.203409+00:00",
+      "nivel": "distrital",
+      "ubigeo": "040201",
+      "error": "CAMANA: RuntimeError: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])"
+    },
+    {
+      "timestamp": "2026-09-15T20:04:49.839071+00:00",
+      "nivel": "distrital",
+      "ubigeo": "040301",
+      "error": "CARAVELI: RuntimeError: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])"
+    },
+    {
+      "timestamp": "2026-09-15T20:06:30.109932+00:00",
+      "nivel": "distrital",
+      "ubigeo": "040401",
+      "error": "APLAO: RuntimeError: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])"
+    },
+    {
+      "timestamp": "2026-09-15T20:08:15.003623+00:00",
+      "nivel": "distrital",
+      "ubigeo": "040501",
+      "error": "CHIVAY: RuntimeError: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])"
+    },
+    {
+      "timestamp": "2026-09-15T20:10:51.009522+00:00",
+      "nivel": "distrital",
+      "ubigeo": "040601",
+      "error": "CHUQUIBAMBA: RuntimeError: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])"
+    },
+    {
+      "timestamp": "2026-09-15T20:12:06.398878+00:00",
+      "nivel": "distrital",
+      "ubigeo": "040701",
+      "error": "MOLLENDO: RuntimeError: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])"
+    },
+    {
+      "timestamp": "2026-09-15T20:13:11.513465+00:00",
+      "nivel": "distrital",
+      "ubigeo": "040801",
+      "error": "COTAHUASI: RuntimeError: el JNE no devolvió el bloque 'MUNICIPAL DISTRITAL' (recibidos: ['REGIONAL', 'MUNICIPAL PROVINCIAL'])"
+    }
+  ],
+  "totales": {
+    "ambitos_ok": 110,
+    "ambitos_faltantes": 8,
+    "organizaciones": 599,
+    "candidatos": 4891,
+    "fotos": 4863,
+    "logos": 40,
+    "fotos_fallidas": 2,
+    "logos_fallidas": 559
+  }
+}

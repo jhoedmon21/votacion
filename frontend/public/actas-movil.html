@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#002B66" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Carga de Actas — Cómputo Electoral Arequipa 2026</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+<style>
+  :root { --onpe:#002B66; --onpe-2:#0056B3; }
+  body { background:#F1F3F6; -webkit-tap-highlight-color:transparent; }
+  header.onpe { background:var(--onpe); color:#fff; position:sticky; top:0; z-index:1030; }
+  .badge-onpe { background:#fff; color:var(--onpe); font-weight:800; letter-spacing:.5px; }
+  .card { border:none; box-shadow:0 1px 3px rgba(16,24,40,.08); border-radius:14px; }
+  .card-header { background:#fff; border-bottom:1px solid #EDF0F4; font-weight:700; color:var(--onpe); }
+  .num-input { width:74px; text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+  .col-head { background:#F8FAFC; border-bottom:1px solid #E2E8F0; font-weight:700; font-size:.8rem;
+              text-transform:uppercase; letter-spacing:.3px; color:#475569; }
+  .barra-validacion { position:sticky; bottom:0; z-index:1030; background:#fff; border-top:1px solid #E2E8F0;
+                      box-shadow:0 -2px 12px rgba(16,24,40,.08); }
+  .estado-ok  { color:#067647; }
+  .estado-mal { color:#B42318; }
+  .punto { display:inline-block; width:10px; height:10px; border-radius:50%; }
+  .fila-ok  .num-input { border-color:#12B76A; background:#F6FEF9; }
+  .fila-mal .num-input { border-color:#F04438; background:#FFFBFA; }
+  .hash { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.7rem; word-break:break-all; }
+  .mini { font-size:.75rem; }
+  .org-logo { width:26px; height:26px; object-fit:contain; border-radius:4px; }
+  .demo-chip { background:#FFF7E6; color:#B54708; border:1px solid #FEDF89; }
+  table.digitacion td { vertical-align:middle; }
+  .usuario-chip { font-size:.72rem; background:#EAF1FB; color:#0B2E6B; border-radius:999px; padding:.2rem .6rem; }
+</style>
+</head>
+<body>
+
+<header class="onpe">
+  <div class="container-fluid px-3 py-2 d-flex align-items-center gap-3">
+    <span class="badge badge-onpe px-2 py-1">ONPE</span>
+    <div class="flex-grow-1">
+      <div class="fw-bolder" style="font-size:.95rem; line-height:1.1;">CARGA DE ACTAS — AREQUIPA 2026</div>
+      <div class="mini" style="color:#BBD0EC;">Gobernación regional · 8 provincias · 109 distritos</div>
+    </div>
+    <span class="badge demo-chip" id="chip-demo" title="Datos de locales/mesas de demostración">DEMO</span>
+    <span class="usuario-chip d-none" id="chip-usuario"></span>
+    <button class="btn btn-sm btn-outline-light d-none" id="btn-salir" title="Cerrar sesión">Salir</button>
+  </div>
+</header>
+
+<main class="container-fluid px-3 py-3" style="max-width:820px;">
+
+  <!-- 1. UBICACIÓN DE LA MESA -->
+  <section class="card mb-3">
+    <div class="card-header d-flex align-items-center gap-2">
+      <i class="bi bi-geo-alt-fill"></i> 1. Ubicación de la mesa
+    </div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-12">
+          <label class="form-label mini fw-semibold mb-1">Tipo de elección</label>
+          <div class="btn-group w-100" role="group" id="grupo-tipo">
+            <input type="radio" class="btn-check" name="tipo" id="t-distrital" value="DISTRITAL" checked>
+            <label class="btn btn-outline-primary btn-sm" for="t-distrital">Distrital</label>
+            <input type="radio" class="btn-check" name="tipo" id="t-provincial" value="PROVINCIAL">
+            <label class="btn btn-outline-primary btn-sm" for="t-provincial">Provincial</label>
+            <input type="radio" class="btn-check" name="tipo" id="t-regional" value="REGIONAL">
+            <label class="btn btn-outline-primary btn-sm" for="t-regional">Regional</label>
+          </div>
+        </div>
+        <div class="col-6">
+          <label class="form-label mini fw-semibold mb-1">Provincia</label>
+          <select class="form-select form-select-sm" id="sel-provincia"></select>
+        </div>
+        <div class="col-6">
+          <label class="form-label mini fw-semibold mb-1">Distrito</label>
+          <select class="form-select form-select-sm" id="sel-distrito"></select>
+        </div>
+        <div class="col-12">
+          <label class="form-label mini fw-semibold mb-1">Local de votación</label>
+          <select class="form-select form-select-sm" id="sel-local"></select>
+          <div class="form-text mini" id="ayuda-local"></div>
+        </div>
+        <div class="col-6">
+          <label class="form-label mini fw-semibold mb-1">N° de mesa (6 dígitos)</label>
+          <select class="form-select form-select-sm" id="sel-mesa"></select>
+        </div>
+        <div class="col-6">
+          <label class="form-label mini fw-semibold mb-1">Electores hábiles</label>
+          <input type="number" class="form-control form-control-sm" id="inp-electores" min="1" value="250">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. FOTO DEL ACTA -->
+  <section class="card mb-3">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <span><i class="bi bi-camera-fill"></i> 2. Foto del acta física</span>
+      <span class="badge text-bg-light mini" id="badge-foto">Sin foto</span>
+    </div>
+    <div class="card-body">
+      <input type="file" id="inp-foto" accept="image/*" capture="environment" class="d-none">
+      <div class="d-flex gap-2 mb-2">
+        <button class="btn btn-sm btn-primary flex-grow-1" id="btn-camara">
+          <i class="bi bi-camera"></i> Tomar / elegir foto
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" id="btn-quitar-foto" disabled>Quitar</button>
+      </div>
+      <div id="preview-foto" class="text-center d-none">
+        <img id="img-foto" class="img-fluid rounded border" style="max-height:220px" alt="Acta">
+        <div class="mini mt-1">SHA-256: <span class="hash" id="hash-foto"></span></div>
+        <div class="mini" id="aviso-hash"></div>
+      </div>
+      <div class="form-text mini">
+        La misma foto no puede asociarse a dos mesas distintas (regla R4): el sistema
+        compara el hash SHA-256 de la evidencia.
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. DIGITACIÓN -->
+  <section class="card mb-3">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <span><i class="bi bi-123"></i> 3. Digitación de votos</span>
+      <span class="d-flex align-items-center gap-2">
+        <span class="badge text-bg-light mini" id="badge-oferta">elija ámbito</span>
+        <button class="btn btn-sm btn-outline-secondary" id="btn-limpiar">Limpiar</button>
+      </span>
+    </div>
+    <div class="card-body p-0" id="panel-digitacion">
+      <div class="p-3 mini text-secondary" id="sin-candidatos">
+        Seleccione provincia, distrito y local para cargar las organizaciones políticas.
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. RESULTADO -->
+  <section class="card mb-5">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <span><i class="bi bi-clipboard2-check"></i> 4. Validación (reglas ONPE)</span>
+      <span class="badge text-bg-secondary" id="badge-servidor">sin validar en servidor</span>
+    </div>
+    <div class="card-body">
+      <div id="lista-hallazgos" class="mini text-secondary">Sin novedades.</div>
+      <hr class="my-3">
+      <div class="row text-center mini g-2">
+        <div class="col-4">
+          <div class="text-secondary">Columna principal</div>
+          <div class="fw-bold" id="m-principal">—</div>
+        </div>
+        <div class="col-4">
+          <div class="text-secondary">Total votantes</div>
+          <div class="fw-bold" id="m-total">0</div>
+        </div>
+        <div class="col-4">
+          <div class="text-secondary">Participación</div>
+          <div class="fw-bold" id="m-participacion">0%</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- BARRA FIJA DE VALIDACIÓN EN TIEMPO REAL -->
+<div class="barra-validacion">
+  <div class="container-fluid px-3 py-2" style="max-width:820px;">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <div class="d-flex align-items-center gap-2">
+        <span class="punto" id="punto-estado" style="background:#98A2B3"></span>
+        <span class="fw-bold" id="texto-estado">Complete el acta</span>
+      </div>
+      <div class="text-end mini">
+        <div>Σ + B + N + I = <span class="fw-bold" id="suma-acta">0</span></div>
+        <div>Acta dice <span class="fw-bold" id="total-acta">0</span></div>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary btn-sm flex-grow-1" id="btn-validar">
+        <i class="bi bi-shield-check"></i> Validar en servidor
+      </button>
+      <button class="btn btn-primary btn-sm flex-grow-1" id="btn-enviar" disabled>
+        <i class="bi bi-send"></i> Registrar acta
+      </button>
+    </div>
+    <div class="mini text-center mt-1" id="cola-info"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+'use strict';
+
+/* ------------------------------------------------------------------ *
+ * Estado del formulario
+ * ------------------------------------------------------------------ */
+const TIPO_POR_NIVEL = { DISTRITAL: 'MUNICIPAL DISTRITAL', PROVINCIAL: 'MUNICIPAL PROVINCIAL', REGIONAL: 'REGIONAL' };
+const COLUMNAS = {
+  DISTRITAL:  [{ key:'ALCALDE', label:'A', titulo:'Alcalde distrital' }, { key:'REGIDORES', label:'B', titulo:'Regidores' }],
+  PROVINCIAL: [{ key:'ALCALDE', label:'A', titulo:'Alcalde provincial' }, { key:'REGIDORES', label:'B', titulo:'Regidores' }],
+  REGIONAL:   [{ key:'GOBERNADOR_VICE', label:'A', titulo:'Gobernador y vicegobernador' }, { key:'CONSEJEROS', label:'B', titulo:'Consejeros regionales' }]
+};
+const CARGOS_POR_COLUMNA = {
+  ALCALDE: ['ALCALDE_DISTRITAL','ALCALDE_PROVINCIAL'],
+  REGIDORES: ['REGIDOR_DISTRITAL','REGIDOR_PROVINCIAL'],
+  GOBERNADOR_VICE: ['GOBERNADOR','VICE_GOBERNADOR'],
+  CONSEJEROS: ['CONSEJERO_REGIONAL']
+};
+
+const S = {
+  ubigeo: null, localesDemo: null,
+  tipo: 'DISTRITAL', provincia: null, distrito: null, local: null, mesa: null,
+  electores: 250, candidatos: null,
+  // sin-alcance | cargando | ok | sin-publicar  (ver Estado de la oferta electoral)
+  estadoCandidatos: 'sin-alcance',
+  padronEsOficial: false, padronFuente: null,
+  foto: null, fotoHash: null,
+  columnas: {},          // columna -> { votos:{orgKey:n}, blancos, nulos, impugnados, total }
+  hallazgos: [], server: null
+};
+
+const $ = (sel) => document.querySelector(sel);
+const n = (v) => { const x = parseInt(v, 10); return Number.isFinite(x) && x > 0 ? x : 0; };
+const esc = (s) => String(s == null ? '' : s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+/* ------------------------------------------------------------------ *
+ * Estado de la oferta electoral del alcance
+ *
+ * Regla dura: sin oferta electoral publicada NO se digita. Antes, un ámbito
+ * sin candidatos caía en una lista ficticia ("AGRUPA 1..6") y el formulario
+ * quedaba operable: se podía registrar un acta votando por organizaciones
+ * inexistentes. Un acta así es peor que un acta no cargada, porque entra al
+ * cómputo con datos falsos sin que nadie lo note.
+ * ------------------------------------------------------------------ */
+function etiquetaAlcance() {
+  if (S.tipo === 'REGIONAL') return 'la elección regional de Arequipa';
+  if (S.tipo === 'PROVINCIAL') {
+    return S.provincia ? `la provincia de ${S.provincia.nombre}` : 'la provincia (sin seleccionar)';
+  }
+  const d = S.provincia && (S.provincia.distritos || []).find(x => x.ubigeo === S.distrito);
+  return d ? `el distrito de ${d.nombre}` : 'el distrito (sin seleccionar)';
+}
+
+function pintarEstadoCandidatos() {
+  const badge = $('#badge-oferta');
+  if (!badge) return;
+  if (S.estadoCandidatos === 'cargando') {
+    badge.textContent = 'cargando oferta…';
+    badge.className = 'badge text-bg-light mini';
+  } else if (S.estadoCandidatos === 'ok') {
+    const orgs = (S.candidatos.organizaciones || []).length;
+    badge.textContent = `${orgs} organizaciones`;
+    badge.className = 'badge text-bg-success mini';
+  } else if (S.estadoCandidatos === 'sin-publicar') {
+    badge.textContent = 'sin candidatos publicados';
+    badge.className = 'badge text-bg-danger mini';
+  } else {
+    badge.textContent = 'elija ámbito';
+    badge.className = 'badge text-bg-light mini';
+  }
+}
+
+function avisoSinCandidatos() {
+  const ruta = alcanceActual();
+  const sinAlcance = S.estadoCandidatos === 'sin-alcance';
+  return `<div class="p-3">
+    <div class="alert alert-${sinAlcance ? 'secondary' : 'danger'} d-flex gap-2 mb-2" role="alert">
+      <i class="bi bi-${sinAlcance ? 'cursor' : 'exclamation-octagon-fill'}"></i>
+      <div>
+        <div class="fw-bold">${sinAlcance
+          ? 'Elija el ámbito del acta'
+          : 'Sin oferta electoral publicada para este ámbito'}</div>
+        <div class="mini">${sinAlcance
+          ? 'Seleccione el tipo de elección y, si corresponde, la provincia y el distrito. Sin ese dato no se sabe qué organizaciones compiten en la mesa.'
+          : `No se puede digitar un acta sin conocer las organizaciones políticas que
+             compiten en <strong>${esc(etiquetaAlcance())}</strong>. El archivo
+             <span class="hash">${esc(ruta)}</span> no existe o no trae organizaciones.`}</div>
+      </div>
+    </div>
+    ${sinAlcance ? '' : `<div class="mini text-secondary">
+      Esto no significa que el acta no exista: el JNE todavía no ha publicado las
+      listas de este ámbito. No registre el acta hasta que la oferta esté disponible:
+      cualquier cifra digitada acabaría contada a favor de una organización que no
+      participa en esta elección.
+    </div>`}
+  </div>`;
+}
+
+// Deja el formulario en un estado explícitamente inoperable.
+function bloquearPorSinCandidatos() {
+  S.columnas = {};
+  S.hallazgos = [];
+  S.server = null;
+  $('#btn-enviar').disabled = true;
+  $('#btn-validar').disabled = true;
+  $('#btn-limpiar').disabled = true;
+  $('#suma-acta').textContent = '0';
+  $('#total-acta').textContent = '0';
+  $('#m-principal').textContent = '—';
+  $('#m-total').textContent = '—';
+  $('#m-participacion').textContent = '—';
+  $('#badge-servidor').className = 'badge text-bg-secondary';
+  $('#badge-servidor').textContent = 'no habilitado';
+  $('#lista-hallazgos').innerHTML = `<span class="text-secondary">${S.estadoCandidatos === 'sin-alcance'
+    ? 'Seleccione el ámbito para cargar la oferta electoral.'
+    : 'Sin oferta electoral no hay nada que validar: el acta no debe registrarse.'}</span>`;
+  const punto = $('#punto-estado');
+  const texto = $('#texto-estado');
+  punto.style.background = '#98A2B3';
+  texto.textContent = S.estadoCandidatos === 'sin-alcance'
+    ? 'Elija el ámbito del acta'
+    : 'Sin oferta electoral publicada';
+  texto.className = 'fw-bold text-secondary';
+}
+
+// La oferta volvió a estar disponible: se reabre el formulario.
+function habilitarFormulario() {
+  $('#btn-validar').disabled = false;
+  $('#btn-limpiar').disabled = false;
+  $('#badge-servidor').className = 'badge text-bg-secondary';
+  $('#badge-servidor').textContent = 'sin validar en servidor';
+}
+
+/* ------------------------------------------------------------------ *
+ * Carga de catálogos
+ * ------------------------------------------------------------------ */
+/*
+ * Locales y mesas: primero lo oficial, después la demostración.
+ *   /data/locales_mesas_arequipa.json  -> lo publica onpe-scraper con el archivo de la ONPE
+ *   /data/locales_mesas_demo.json      -> 10 ubigeos de ejemplo, sólo para desarrollo
+ * Se registra cuál se usó, porque la diferencia importa: el tope del padrón (R2)
+ * y los electores hábiles no valen lo mismo si la fuente es un ejemplo.
+ */
+async function cargarPadron() {
+  for (const [ruta, oficial] of [
+    ['/data/locales_mesas_arequipa.json', true],
+    ['/data/locales_mesas_demo.json', false]
+  ]) {
+    try {
+      const r = await fetch(ruta);
+      const tipo = r.headers.get('content-type') || '';
+      if (!r.ok || !tipo.includes('json')) continue;   // 404 o index.html de la SPA
+      const d = await r.json();
+      if (d && d.por_ubigeo && Object.keys(d.por_ubigeo).length) {
+        S.padronEsOficial = oficial;
+        S.padronFuente = ruta;
+        return d;
+      }
+    } catch (_) { /* se prueba la siguiente fuente */ }
+  }
+  S.padronEsOficial = false;
+  S.padronFuente = null;
+  return null;
+}
+
+async function cargarCatalogos() {
+  const [ubigeo, locales] = await Promise.all([
+    fetch('/data/ubigeo_arequipa.json').then(r => r.json()),
+    cargarPadron()
+  ]);
+  S.ubigeo = ubigeo;
+  S.localesDemo = locales;
+
+  const sel = $('#sel-provincia');
+  sel.innerHTML = ubigeo.provincias
+    .map(p => `<option value="${p.codigo}">${p.nombre}</option>`).join('');
+  sel.dispatchEvent(new Event('change'));
+}
+
+function actualizarMapaDemo() {
+  const chip = $('#chip-demo');
+  const distritos = Object.keys((S.localesDemo && S.localesDemo.por_ubigeo) || {});
+  if (!distritos.length) {
+    chip.textContent = 'SIN PADRÓN';
+    chip.className = 'badge text-bg-danger';
+    chip.title = 'No hay locales ni mesas cargados para ningún distrito';
+    return;
+  }
+  if (S.padronEsOficial) {
+    chip.textContent = `PADRÓN · ${distritos.length}/109`;
+    chip.className = 'badge text-bg-success';
+    chip.title = `Locales y mesas oficiales desde ${S.padronFuente}`;
+  } else {
+    chip.textContent = 'DEMO';
+    chip.className = 'badge demo-chip';
+    chip.title = 'Locales y mesas de DEMOSTRACIÓN: no sirven para el cómputo real';
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Cascada provincia → distrito → local → mesa
+ * ------------------------------------------------------------------ */
+$('#sel-provincia').addEventListener('change', (e) => {
+  const prov = S.ubigeo.provincias.find(p => p.codigo === e.target.value);
+  S.provincia = prov;
+  $('#sel-distrito').innerHTML = prov.distritos
+    .map(d => `<option value="${d.ubigeo}">${d.nombre}</option>`).join('');
+  $('#sel-distrito').dispatchEvent(new Event('change'));
+});
+
+$('#sel-distrito').addEventListener('change', async (e) => {
+  S.distrito = e.target.value;
+  const demo = (S.localesDemo && S.localesDemo.por_ubigeo || {})[S.distrito];
+  const locales = demo ? demo.locales : [{
+    codigo: 'SIN-PADRON', nombre: 'Local sin padrón cargado (genérico)',
+    direccion: 'Complete la información del acta física',
+    mesas: ['000001','000002','000003','000004']
+  }];
+  $('#ayuda-local').textContent = demo
+    ? `${demo.locales.length} local(es) ${S.padronEsOficial ? 'oficial(es)' : 'de demostración'} para este distrito.`
+    : 'Este distrito no tiene locales cargados: use el local genérico y ajuste los electores hábiles.';
+  $('#sel-local').innerHTML = locales
+    .map((l, i) => `<option value="${i}">${l.codigo} · ${l.nombre}</option>`).join('');
+  S.locales = locales;
+  await cargarCandidatosDelAlcance();
+});
+
+/*
+ * Electores hábiles de una mesa. Es el dato del que depende R2 (tope del padrón),
+ * así que se resuelve de lo más preciso a lo más grueso:
+ *   1. el padrón de esa mesa concreta (locales[].electores[<mesa>])
+ *   2. el mayor del local (locales[].electores_por_mesa)
+ *   3. el promedio de la fuente (electores_por_mesa_defecto)
+ * Lo último sólo debería ocurrir con la data de demostración.
+ */
+function electoresDeMesa(local, mesa) {
+  if (local) {
+    if (local.electores && local.electores[mesa]) return local.electores[mesa];
+    if (local.electores_por_mesa) return local.electores_por_mesa;
+  }
+  return (S.localesDemo && S.localesDemo.electores_por_mesa_defecto) || 250;
+}
+
+function sincronizarElectores() {
+  S.electores = electoresDeMesa(S.local, S.mesa);
+  $('#inp-electores').value = S.electores;
+  $('#inp-electores').title = (S.local && S.local.electores && S.local.electores[S.mesa])
+    ? 'Electores hábiles de esta mesa según el padrón cargado'
+    : 'Electores estimados: no hay padrón por mesa para este ámbito';
+}
+
+$('#sel-local').addEventListener('change', (e) => {
+  S.local = S.locales[+e.target.value];
+  $('#sel-mesa').innerHTML = S.local.mesas
+    .map(m => `<option value="${m}">${m}</option>`).join('');
+  S.mesa = $('#sel-mesa').value;
+  sincronizarElectores();
+  construirFormulario();
+});
+
+$('#sel-mesa').addEventListener('change', (e) => {
+  S.mesa = e.target.value;
+  sincronizarElectores();   // cada mesa tiene su propio tope de padrón
+  recalcular();
+});
+$('#inp-electores').addEventListener('input', (e) => { S.electores = n(e.target.value); recalcular(); });
+
+document.querySelectorAll('#grupo-tipo input').forEach(input => {
+  input.addEventListener('change', async (e) => {
+    S.tipo = e.target.value;
+    // La oferta electoral cambia con el tipo de elección (regional/provincial/distrital)
+    await cargarCandidatosDelAlcance();
+  });
+});
+
+/*
+ * Oferta electoral del alcance activo. El crawler publica un JSON por ámbito en
+ * jne-scraper/data/arequipa/<nivel>/<ubigeo>.json; esos archivos se copian aquí:
+ *   distrital  -> /data/candidatos/<ubigeo>.json
+ *   provincial -> /data/candidatos/prov-<ubigeoProvincia>.json
+ *   regional   -> /data/candidatos/regional.json
+ */
+function alcanceActual() {
+  if (S.tipo === 'REGIONAL') return '/data/candidatos/regional.json';
+  if (S.tipo === 'PROVINCIAL') return `/data/candidatos/prov-${S.provincia ? S.provincia.ubigeo : ''}.json`;
+  return `/data/candidatos/${S.distrito || ''}.json`;
+}
+
+async function cargarCandidatosDelAlcance() {
+  const ruta = alcanceActual();
+  S.candidatos = null;
+
+  // El alcance regional no depende de provincia/distrito; los otros dos sí.
+  const faltaAlcance = (S.tipo === 'PROVINCIAL' && !S.provincia) ||
+                       (S.tipo === 'DISTRITAL'  && !S.distrito);
+  S.estadoCandidatos = faltaAlcance ? 'sin-alcance' : 'cargando';
+  pintarEstadoCandidatos();          // feedback inmediato mientras viaja el fetch
+
+  if (!faltaAlcance) {
+    try {
+      const r = await fetch(ruta);
+      // Un servidor estático responde index.html (200) para rutas inexistentes:
+      // sólo aceptamos JSON, y sólo si trae organizaciones de verdad.
+      const tipoResp = r.headers.get('content-type') || '';
+      if (r.ok && tipoResp.includes('json')) {
+        const data = await r.json();
+        if (Array.isArray(data.organizaciones) && data.organizaciones.length) {
+          S.candidatos = data;
+          S.estadoCandidatos = 'ok';
+        } else {
+          S.estadoCandidatos = 'sin-publicar';   // archivo existe pero vino vacío
+        }
+      } else {
+        S.estadoCandidatos = 'sin-publicar';     // 404 / HTML: no hay archivo
+      }
+    } catch (_) {
+      S.estadoCandidatos = 'sin-publicar';
+    }
+  }
+
+  // Se reconstruye la digitación ya con la oferta electoral del alcance
+  $('#sel-local').dispatchEvent(new Event('change'));
+}
+
+/* ------------------------------------------------------------------ *
+ * Construcción del formulario de digitación
+ * ------------------------------------------------------------------ */
+function principalKey() {
+  return COLUMNAS[S.tipo][0].key;
+}
+
+function organizaciones() {
+  if (S.estadoCandidatos === 'ok' && S.candidatos && Array.isArray(S.candidatos.organizaciones)) {
+    return S.candidatos.organizaciones.map((o, i) => ({
+      key: `org-${i}`,
+      nombre: o.organizacionPolitica,
+      logo: o.logo_url,
+      candidatos: o.candidatos || []
+    }));
+  }
+  // Sin oferta publicada NO se inventan organizaciones: el formulario queda
+  // bloqueado (ver construirFormulario) en lugar de ofrecer partidos ficticios.
+  return [];
+}
+
+function inicializarColumnas() {
+  const orgs = organizaciones();
+  S.columnas = {};
+  COLUMNAS[S.tipo].forEach(col => {
+    S.columnas[col.key] = { votos: {}, blancos: 0, nulos: 0, impugnados: 0, total: 0, orgs };
+    orgs.forEach(o => { S.columnas[col.key].votos[o.key] = 0; });
+  });
+}
+
+function construirFormulario() {
+  const panel = $('#panel-digitacion');
+  const orgs = organizaciones();
+
+  if (!orgs.length) {
+    // Bloqueado. Se limpia la digitación anterior: dejarla a la vista haría
+    // parecer que esas organizaciones pertenecen al ámbito recién elegido.
+    pintarEstadoCandidatos();
+    panel.innerHTML = avisoSinCandidatos();
+    bloquearPorSinCandidatos();
+    return;
+  }
+
+  pintarEstadoCandidatos();
+  habilitarFormulario();
+  inicializarColumnas();
+  panel.innerHTML = COLUMNAS[S.tipo].map(col => {
+    const cargos = CARGOS_POR_COLUMNA[col.key];
+    const filas = orgs.map(o => {
+      const cands = (o.candidatos || []).filter(c => cargos.includes(c.cargo));
+      const nombre = cands.length ? cands[0].nombre_completo : '—';
+      const extra = cands.length > 1
+        ? `<button class="btn btn-link btn-sm p-0 mini" data-ver="${col.key}:${o.key}" type="button">ver ${cands.length}</button>`
+        : '';
+      return `<tr data-col="${col.key}">
+        <td class="ps-3">
+          <div class="d-flex align-items-center gap-2">
+            ${o.logo ? `<img src="${o.logo}" class="org-logo" alt="">` : ''}
+            <div>
+              <div class="fw-semibold" style="font-size:.82rem">${o.nombre}</div>
+              <div class="mini text-secondary">${nombre} ${extra}</div>
+            </div>
+          </div>
+        </td>
+        <td class="text-end pe-3">
+          <input type="number" min="0" inputmode="numeric" class="form-control form-control-sm num-input"
+                 data-col="${col.key}" data-org="${o.key}" value="0">
+        </td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="col-head px-3 py-2">Columna ${col.label} — ${col.titulo}</div>
+      <table class="table table-sm mb-0 digitacion">
+        <tbody>${filas}</tbody>
+        <tfoot class="table-light">
+          <tr>
+            <td class="ps-3 mini fw-semibold">Votos en blanco</td>
+            <td class="text-end pe-3"><input type="number" min="0" inputmode="numeric"
+              class="form-control form-control-sm num-input" data-meta="blancos" data-col="${col.key}" value="0"></td>
+          </tr>
+          <tr>
+            <td class="ps-3 mini fw-semibold">Votos nulos</td>
+            <td class="text-end pe-3"><input type="number" min="0" inputmode="numeric"
+              class="form-control form-control-sm num-input" data-meta="nulos" data-col="${col.key}" value="0"></td>
+          </tr>
+          <tr>
+            <td class="ps-3 mini fw-semibold">Votos impugnados</td>
+            <td class="text-end pe-3"><input type="number" min="0" inputmode="numeric"
+              class="form-control form-control-sm num-input" data-meta="impugnados" data-col="${col.key}" value="0"></td>
+          </tr>
+          <tr>
+            <td class="ps-3 mini fw-bold">TOTAL DE VOTANTES (según acta)</td>
+            <td class="text-end pe-3"><input type="number" min="0" inputmode="numeric"
+              class="form-control form-control-sm num-input fw-bold" data-meta="total" data-col="${col.key}" value="0"></td>
+          </tr>
+          <tr>
+            <td class="ps-3 mini text-secondary">Σ votos + B + N + I</td>
+            <td class="text-end pe-3 mini"><span data-suma="${col.key}">0</span> ·
+              <span data-dif="${col.key}" class="fw-bold">diferencia 0</span></td>
+          </tr>
+        </tfoot>
+      </table>`;
+  }).join('');
+
+  panel.querySelectorAll('input').forEach(inp => inp.addEventListener('input', recalcular));
+  panel.querySelectorAll('[data-ver]').forEach(btn => btn.addEventListener('click', mostrarDetalle));
+  recalcular();
+}
+
+function mostrarDetalle(ev) {
+  const [colKey, orgKey] = ev.currentTarget.dataset.ver.split(':');
+  const org = organizaciones().find(o => o.key === orgKey);
+  const cargos = CARGOS_POR_COLUMNA[colKey];
+  const lista = (org.candidatos || []).filter(c => cargos.includes(c.cargo))
+    .map(c => `<li>${c.posicion ?? ''}. ${c.nombre_completo} <span class="text-secondary">(${c.dni || 'sin DNI'}, ${c.estado})</span></li>`)
+    .join('');
+  alert(`${org.nombre}\n\n${lista.replace(/<[^>]+>/g, '')}`);
+}
+
+/* ------------------------------------------------------------------ *
+ * Validación en tiempo real (espejo de las reglas del backend)
+ * ------------------------------------------------------------------ */
+function leerColumnas() {
+  COLUMNAS[S.tipo].forEach(col => {
+    const c = S.columnas[col.key];
+    const orgs = c.orgs;
+    orgs.forEach(o => {
+      const inp = document.querySelector(`input[data-col="${col.key}"][data-org="${o.key}"]`);
+      c.votos[o.key] = n(inp && inp.value);
+    });
+    ['blancos','nulos','impugnados','total'].forEach(meta => {
+      const inp = document.querySelector(`input[data-meta="${meta}"][data-col="${col.key}"]`);
+      c[meta] = n(inp && inp.value);
+    });
+  });
+}
+
+function sumaColumna(col) {
+  return Object.values(col.votos).reduce((a, b) => a + b, 0) + col.blancos + col.nulos + col.impugnados;
+}
+
+function recalcular() {
+  if (!S.columnas || !Object.keys(S.columnas).length) return;
+  leerColumnas();
+
+  // La columna A (primera del acta) es siempre la principal: define el total de votantes
+  const principal = principalKey();
+  const colPrincipal = S.columnas[principal];
+  const hallazgos = [];
+
+  COLUMNAS[S.tipo].forEach(col => {
+    const c = S.columnas[col.key];
+    const suma = sumaColumna(c);
+    const dif = c.total - suma;
+    document.querySelector(`[data-suma="${col.key}"]`).textContent = suma;
+    const spanDif = document.querySelector(`[data-dif="${col.key}"]`);
+    spanDif.textContent = `diferencia ${dif > 0 ? '+' : ''}${dif}`;
+    spanDif.className = 'fw-bold ' + (dif === 0 ? 'estado-ok' : 'estado-mal');
+    document.querySelectorAll(`tr[data-col="${col.key}"]`).forEach(fila => {
+      fila.classList.toggle('fila-mal', dif !== 0);
+      fila.classList.toggle('fila-ok', dif === 0 && c.total > 0);
+    });
+    if (dif !== 0) {
+      hallazgos.push({
+        regla: 'R1_SUMA_VOTOS', severidad: 'BLOQUEANTE',
+        mensaje: `Columna ${col.label}: el total de votantes (${c.total}) no es igual a Σ votos + blancos + nulos + impugnados (${suma}). Diferencia ${dif > 0 ? '+' : ''}${dif}.`
+      });
+    }
+  });
+
+  if (colPrincipal.total > S.electores) {
+    hallazgos.push({
+      regla: 'R2_TOPE_ELECTORES', severidad: 'BLOQUEANTE',
+      mensaje: `El acta registra ${colPrincipal.total} votantes y la mesa sólo tiene ${S.electores} electores hábiles (exceso de ${colPrincipal.total - S.electores}).`
+    });
+  }
+
+  COLUMNAS[S.tipo].forEach(col => {
+    if (col.key === principal) return;
+    const c = S.columnas[col.key];
+    if (c.total && colPrincipal.total && c.total !== colPrincipal.total) {
+      hallazgos.push({
+        regla: 'R3_COLUMNAS_INCOHERENTES', severidad: 'ADVERTENCIA',
+        mensaje: `La columna ${col.label} declara ${c.total} votantes y la columna A declara ${colPrincipal.total}. Verifique el papel: el total del acta se toma de la columna A.`
+      });
+    }
+  });
+
+  const hayDatos = colPrincipal.total > 0;
+  if (hayDatos && !S.foto) {
+    hallazgos.push({ regla: 'R5_FOTO_AUSENTE', severidad: 'ADVERTENCIA', mensaje: 'Falta la fotografía del acta como evidencia.' });
+  }
+  if (S.fotoRepetida) {
+    hallazgos.push({ regla: 'R4_ACTA_DUPLICADA', severidad: 'BLOQUEANTE', mensaje: 'Esta fotografía ya fue usada en otra acta.' });
+  }
+  if (colPrincipal.total > 0 && Object.values(colPrincipal.votos).every(v => v === 0)) {
+    hallazgos.push({ regla: 'R1_SUMA_VOTOS', severidad: 'ADVERTENCIA', mensaje: 'No hay votos válidos digitados: confirme que no sea un formulario vacío.' });
+  }
+
+  const bloqueantes = hallazgos.filter(h => h.severidad === 'BLOQUEANTE');
+  S.hallazgos = hallazgos;
+
+  const suma = sumaColumna(colPrincipal);
+  const dif = colPrincipal.total - suma;
+  const consistente = dif === 0 && hayDatos;
+  const puedeEnviar = bloqueantes.length === 0 && consistente && !!S.mesa;
+
+  $('#suma-acta').textContent = suma;
+  $('#total-acta').textContent = colPrincipal.total;
+  $('#m-principal').textContent = COLUMNAS[S.tipo][0].titulo;
+  $('#m-total').textContent = colPrincipal.total;
+  $('#m-participacion').textContent = S.electores
+    ? (100 * colPrincipal.total / S.electores).toFixed(1) + '%' : '0%';
+
+  const punto = $('#punto-estado');
+  const texto = $('#texto-estado');
+  if (!hayDatos) {
+    punto.style.background = '#98A2B3';
+    texto.textContent = 'Complete el acta';
+    texto.className = 'fw-bold text-secondary';
+  } else if (consistente && puedeEnviar) {
+    punto.style.background = '#12B76A';
+    texto.textContent = 'Acta consistente';
+    texto.className = 'fw-bold estado-ok';
+  } else if (bloqueantes.length) {
+    punto.style.background = '#F04438';
+    texto.textContent = `Inconsistente — ${bloqueantes.length} bloqueante(s)`;
+    texto.className = 'fw-bold estado-mal';
+  } else {
+    punto.style.background = '#F79009';
+    texto.textContent = 'Con advertencias';
+    texto.className = 'fw-bold';
+  }
+
+  $('#btn-enviar').disabled = !puedeEnviar;
+  renderHallazgos();
+}
+
+function renderHallazgos() {
+  const cont = $('#lista-hallazgos');
+  if (!S.hallazgos.length) {
+    const principal = S.columnas[principalKey()];
+    cont.innerHTML = principal && principal.total > 0
+      ? '<span class="estado-ok">✔ Sin observaciones: la suma cuadra y no excede el padrón.</span>'
+      : '<span class="text-secondary">Digite los votos del acta para validarla.</span>';
+    return;
+  }
+  cont.innerHTML = S.hallazgos.map(h => {
+    const color = h.severidad === 'BLOQUEANTE' ? 'danger' : h.severidad === 'ADVERTENCIA' ? 'warning' : 'secondary';
+    return `<div class="d-flex gap-2 mb-1">
+      <span class="badge text-bg-${color}">${h.regla}</span>
+      <span>${h.mensaje}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ------------------------------------------------------------------ *
+ * Foto + hash SHA-256 (deduplicación de evidencia)
+ * ------------------------------------------------------------------ */
+$('#btn-camara').addEventListener('click', () => $('#inp-foto').click());
+$('#inp-foto').addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  S.foto = file;
+  const buf = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest('SHA-256', buf);
+  S.fotoHash = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+
+  const usados = JSON.parse(localStorage.getItem('hashes_actas') || '[]');
+  S.fotoRepetida = usados.includes(S.fotoHash);
+
+  $('#hash-foto').textContent = S.fotoHash;
+  $('#aviso-hash').innerHTML = S.fotoRepetida
+    ? '<span class="estado-mal fw-bold">Ya registrada en otra acta (R4).</span>'
+    : '<span class="estado-ok">Evidencia nueva: se registrará al enviar.</span>';
+  $('#img-foto').src = URL.createObjectURL(file);
+  $('#preview-foto').classList.remove('d-none');
+  $('#badge-foto').textContent = 'Foto adjunta';
+  $('#badge-foto').className = 'badge text-bg-success mini';
+  $('#btn-quitar-foto').disabled = false;
+  recalcular();
+});
+
+$('#btn-quitar-foto').addEventListener('click', () => {
+  S.foto = null; S.fotoHash = null; S.fotoRepetida = false;
+  $('#inp-foto').value = '';
+  $('#preview-foto').classList.add('d-none');
+  $('#badge-foto').textContent = 'Sin foto';
+  $('#badge-foto').className = 'badge text-bg-light mini';
+  $('#btn-quitar-foto').disabled = true;
+  recalcular();
+});
+
+/* ------------------------------------------------------------------ *
+ * Validación contra el servidor (autoridad)
+ * ------------------------------------------------------------------ */
+function payload() {
+  return {
+    tipo_eleccion: S.tipo,
+    electores_habiles: S.electores || 1,
+    numero_mesa: S.mesa,
+    foto_presente: !!S.foto,
+    foto_repetida: !!S.fotoRepetida,
+    columnas: COLUMNAS[S.tipo].map(col => {
+      const c = S.columnas[col.key];
+      return {
+        columna: col.key,
+        // El voto se identifica por ORGANIZACIÓN POLÍTICA (así lo cuenta la ONPE)
+        votos: Object.fromEntries(c.orgs.map(o => [o.nombre, c.votos[o.key] || 0])),
+        votos_blancos: c.blancos,
+        votos_nulos: c.nulos,
+        votos_impugnados: c.impugnados,
+        total_votantes: c.total
+      };
+    })
+  };
+}
+
+$('#btn-validar').addEventListener('click', async () => {
+  const badge = $('#badge-servidor');
+  badge.className = 'badge text-bg-secondary';
+  badge.textContent = 'validando…';
+  try {
+    const r = await fetch('/api/actas/validar', {
+      method: 'POST', headers: headersAuth(),
+      body: JSON.stringify(payload())
+    });
+    if (r.status === 401) { localStorage.removeItem(CLAVE_SESION); location.reload(); return; }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    S.server = data;
+    badge.className = 'badge ' + (data.puede_enviar ? 'text-bg-success' : 'text-bg-danger');
+    badge.textContent = data.puede_enviar
+      ? `servidor: consistente (${data.estado_sugerido})`
+      : `servidor: ${data.diferencia !== 0 ? 'diferencia ' + data.diferencia : 'bloqueado'}`;
+  } catch (err) {
+    badge.className = 'badge text-bg-warning';
+    badge.textContent = 'offline: se usan las reglas locales';
+  }
+});
+
+/* ------------------------------------------------------------------ *
+ * Registro del acta (cola local; el envío oficial lo hace el backend PG)
+ * ------------------------------------------------------------------ */
+$('#btn-enviar').addEventListener('click', async () => {
+  const clave = `acta:${S.tipo}:${S.distrito}:${S.mesa}`;
+  const registro = {
+    ...payload(),
+    local: S.local && S.local.nombre,
+    foto_hash: S.fotoHash,
+    registrado_at: new Date().toISOString(),
+    hallazgos: S.hallazgos
+  };
+  localStorage.setItem(clave, JSON.stringify(registro));
+  if (S.fotoHash) {
+    const usados = JSON.parse(localStorage.getItem('hashes_actas') || '[]');
+    usados.push(S.fotoHash);
+    localStorage.setItem('hashes_actas', JSON.stringify(usados));
+  }
+  const cola = JSON.parse(localStorage.getItem('cola_actas') || '[]');
+  if (!cola.includes(clave)) cola.push(clave);
+  localStorage.setItem('cola_actas', JSON.stringify(cola));
+  mostrarCola();
+
+  // Intento de sincronización con el backend de cómputo; si no está disponible,
+  // el acta queda en la cola local (la PWA funciona sin señal en el local).
+  try {
+    const r = await fetch('/api/actas/movil', {
+      method: 'POST', headers: headersAuth(),
+      body: JSON.stringify({ ...payload(), local: S.local && S.local.nombre, foto_hash: S.fotoHash })
+    });
+    if (r.status === 401) { localStorage.removeItem(CLAVE_SESION); location.reload(); return; }
+    if (r.ok) {
+      const data = await r.json();
+      $('#cola-info').innerHTML = `<span class="estado-ok">Contabilizada en el servidor (acta ${data.acta_id}).</span>`;
+    } else if (r.status === 409) {
+      const detalle = await r.json();
+      const lista = (detalle.detail && detalle.detail.hallazgos || [])
+        .map(h => `<div>· ${h.regla}: ${h.mensaje}</div>`).join('');
+      $('#cola-info').innerHTML =
+        `<span class="estado-mal fw-semibold">OBSERVADA en el servidor: no se contabilizó.</span>${lista}`;
+    } else {
+      $('#cola-info').innerHTML = '<span class="text-secondary">Guardada localmente; se sincronizará al recuperar conexión.</span>';
+    }
+  } catch (_) {
+    $('#cola-info').innerHTML = '<span class="text-secondary">Guardada localmente; se sincronizará al recuperar conexión.</span>';
+  }
+});
+
+function mostrarCola() {
+  const cola = JSON.parse(localStorage.getItem('cola_actas') || '[]');
+  if (cola.length) {
+    $('#cola-info').innerHTML = `<span class="text-secondary">${cola.length} acta(s) en la cola local del dispositivo.</span>`;
+  }
+}
+
+$('#btn-limpiar').addEventListener('click', () => { construirFormulario(); $('#btn-enviar').disabled = true; });
+
+/* ------------------------------------------------------------------ *
+ * Autenticación: sesión local + cabeceras Bearer
+ * ------------------------------------------------------------------ */
+const CLAVE_SESION = 'sesion_computo';
+
+function sesionGuardada() {
+  try {
+    const s = JSON.parse(localStorage.getItem(CLAVE_SESION) || 'null');
+    if (!s || !s.token || (s.expira_at && new Date(s.expira_at) <= new Date())) return null;
+    return s;
+  } catch { return null; }
+}
+
+function headersAuth(extra = {}) {
+  const s = sesionGuardada();
+  return { 'Content-Type': 'application/json', ...(s ? { Authorization: 'Bearer ' + s.token } : {}), ...extra };
+}
+
+function mostrarUsuario(s) {
+  const chip = $('#chip-usuario');
+  chip.textContent = `${s.usuario.nombre_completo} · ${s.usuario.rol}`;
+  chip.classList.remove('d-none');
+  $('#btn-salir').classList.remove('d-none');
+}
+
+$('#btn-salir').addEventListener('click', async () => {
+  try { await fetch('/api/auth/logout', { method: 'POST', headers: headersAuth() }); } catch {}
+  localStorage.removeItem(CLAVE_SESION);
+  location.reload();
+});
+
+/* ------------------------------------------------------------------ *
+ * Arranque
+ * ------------------------------------------------------------------ */
+(async function init() {
+  // Sin portada de login: la PWA abre directo en el formulario de carga.
+  // Si quedó una sesión guardada de antes, sólo se muestra su chip identificador
+  // (y así las llamadas a la API siguen llevando el Bearer en headersAuth()).
+  const sesion = sesionGuardada();
+  if (sesion) mostrarUsuario(sesion);
+  await cargarCatalogos();
+  actualizarMapaDemo();
+  mostrarCola();
+})();
+</script>
+</body>
+</html>

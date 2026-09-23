@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#002B66">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json">
+<title>Registro de Acta — Cómputo Arequipa 2026</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4/dist/chart.umd.min.js"></script>
+<script src="/js/electoral_logic.js"></script>
+<style>
+:root {
+    --onpe: #002B66;
+    --onpe-2: #0056B3;
+    --verde: #12B76A;
+    --rojo: #F04438;
+    --ambar: #F79009;
+}
+body {
+    background: #F1F3F6;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    padding-bottom: 80px;
+}
+header.onpe {
+    background: linear-gradient(135deg, var(--onpe), var(--onpe-2));
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    padding: 10px 12px;
+}
+header.onpe .badge-onpe {
+    background: #fff;
+    color: var(--onpe);
+    font-weight: 800;
+    letter-spacing: .5px;
+}
+.card {
+    border: none;
+    box-shadow: 0 1px 3px rgba(16,24,40,.08);
+    border-radius: 14px;
+    margin-bottom: 14px;
+}
+.card-header {
+    background: #fff;
+    border-bottom: 1px solid #EDF0F4;
+    font-weight: 700;
+    font-size: .9rem;
+    color: var(--onpe);
+    padding: 12px 16px;
+}
+.card-body { padding: 16px; }
+.num-input {
+    width: 72px;
+    text-align: right;
+    font-size: .9rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.num-input:focus {
+    border-color: var(--onpe);
+    box-shadow: 0 0 0 2px rgba(0,43,102,.15);
+}
+.form-label { font-size: .78rem; font-weight: 600; margin-bottom: 2px; }
+.form-select-sm, .form-control-sm { font-size: .85rem; }
+.col-head {
+    background: #F8FAFC;
+    border-bottom: 1px solid #E2E8F0;
+    font-weight: 700;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    color: #475569;
+    padding: 8px 16px;
+}
+.barra-validacion {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+    background: #fff;
+    border-top: 1px solid #E2E8F0;
+    box-shadow: 0 -2px 12px rgba(0,0,0,.1);
+    padding: 10px 12px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
+}
+.estado-ok { color: #067647; }
+.estado-mal { color: #B42318; }
+.punto-estado {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+.fila-ok .num-input { border-color: var(--verde); background: #F6FEF9; }
+.fila-mal .num-input { border-color: var(--rojo); background: #FFFBFA; }
+.org-logo { width: 24px; height: 24px; object-fit: contain; border-radius: 4px; }
+.hash { font-family: monospace; font-size: .68rem; word-break: break-all; }
+.mini { font-size: .72rem; }
+.demo-chip { background: #FFF7E6; color: #B54708; border: 1px solid #FEDF89; font-size: .7rem; }
+.login-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(160deg,#0B2E6B,#123F8F);
+    display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.login-overlay .tarjeta { background: #fff; border-radius: 14px; max-width: 380px; width: 100%; padding: 1.5rem; }
+.row.g-2 > * { padding-bottom: 0; }
+table.digitacion td { vertical-align: middle; padding: 4px 6px; }
+table.digitacion input { margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="login-overlay">
+    <div class="tarjeta">
+        <div class="text-center mb-3">
+            <span class="badge bg-dark px-3 py-1" style="background:var(--onpe)!important;font-size:1rem;">ONPE</span>
+        </div>
+        <h5 class="fw-bold text-center">Carga de Actas</h5>
+        <p class="text-secondary text-center small">Cómputo Electoral Arequipa 2026</p>
+        <div class="mb-2">
+            <label class="form-label">Correo institucional</label>
+            <input type="email" class="form-control form-control-sm" id="login-email" placeholder="usuario@computoarequipa.gob.pe" autocomplete="username">
+        </div>
+        <div class="mb-2">
+            <label class="form-label">Contraseña</label>
+            <input type="password" class="form-control form-control-sm" id="login-clave" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div id="login-error" class="small estado-mal mb-1" style="min-height:20px"></div>
+        <button class="btn w-100 fw-semibold mt-1" id="btn-login" style="background:var(--onpe);color:#fff;border:none;padding:8px;">Ingresar</button>
+        <p class="text-center mt-2 mb-0"><span class="badge bg-warning text-dark px-3">Demo</span></p>
+    </div>
+</div>
+
+<!-- HEADER -->
+<header class="onpe d-flex align-items-center gap-2">
+    <span class="badge badge-onpe px-2">ONPE</span>
+    <div class="flex-grow-1">
+        <div class="fw-bold" style="font-size:.9rem;line-height:1.2;">REGISTRO DE ACTA</div>
+        <div class="mini" style="color:#BBD0EC;">Cómputo Electoral — Región Arequipa 2026</div>
+    </div>
+    <span class="badge demo-chip" id="chip-demo">DEMO</span>
+    <span class="badge bg-white text-dark mini d-none" id="chip-usuario"></span>
+    <button class="btn btn-sm btn-outline-light d-none" id="btn-salir" style="font-size:.7rem;padding:2px 8px;">Salir</button>
+</header>
+
+<main class="container-fluid px-2 py-2" style="max-width:600px;padding-bottom:80px;">
+
+    <!-- 1. UBICACIÓN -->
+    <section class="card">
+        <div class="card-header"><i class="bi bi-geo-alt-fill me-1"></i> 1. Ubicación de la mesa</div>
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-12">
+                    <label class="form-label">Tipo de elección</label>
+                    <div class="btn-group w-100" role="group" id="grupo-tipo">
+                        <input type="radio" class="btn-check" name="tipo" id="t-distrital" value="DISTRITAL" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="t-distrital">Distrital</label>
+                        <input type="radio" class="btn-check" name="tipo" id="t-provincial" value="PROVINCIAL">
+                        <label class="btn btn-outline-primary btn-sm" for="t-provincial">Provincial</label>
+                        <input type="radio" class="btn-check" name="tipo" id="t-regional" value="REGIONAL">
+                        <label class="btn btn-outline-primary btn-sm" for="t-regional">Regional</label>
+                    </div>
+                </div>
+                <div class="col-6"><label class="form-label">Provincia</label><select class="form-select form-select-sm" id="sel-provincia"></select></div>
+                <div class="col-6"><label class="form-label">Distrito</label><select class="form-select form-select-sm" id="sel-distrito"></select></div>
+                <div class="col-8"><label class="form-label">Local de votación</label><select class="form-select form-select-sm" id="sel-local"></select></div>
+                <div class="col-4"><label class="form-label">N° Mesa</label><select class="form-select form-select-sm" id="sel-mesa"></select></div>
+                <div class="col-12"><label class="form-label">Electores hábiles</label><input type="number" class="form-control form-control-sm" id="inp-electores" min="1" value="250"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. FOTO -->
+    <section class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-camera-fill me-1"></i> 2. Foto del acta física</span>
+            <span class="badge bg-light text-dark mini" id="badge-foto">Sin foto</span>
+        </div>
+        <div class="card-body">
+            <input type="file" id="inp-foto" accept="image/*" capture="environment" class="d-none">
+            <div class="d-flex gap-2 mb-2">
+                <button class="btn btn-sm btn-primary flex-grow-1" id="btn-camara" style="background:var(--onpe);border:none;">
+                    <i class="bi bi-camera"></i> Tomar / elegir foto
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" id="btn-quitar-foto" disabled>Quitar</button>
+            </div>
+            <div id="preview-foto" class="text-center d-none">
+                <img id="img-foto" class="img-fluid rounded border" style="max-height:180px" alt="Acta">
+                <div class="mini mt-1">SHA-256: <span class="hash" id="hash-foto"></span></div>
+                <div class="mini" id="aviso-hash"></div>
+            </div>
+            <div class="form-text mini mt-1">La misma foto no puede asociarse a dos mesas distintas (R4).</div>
+        </div>
+    </section>
+
+    <!-- 3. DIGITACIÓN -->
+    <section class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-123 me-1"></i> 3. Digitación de votos</span>
+            <button class="btn btn-sm btn-outline-secondary" id="btn-limpiar">Limpiar</button>
+        </div>
+        <div class="card-body p-0" id="panel-digitacion">
+            <div class="p-3 mini text-secondary" id="sin-candidatos">
+                Seleccione provincia, distrito y local para cargar las organizaciones políticas.
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. VALIDACIÓN -->
+    <section class="card">
+        <div class="card-header d-flex justify-content-between">
+            <span><i class="bi bi-clipboard2-check me-1"></i> 4. Validación ONPE</span>
+            <span class="badge bg-secondary mini" id="badge-servidor">sin servidor</span>
+        </div>
+        <div class="card-body">
+            <div id="lista-hallazgos" class="mini text-secondary">Sin novedades.</div>
+            <hr class="my-2">
+            <div class="row text-center mini g-2">
+                <div class="col-4"><div class="text-secondary">Columna</div><div class="fw-bold" id="m-columna">—</div></div>
+                <div class="col-4"><div class="text-secondary">Votantes</div><div class="fw-bold" id="m-total">0</div></div>
+                <div class="col-4"><div class="text-secondary">Participación</div><div class="fw-bold" id="m-participacion">0%</div></div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- BARRA FIJA DE VALIDACIÓN -->
+<div class="barra-validacion">
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="punto-estado" id="punto-estado" style="background:#98A2B3"></span>
+        <span class="fw-bold" id="texto-estado" style="font-size:.85rem;">Complete el acta</span>
+        <span class="ms-auto mini fw-bold" id="suma-acta">Σ=0 vs Total=0</span>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary btn-sm flex-grow-1" id="btn-validar-server">
+            <i class="bi bi-shield-check"></i> Validar
+        </button>
+        <button class="btn btn-sm flex-grow-1 fw-semibold" id="btn-enviar" disabled
+                style="background:var(--onpe);color:#fff;border:none;">
+            <i class="bi bi-send"></i> Registrar acta
+        </button>
+    </div>
+    <div class="mini text-center mt-1" id="cola-info"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+'use strict';
+/* ==========================================================================
+ * REGISTRO DE ACTA — Formulario PWA Móvil con Validación ONPE en Tiempo Real
+ *
+ * Reglas implementadas:
+ *   R1: Σ votos + blancos + nulos + impugnados = total votantes (BLOQUEANTE)
+ *   R2: total votantes ≤ electores hábiles (BLOQUEANTE)
+ *   R3: coherencia columnas A/B (ADVERTENCIA)
+ *   R4: foto duplicada (BLOQUEANTE)
+ *   R5: foto ausente (ADVERTENCIA)
+ * ========================================================================== */
+
+/* ---- Constantes ---- */
+const CLAVE_SESION = 'sesion_computo';
+const TIPO_POR_NIVEL = { DISTRITAL: 'MUNICIPAL DISTRITAL', PROVINCIAL: 'MUNICIPAL PROVINCIAL', REGIONAL: 'REGIONAL' };
+const COLUMNAS = {
+    DISTRITAL:  [{ key:'ALCALDE', label:'A', titulo:'Alcalde' }, { key:'REGIDORES', label:'B', titulo:'Regidores' }],
+    PROVINCIAL: [{ key:'ALCALDE', label:'A', titulo:'Alcalde' }, { key:'REGIDORES', label:'B', titulo:'Regidores' }],
+    REGIONAL:   [{ key:'GOBERNADOR_VICE', label:'A', titulo:'Gobernador/Vice' }, { key:'CONSEJEROS', label:'B', titulo:'Consejeros' }],
+};
+const CARGOS_POR_COLUMNA = {
+    ALCALDE: ['ALCALDE_DISTRITAL','ALCALDE_PROVINCIAL'],
+    REGIDORES: ['REGIDOR_DISTRITAL','REGIDOR_PROVINCIAL'],
+    GOBERNADOR_VICE: ['GOBERNADOR_REGIONAL','VICE_GOBERNADOR'],
+    CONSEJEROS: ['CONSEJERO_REGIONAL'],
+};
+
+/* ---- Estado ---- */
+const S = {
+    ubigeo: null, localesDemo: null,
+    tipo: 'DISTRITAL', provincia: null, distrito: null, local: null, mesa: null,
+    electores: 250, candidatos: null,
+    foto: null, fotoHash: null, fotoRepetida: false,
+    columnas: {},
+    hallazgos: [], server: null,
+};
+
+const $ = s => document.querySelector(s);
+const n = v => { const x = parseInt(v, 10); return Number.isFinite(x) && x >= 0 ? x : 0; };
+const formatear = v => (parseInt(v,10)||0).toLocaleString('es-PE');
+
+/* ---- Autenticación ---- */
+function sesionGuardada() {
+    try {
+        const s = JSON.parse(localStorage.getItem(CLAVE_SESION) || 'null');
+        if (!s || !s.token || (s.expira_at && new Date(s.expira_at) <= new Date())) return null;
+        return s;
+    } catch { return null; }
+}
+function headersAuth() {
+    const s = sesionGuardada();
+    return { 'Content-Type': 'application/json', ...(s ? { Authorization: 'Bearer ' + s.token } : {}) };
+}
+
+$('#btn-login').addEventListener('click', async () => {
+    const email = $('#login-email').value.trim();
+    const clave = $('#login-clave').value;
+    const err = $('#login-error');
+    err.textContent = '';
+    if (!email || !clave) { err.textContent = 'Ingrese correo y contraseña.'; return; }
+    try {
+        const r = await fetch('/api/auth/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, contrasena: clave, dispositivo: navigator.userAgent.slice(0, 120) })
+        });
+        const data = await r.json();
+        if (!r.ok) { err.textContent = data.detail || 'Credenciales inválidas.'; return; }
+        localStorage.setItem(CLAVE_SESION, JSON.stringify(data));
+        $('#login-overlay').remove();
+        mostrarUsuario(data);
+    } catch { err.textContent = 'Sin conexión.'; }
+});
+$('#login-clave').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btn-login').click(); });
+$('#btn-salir').addEventListener('click', async () => {
+    try { await fetch('/api/auth/logout', { method: 'POST', headers: headersAuth() }); } catch {}
+    localStorage.removeItem(CLAVE_SESION);
+    location.reload();
+});
+
+function mostrarUsuario(s) {
+    const chip = $('#chip-usuario');
+    chip.textContent = `${s.usuario.nombre_completo}`;
+    chip.classList.remove('d-none');
+    $('#btn-salir').classList.remove('d-none');
+}
+
+const sesion = sesionGuardada();
+if (sesion) {
+    fetch('/api/auth/me', { headers: headersAuth() }).then(r => {
+        if (r.ok) {
+            $('#login-overlay').remove();
+            return r.json();
+        }
+        localStorage.removeItem(CLAVE_SESION);
+    }).then(u => { if (u) mostrarUsuario({usuario: u}); })
+    .catch(() => { $('#login-overlay').remove(); mostrarUsuario(sesion); });
+}
+
+/* ---- Carga de catálogos ---- */
+/* Padrón de locales y mesas: primero el oficial de la ONPE (lo publica
+ * onpe-scraper al importar el archivo real) y sólo si no existe se cae a la
+ * muestra de desarrollo, para no confundir un ejemplo con el padrón. */
+async function cargarPadron() {
+    for (const ruta of ['/data/locales_mesas_arequipa.json',
+                        '/data/locales_mesas_demo.json']) {
+        try {
+            const r = await fetch(ruta);
+            if (!r.ok) continue;
+            const d = await r.json();
+            if (d && d.por_ubigeo && Object.keys(d.por_ubigeo).length) return d;
+        } catch { /* se prueba la siguiente fuente */ }
+    }
+    return null;
+}
+
+async function cargarCatalogos() {
+    const [ubigeo, locales] = await Promise.all([
+        fetch('/data/ubigeo_arequipa.json').then(r => r.json()),
+        cargarPadron(),
+    ]);
+    S.ubigeo = ubigeo;
+    S.localesDemo = locales;
+    const sel = $('#sel-provincia');
+    sel.innerHTML = ubigeo.provincias.map(p => `<option value="${p.codigo}">${p.nombre}</option>`).join('');
+    sel.dispatchEvent(new Event('change'));
+}
+
+$('#sel-provincia').addEventListener('change', e => {
+    const prov = S.ubigeo.provincias.find(p => p.codigo === e.target.value);
+    S.provincia = prov;
+    $('#sel-distrito').innerHTML = prov.distritos.map(d => `<option value="${d.ubigeo}">${d.nombre}</option>`).join('');
+    $('#sel-distrito').dispatchEvent(new Event('change'));
+});
+
+$('#sel-distrito').addEventListener('change', async e => {
+    S.distrito = e.target.value;
+    const demo = (S.localesDemo?.por_ubigeo || {})[S.distrito];
+    const locales = demo?.locales || [{ codigo: 'GEN', nombre: 'Local genérico (sin padrón)', direccion: '', mesas: ['000001','000002','000003','000004'] }];
+    $('#sel-local').innerHTML = locales.map((l, i) => `<option value="${i}">${l.codigo} · ${l.nombre}</option>`).join('');
+    S.locales = locales;
+    await cargarCandidatos();
+});
+
+$('#sel-local').addEventListener('change', e => {
+    S.local = S.locales[+e.target.value];
+    const porMesa = S.localesDemo?.electores_por_mesa_defecto || 250;
+    $('#sel-mesa').innerHTML = S.local.mesas.map(m => `<option value="${m}">${m}</option>`).join('');
+    S.mesa = $('#sel-mesa').value;
+    S.electores = porMesa;
+    construirFormulario();
+});
+
+$('#sel-mesa').addEventListener('change', e => { S.mesa = e.target.value; });
+$('#inp-electores').addEventListener('input', e => { S.electores = n(e.target.value); recalcular(); });
+
+document.querySelectorAll('#grupo-tipo input').forEach(inp => {
+    inp.addEventListener('change', async e => {
+        S.tipo = e.target.value;
+        await cargarCandidatos();
+    });
+});
+
+function rutaCandidatos() {
+    if (S.tipo === 'REGIONAL') return '/data/candidatos/regional.json';
+    if (S.tipo === 'PROVINCIAL') return `/data/candidatos/prov-${S.provincia?.ubigeo || ''}.json`;
+    return `/data/candidatos/${S.distrito || ''}.json`;
+}
+
+async function cargarCandidatos() {
+    S.candidatos = null;
+    const ruta = rutaCandidatos();
+    try {
+        const r = await fetch(ruta);
+        const ct = r.headers.get('content-type') || '';
+        if (r.ok && ct.includes('json')) S.candidatos = await r.json();
+    } catch {}
+    $('#sel-local').dispatchEvent(new Event('change'));
+}
+
+/* ---- Formulario de digitación ---- */
+function organizaciones() {
+    if (S.candidatos?.organizaciones?.length) {
+        return S.candidatos.organizaciones.map((o, i) => ({
+            key: `org-${i}`, nombre: o.organizacionPolitica,
+            logo: o.logo_url, candidatos: o.candidatos || [],
+        }));
+    }
+    return ['Agrupación 1','Agrupación 2','Agrupación 3','Agrupación 4','Agrupación 5','Agrupación 6','Agrupación 7','Agrupación 8']
+        .map((n, i) => ({ key: `gen-${i}`, nombre: n, logo: null, candidatos: [] }));
+}
+
+function inicializarColumnas() {
+    const orgs = organizaciones();
+    S.columnas = {};
+    COLUMNAS[S.tipo].forEach(col => {
+        S.columnas[col.key] = { votos: {}, blancos: 0, nulos: 0, impugnados: 0, total: 0, orgs };
+        orgs.forEach(o => { S.columnas[col.key].votos[o.key] = 0; });
+    });
+}
+
+function construirFormulario() {
+    const orgs = organizaciones();
+    if (!orgs.length) return;
+    inicializarColumnas();
+    const panel = $('#panel-digitacion');
+
+    panel.innerHTML = COLUMNAS[S.tipo].map(col => {
+        const cargos = CARGOS_POR_COLUMNA[col.key] || [];
+        const filas = orgs.map(o => {
+            const cands = (o.candidatos || []).filter(c => cargos.includes(c.cargo));
+            const nombre = cands.length ? cands[0].nombre_completo : '—';
+            return `<tr data-col="${col.key}">
+                <td style="padding:4px 8px;">
+                    <div class="d-flex align-items-center gap-1">
+                        ${o.logo ? `<img src="${o.logo}" class="org-logo" alt="" onerror="this.style.display='none'">` : ''}
+                        <div><div class="fw-semibold" style="font-size:.78rem">${o.nombre}</div>
+                        <div class="mini text-secondary">${nombre}</div></div>
+                    </div>
+                </td>
+                <td style="padding:4px 4px;width:76px;">
+                    <input type="number" min="0" inputmode="numeric" class="form-control form-control-sm num-input"
+                           data-col="${col.key}" data-org="${o.key}" value="0" style="width:68px;">
+                </td>
+            </tr>`;
+        }).join('');
+
+        return `<div class="col-head">Columna ${col.label} — ${col.titulo}</div>
+            <table class="table table-sm mb-0 digitacion" style="font-size:.82rem;">
+                <tbody>${filas}</tbody>
+                <tfoot>
+                    <tr><td class="ps-3 mini fw-semibold">Blancos</td>
+                        <td class="text-end pe-3"><input type="number" min="0" inputmode="numeric" class="form-control form-control-sm num-input" data-meta="blancos" data-col="${col.key}" value="0" style="width:68px;"></td></tr>
+                    <tr><td class="ps-3 mini fw-semibold">Nulos</td>
+                        <td class="text-end pe-3"><input type="number" min="0" inputmode="numeric" class="form-control form-control-sm num-input" data-meta="nulos" data-col="${col.key}" value="0" style="width:68px;"></td></tr>
+                    <tr><td class="ps-3 mini fw-semibold">Impugnados</td>
+                        <td class="text-end pe-3"><input type="number" min="0" inputmode="numeric" class="form-control form-control-sm num-input" data-meta="impugnados" data-col="${col.key}" value="0" style="width:68px;"></td></tr>
+                    <tr class="table-light"><td class="ps-3 mini fw-bold">TOTAL VOTANTES</td>
+                        <td class="text-end pe-3"><input type="number" min="0" inputmode="numeric" class="form-control form-control-sm num-input fw-bold" data-meta="total" data-col="${col.key}" value="0" style="width:68px;"></td></tr>
+                    <tr><td class="ps-3 mini text-secondary">Σ votos + B + N + I</td>
+                        <td class="text-end pe-3 mini"><span data-suma="${col.key}">0</span> · <span data-dif="${col.key}" class="fw-bold">ok</span></td></tr>
+                </tfoot>
+            </table>`;
+    }).join('');
+
+    panel.querySelectorAll('input').forEach(inp => inp.addEventListener('input', recalcular));
+    recalcular();
+}
+
+/* ---- Validación en tiempo real ---- */
+function leerColumnas() {
+    COLUMNAS[S.tipo].forEach(col => {
+        const c = S.columnas[col.key];
+        c.orgs.forEach(o => {
+            const inp = document.querySelector(`input[data-col="${col.key}"][data-org="${o.key}"]`);
+            c.votos[o.key] = n(inp?.value);
+        });
+        ['blancos','nulos','impugnados','total'].forEach(meta => {
+            const inp = document.querySelector(`input[data-meta="${meta}"][data-col="${col.key}"]`);
+            c[meta] = n(inp?.value);
+        });
+    });
+}
+
+function sumaColumna(col) {
+    return Object.values(col.votos).reduce((a, b) => a + b, 0) + col.blancos + col.nulos + col.impugnados;
+}
+
+function recalcular() {
+    if (!S.columnas || !Object.keys(S.columnas).length) return;
+    leerColumnas();
+
+    const principalKey = COLUMNAS[S.tipo][0].key;
+    const colPrincipal = S.columnas[principalKey];
+    const hallazgos = [];
+
+    COLUMNAS[S.tipo].forEach(col => {
+        const c = S.columnas[col.key];
+        const suma = sumaColumna(c);
+        const dif = c.total - suma;
+        const elSuma = document.querySelector(`[data-suma="${col.key}"]`);
+        const elDif = document.querySelector(`[data-dif="${col.key}"]`);
+        if (elSuma) elSuma.textContent = formatear(suma);
+        if (elDif) {
+            elDif.textContent = dif === 0 ? '✔ ok' : `${dif > 0 ? '+' : ''}${dif}`;
+            elDif.className = 'fw-bold ' + (dif === 0 ? 'estado-ok' : 'estado-mal');
+        }
+        document.querySelectorAll(`tr[data-col="${col.key}"]`).forEach(f => {
+            f.classList.toggle('fila-mal', dif !== 0);
+            f.classList.toggle('fila-ok', dif === 0 && c.total > 0);
+        });
+        if (dif !== 0) {
+            hallazgos.push({ regla: 'R1_SUMA_VOTOS', severidad: 'BLOQUEANTE',
+                mensaje: `Col.${col.label}: total (${c.total}) ≠ Σ votos+B+N+I (${suma}). Dif: ${dif > 0 ? '+' : ''}${dif}` });
+        }
+    });
+
+    if (colPrincipal && colPrincipal.total > S.electores) {
+        hallazgos.push({ regla: 'R2_TOPE_ELECTORES', severidad: 'BLOQUEANTE',
+            mensaje: `${colPrincipal.total} votantes exceden los ${S.electores} electores hábiles.` });
+    }
+
+    COLUMNAS[S.tipo].forEach(col => {
+        if (col.key === principalKey || !colPrincipal) return;
+        const c = S.columnas[col.key];
+        if (c.total && colPrincipal.total && c.total !== colPrincipal.total) {
+            hallazgos.push({ regla: 'R3_COLUMNAS_INCOHERENTES', severidad: 'ADVERTENCIA',
+                mensaje: `Col.${col.label} (${c.total}) difiere de col.A (${colPrincipal.total}).` });
+        }
+    });
+
+    const hayDatos = colPrincipal && colPrincipal.total > 0;
+    if (hayDatos && !S.foto) {
+        hallazgos.push({ regla: 'R5_FOTO_AUSENTE', severidad: 'ADVERTENCIA',
+            mensaje: 'Falta la foto del acta como evidencia.' });
+    }
+    if (S.fotoRepetida) {
+        hallazgos.push({ regla: 'R4_ACTA_DUPLICADA', severidad: 'BLOQUEANTE',
+            mensaje: 'Esta foto ya fue usada en otra acta.' });
+    }
+
+    const bloqueantes = hallazgos.filter(h => h.severidad === 'BLOQUEANTE');
+    S.hallazgos = hallazgos;
+
+    if (colPrincipal) {
+        const suma = sumaColumna(colPrincipal);
+        const dif = colPrincipal.total - suma;
+        const consistente = dif === 0 && hayDatos;
+        const puedeEnviar = bloqueantes.length === 0 && consistente && !!S.mesa;
+
+        $('#suma-acta').textContent = `Σ=${formatear(suma)} vs Total=${formatear(colPrincipal.total)}`;
+        $('#m-columna').textContent = COLUMNAS[S.tipo][0].titulo;
+        $('#m-total').textContent = formatear(colPrincipal.total);
+        $('#m-participacion').textContent = S.electores
+            ? (100 * colPrincipal.total / S.electores).toFixed(1) + '%' : '0%';
+
+        const punto = $('#punto-estado');
+        const texto = $('#texto-estado');
+        if (!hayDatos) {
+            punto.style.background = '#98A2B3';
+            texto.textContent = 'Complete el acta';
+            texto.className = 'fw-bold text-secondary';
+        } else if (consistente && puedeEnviar) {
+            punto.style.background = '#12B76A';
+            texto.textContent = '✔ ACTA CONSISTENTE (Cuadre Correcto)';
+            texto.className = 'fw-bold estado-ok';
+        } else if (bloqueantes.length) {
+            punto.style.background = '#F04438';
+            texto.textContent = `✘ INCONSISTENTE — ${bloqueantes.length} bloqueante(s)`;
+            texto.className = 'fw-bold estado-mal';
+        } else {
+            punto.style.background = '#F79009';
+            texto.textContent = '⚠ Con advertencias';
+            texto.className = 'fw-bold';
+        }
+        $('#btn-enviar').disabled = !puedeEnviar;
+    }
+    renderHallazgos();
+}
+
+function renderHallazgos() {
+    const cont = $('#lista-hallazgos');
+    if (!S.hallazgos.length) {
+        const p = S.columnas[COLUMNAS[S.tipo][0].key];
+        cont.innerHTML = p && p.total > 0
+            ? '<span class="estado-ok fw-semibold">✔ ACTA CONSISTENTE — La suma cuadra correctamente.</span>'
+            : '<span class="text-secondary">Digite los votos del acta para validarla.</span>';
+        return;
+    }
+    cont.innerHTML = S.hallazgos.map(h => {
+        const color = h.severidad === 'BLOQUEANTE' ? 'danger' : 'warning';
+        return `<div class="d-flex gap-1 mb-1"><span class="badge text-bg-${color}" style="font-size:.65rem;">${h.regla}</span><span>${h.mensaje}</span></div>`;
+    }).join('');
+}
+
+/* ---- Foto ---- */
+$('#btn-camara').addEventListener('click', () => $('#inp-foto').click());
+$('#inp-foto').addEventListener('change', async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    S.foto = file;
+    const buf = await file.arrayBuffer();
+    const digest = await crypto.subtle.digest('SHA-256', buf);
+    S.fotoHash = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2,'0')).join('');
+    const usados = JSON.parse(localStorage.getItem('hashes_actas') || '[]');
+    S.fotoRepetida = usados.includes(S.fotoHash);
+    $('#hash-foto').textContent = S.fotoHash;
+    $('#aviso-hash').innerHTML = S.fotoRepetida
+        ? '<span class="estado-mal fw-bold">Ya registrada en otra acta (R4).</span>'
+        : '<span class="estado-ok">Evidencia nueva.</span>';
+    $('#img-foto').src = URL.createObjectURL(file);
+    $('#preview-foto').classList.remove('d-none');
+    $('#badge-foto').textContent = 'Foto adjunta';
+    $('#badge-foto').className = 'badge text-bg-success mini';
+    $('#btn-quitar-foto').disabled = false;
+    recalcular();
+});
+$('#btn-quitar-foto').addEventListener('click', () => {
+    S.foto = null; S.fotoHash = null; S.fotoRepetida = false;
+    $('#inp-foto').value = '';
+    $('#preview-foto').classList.add('d-none');
+    $('#badge-foto').textContent = 'Sin foto';
+    $('#badge-foto').className = 'badge text-bg-light mini';
+    $('#btn-quitar-foto').disabled = true;
+    recalcular();
+});
+
+/* ---- Envío al servidor ---- */
+$('#btn-validar-server').addEventListener('click', async () => {
+    const badge = $('#badge-servidor');
+    badge.className = 'badge bg-secondary mini';
+    badge.textContent = 'validando…';
+    try {
+        const body = {
+            tipo_eleccion: S.tipo, electores_habiles: S.electores || 1,
+            numero_mesa: S.mesa, foto_presente: !!S.foto, foto_repetida: !!S.fotoRepetida,
+            columnas: COLUMNAS[S.tipo].map(col => {
+                const c = S.columnas[col.key];
+                return { columna: col.key,
+                    votos: Object.fromEntries(c.orgs.map(o => [o.nombre, c.votos[o.key] || 0])),
+                    votos_blancos: c.blancos, votos_nulos: c.nulos,
+                    votos_impugnados: c.impugnados, total_votantes: c.total };
+            }),
+        };
+        const r = await fetch('/api/actas/validar', {
+            method: 'POST', headers: headersAuth(), body: JSON.stringify(body),
+        });
+        if (r.status === 401) { localStorage.removeItem(CLAVE_SESION); location.reload(); return; }
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        badge.className = 'badge mini ' + (data.puede_enviar ? 'text-bg-success' : 'text-bg-danger');
+        badge.textContent = data.puede_enviar ? 'consistente' : 'bloqueado';
+    } catch {
+        badge.className = 'badge text-bg-warning mini';
+        badge.textContent = 'offline (reglas locales)';
+    }
+});
+
+$('#btn-enviar').addEventListener('click', async () => {
+    const clave = `acta:${S.tipo}:${S.distrito}:${S.mesa}`;
+    const registro = {
+        tipo_eleccion: S.tipo, electores_habiles: S.electores,
+        numero_mesa: S.mesa, local: S.local?.nombre,
+        foto_hash: S.fotoHash, registrado_at: new Date().toISOString(),
+        hallazgos: S.hallazgos,
+        columnas: COLUMNAS[S.tipo].map(col => {
+            const c = S.columnas[col.key];
+            return { columna: col.key,
+                votos: Object.fromEntries(c.orgs.map(o => [o.nombre, c.votos[o.key] || 0])),
+                votos_blancos: c.blancos, votos_nulos: c.nulos,
+                votos_impugnados: c.impugnados, total_votantes: c.total };
+        }),
+    };
+    localStorage.setItem(clave, JSON.stringify(registro));
+    if (S.fotoHash) {
+        const usados = JSON.parse(localStorage.getItem('hashes_actas') || '[]');
+        if (!usados.includes(S.fotoHash)) {
+            usados.push(S.fotoHash);
+            localStorage.setItem('hashes_actas', JSON.stringify(usados));
+        }
+    }
+    const cola = JSON.parse(localStorage.getItem('cola_actas') || '[]');
+    if (!cola.includes(clave)) cola.push(clave);
+    localStorage.setItem('cola_actas', JSON.stringify(cola));
+    mostrarCola();
+
+    try {
+        const r = await fetch('/api/actas/movil', {
+            method: 'POST', headers: headersAuth(),
+            body: JSON.stringify({
+                tipo_eleccion: S.tipo, numero_mesa: S.mesa, electores_habiles: S.electores,
+                local: S.local?.nombre, foto_hash: S.fotoHash,
+                columnas: COLUMNAS[S.tipo].map(col => {
+                    const c = S.columnas[col.key];
+                    return { columna: col.key,
+                        votos: Object.fromEntries(c.orgs.map(o => [o.nombre, c.votos[o.key] || 0])),
+                        votos_blancos: c.blancos, votos_nulos: c.nulos,
+                        votos_impugnados: c.impugnados, total_votantes: c.total };
+                }),
+            }),
+        });
+        if (r.status === 401) { localStorage.removeItem(CLAVE_SESION); location.reload(); return; }
+        if (r.ok) {
+            const data = await r.json();
+            $('#cola-info').innerHTML = `<span class="estado-ok fw-semibold">Contabilizada (acta #${data.acta_id})</span>`;
+        } else if (r.status === 409) {
+            const detalle = await r.json();
+            const lista = (detalle.detail?.hallazgos || []).map(h => `<div class="mini">· ${h.regla}: ${h.mensaje}</div>`).join('');
+            $('#cola-info').innerHTML = `<span class="estado-mal fw-semibold">OBSERVADA en servidor</span>${lista}`;
+        } else {
+            $('#cola-info').innerHTML = '<span class="text-secondary">Guardada localmente; sincronizará al recuperar conexión.</span>';
+        }
+    } catch {
+        $('#cola-info').innerHTML = '<span class="text-secondary">Guardada localmente; sincronizará al recuperar conexión.</span>';
+    }
+});
+
+function mostrarCola() {
+    const cola = JSON.parse(localStorage.getItem('cola_actas') || '[]');
+    if (cola.length) {
+        $('#cola-info').innerHTML = `<span class="text-secondary">${cola.length} acta(s) en cola local.</span>`;
+    }
+}
+
+$('#btn-limpiar').addEventListener('click', () => { construirFormulario(); $('#btn-enviar').disabled = true; });
+
+/* ---- Inicio ---- */
+(async function init() {
+    await cargarCatalogos();
+    mostrarCola();
+})();
+</script>
+</body>
+</html>

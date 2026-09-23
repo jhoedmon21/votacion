@@ -1,0 +1,316 @@
+{
+  "jornada": {
+    "fecha": "2026-10-04",
+    "departamento": "AREQUIPA",
+    "ubigeo_departamento": "040000",
+    "generada_en": "2026-08-20T04:00:00Z",
+    "fuentes": [
+      {
+        "organismo": "JNE",
+        "bloque": "NOMINA",
+        "fecha_extraccion": "2026-08-19T23:12:41Z"
+      },
+      {
+        "organismo": "ONPE",
+        "bloque": "DISTRIBUCION",
+        "fecha_extraccion": "2026-08-18T15:30:00Z"
+      }
+    ]
+  },
+  "nomina": {
+    "ambitos": [
+      {
+        "tipo_eleccion": "REGIONAL",
+        "ubigeo": "040000",
+        "provincia": null,
+        "distrito": null,
+        "organizaciones": [
+          {
+            "numero": 1,
+            "organizacionPolitica": "AHORA NACION - AN",
+            "idOrganizacionPolitica": 4,
+            "tipo": "MOVIMIENTO_REGIONAL",
+            "logo_url": "https://jne.gob.pe/media/partidos/ahora_nacion.jpg",
+            "color_hex": "#c8102e",
+            "candidatos": [
+              {
+                "numero": 1,
+                "dni": "29460883",
+                "nombres": "ROQUE",
+                "apellidos": "LAZARTE LINA",
+                "nombre_completo": "ROQUE LAZARTE LINA",
+                "cargo": "GOBERNADOR",
+                "estado": "INSCRITO",
+                "foto_url": "https://jne.gob.pe/media/candidatos/candidato_29460883.jpg"
+              },
+              {
+                "numero": 2,
+                "dni": "29521830",
+                "nombres": "MIRIAM",
+                "apellidos": "HURTADO LARIOS",
+                "nombre_completo": "MIRIAM HURTADO LARIOS",
+                "cargo": "VICE_GOBERNADOR",
+                "estado": "INSCRITO"
+              },
+              {
+                "numero": 3,
+                "dni": "29567890",
+                "nombres": "CARLOS",
+                "apellidos": "QUISPE MAMANI",
+                "nombre_completo": "CARLOS QUISPE MAMANI",
+                "cargo": "CONSEJERO_REGIONAL",
+                "estado": "INSCRITO"
+              }
+            ]
+          },
+          {
+            "numero": 2,
+            "organizacionPolitica": "ACCION POPULAR",
+            "idOrganizacionPolitica": 2,
+            "tipo": "PARTIDO_NACIONAL",
+            "logo_url": "https://jne.gob.pe/media/partidos/accion_popular.jpg",
+            "color_hex": "#0033a0",
+            "candidatos": [
+              {
+                "numero": 1,
+                "dni": "29600123",
+                "nombres": "LUIS",
+                "apellidos": "VALDIVIA CALLE",
+                "nombre_completo": "LUIS VALDIVIA CALLE",
+                "cargo": "GOBERNADOR",
+                "estado": "INSCRITO"
+              }
+            ]
+          },
+          {
+            "numero": 3,
+            "organizacionPolitica": "FUERZA AREQUIPEÑA",
+            "idOrganizacionPolitica": 11,
+            "tipo": "MOVIMIENTO_REGIONAL",
+            "logo_url": "https://jne.gob.pe/media/partidos/fuerza_arequipena.jpg",
+            "color_hex": "#f28c00",
+            "candidatos": [
+              {
+                "numero": 1,
+                "dni": "29611567",
+                "nombres": "MARTHA",
+                "apellidos": "BARRIGA NEYRA",
+                "nombre_completo": "MARTHA BARRIGA NEYRA",
+                "cargo": "GOBERNADOR",
+                "estado": "INSCRITO"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tipo_eleccion": "PROVINCIAL",
+        "ubigeo": "040100",
+        "provincia": "AREQUIPA",
+        "distrito": null,
+        "organizaciones": [
+          {
+            "numero": 1,
+            "organizacionPolitica": "AHORA NACION - AN",
+            "idOrganizacionPolitica": 4,
+            "tipo": "MOVIMIENTO_REGIONAL",
+            "logo_url": "https://jne.gob.pe/media/partidos/ahora_nacion.jpg",
+            "color_hex": "#c8102e",
+            "candidatos": [
+              {
+                "numero": 1,
+                "dni": "29460883",
+                "nombres": "ROQUE",
+                "apellidos": "LAZARTE LINA",
+                "nombre_completo": "ROQUE LAZARTE LINA",
+                "cargo": "ALCALDE_PROVINCIAL",
+                "estado": "INSCRITO"
+              },
+              {
+                "numero": 2,
+                "dni": "29700111",
+                "nombres": "SOFIA",
+                "apellidos": "RIVERA TICONA",
+                "nombre_completo": "SOFIA RIVERA TICONA",
+                "cargo": "REGIDOR_PROVINCIAL",
+                "estado": "INSCRITO"
+              }
+            ]
+          },
+          {
+            "numero": 2,
+            "organizacionPolitica": "ACCION POPULAR",
+            "idOrganizacionPolitica": 2,
+            "tipo": "PARTIDO_NACIONAL",
+            "logo_url": "https://jne.gob.pe/media/partidos/accion_popular.jpg",
+            "color_hex": "#0033a0",
+            "candidatos": [
+              {
+                "numero": 1,
+                "dni": "29600123",
+                "nombres": "LUIS",
+                "apellidos": "VALDIVIA CALLE",
+                "nombre_completo": "LUIS VALDIVIA CALLE",
+                "cargo": "ALCALDE_PROVINCIAL",
+                "estado": "INSCRITO"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tipo_eleccion": "DISTRITAL",
+        "ubigeo": "040112",
+        "ubigeo_reniec": "040109",
+        "provincia": "AREQUIPA",
+        "distrito": "PAUCARPATA",
+        "organizaciones": [
+          {
+            "numero": 1,
+            "organizacionPolitica": "AHORA NACION - AN",
+            "idOrganizacionPolitica": 4,
+            "tipo": "MOVIMIENTO_REGIONAL",
+            "logo_url": "https://jne.gob.pe/media/partidos/ahora_nacion.jpg",
+            "color_hex": "#c8102e",
+            "candidatos": [
+              {
+                "numero": 1,
+                "dni": "29460883",
+                "nombres": "ROQUE",
+                "apellidos": "LAZARTE LINA",
+                "nombre_completo": "ROQUE LAZARTE LINA",
+                "cargo": "ALCALDE_DISTRITAL",
+                "estado": "INSCRITO"
+              },
+              {
+                "numero": 2,
+                "dni": "29800222",
+                "nombres": "PEDRO",
+                "apellidos": "CCAMA ZUÑIGA",
+                "nombre_completo": "PEDRO CCAMA ZUÑIGA",
+                "cargo": "REGIDOR_DISTRITAL",
+                "estado": "INSCRITO"
+              }
+            ]
+          },
+          {
+            "numero": 2,
+            "organizacionPolitica": "ACCION POPULAR",
+            "idOrganizacionPolitica": 2,
+            "tipo": "PARTIDO_NACIONAL",
+            "logo_url": "https://jne.gob.pe/media/partidos/accion_popular.jpg",
+            "color_hex": "#0033a0",
+            "candidatos": [
+              {
+                "numero": 1,
+                "dni": "29600123",
+                "nombres": "LUIS",
+                "apellidos": "VALDIVIA CALLE",
+                "nombre_completo": "LUIS VALDIVIA CALLE",
+                "cargo": "ALCALDE_DISTRITAL",
+                "estado": "INSCRITO"
+              },
+              {
+                "numero": 2,
+                "dni": "29800333",
+                "nombres": "ANA",
+                "apellidos": "SILVA ROJAS",
+                "nombre_completo": "ANA SILVA ROJAS",
+                "cargo": "REGIDOR_DISTRITAL",
+                "estado": "INSCRITO"
+              }
+            ]
+          },
+          {
+            "numero": 3,
+            "organizacionPolitica": "FUERZA AREQUIPEÑA",
+            "idOrganizacionPolitica": 11,
+            "tipo": "MOVIMIENTO_REGIONAL",
+            "logo_url": "https://jne.gob.pe/media/partidos/fuerza_arequipena.jpg",
+            "color_hex": "#f28c00",
+            "candidatos": [
+              {
+                "numero": 1,
+                "dni": "29611567",
+                "nombres": "MARTHA",
+                "apellidos": "BARRIGA NEYRA",
+                "nombre_completo": "MARTHA BARRIGA NEYRA",
+                "cargo": "ALCALDE_DISTRITAL",
+                "estado": "INSCRITO"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "distribucion": {
+    "locales": [
+      {
+        "codigo_local": "023001",
+        "ubigeo": "040112",
+        "nombre": "I.E. Manuel Veramendi",
+        "direccion": "Av. Arequipa 123, Paucarpata",
+        "referencia": "A 2 cuadras de la plaza",
+        "latitud": -16.432778,
+        "longitud": -71.504722,
+        "mesas": [
+          {
+            "numero_mesa": "023001",
+            "electores_habiles": 250,
+            "pabellon": "A",
+            "piso": "1",
+            "numero_orden": 1
+          },
+          {
+            "numero_mesa": "023002",
+            "electores_habiles": 250,
+            "pabellon": "A",
+            "piso": "1",
+            "numero_orden": 2
+          },
+          {
+            "numero_mesa": "023003",
+            "electores_habiles": 250,
+            "pabellon": "B",
+            "piso": "1",
+            "numero_orden": 3
+          },
+          {
+            "numero_mesa": "023004",
+            "electores_habiles": 250,
+            "pabellon": "B",
+            "piso": "1",
+            "numero_orden": 4
+          }
+        ]
+      },
+      {
+        "codigo_local": "023002",
+        "ubigeo": "040112",
+        "nombre": "I.E. Teobaldo Paredes",
+        "direccion": "Calle Grau 456, Paucarpata",
+        "referencia": null,
+        "latitud": -16.441100,
+        "longitud": -71.523300,
+        "mesas": [
+          {
+            "numero_mesa": "023005",
+            "electores_habiles": 250,
+            "pabellon": "A",
+            "piso": "1",
+            "numero_orden": 1
+          },
+          {
+            "numero_mesa": "023006",
+            "electores_habiles": 250,
+            "pabellon": "A",
+            "piso": "2",
+            "numero_orden": 2
+          }
+        ]
+      }
+    ]
+  },
+  "nota": "Documento ILUSTRATIVO de estructura (basado en el formato público de la API del JNE/ONPE); los nombres de candidatos y organizaciones NO son datos oficiales. En producción lo genera el crawler (jne-scraper/crawler_arequipa.py + onpe-scraper/crawler_locales_mesas.py) y lo consume POST /api/ingesta/jornada."
+}

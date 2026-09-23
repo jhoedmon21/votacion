@@ -1,0 +1,88 @@
+{
+  "nota": "Locales y mesas de DEMOSTRACIÓN para el formulario móvil. En producción esta data viene del padrón oficial de la ONPE (tablas locales_votacion y mesas). Las mesas se numeran de 6 dígitos y se asume 250 electores hábiles por mesa para poder probar el tope del padrón (R2).",
+  "electores_por_mesa_defecto": 250,
+  "por_ubigeo": {
+    "040112": {
+      "distrito": "PAUCARPATA",
+      "locales": [
+        {
+          "codigo": "023001",
+          "nombre": "I.E. Manuel Veramendi",
+          "direccion": "Av. Arequipa 123, Paucarpata",
+          "mesas": ["023001", "023002", "023003", "023004"]
+        },
+        {
+          "codigo": "023005",
+          "nombre": "I.E. Teobaldo Paredes",
+          "direccion": "Calle Grau 456, Paucarpata",
+          "mesas": ["023005", "023006", "023007", "023008"]
+        },
+        {
+          "codigo": "023009",
+          "nombre": "I.E. Campo Marte",
+          "direccion": "Av. Campo Marte 789, Paucarpata",
+          "mesas": ["023009", "023010", "023011", "023012"]
+        }
+      ]
+    },
+    "040126": {
+      "distrito": "YANAHUARA",
+      "locales": [
+        {
+          "codigo": "023101",
+          "nombre": "I.E. San José",
+          "direccion": "Calle San José 111, Yanahuara",
+          "mesas": ["023101", "023102", "023103", "023104"]
+        }
+      ]
+    },
+    "040101": {
+      "distrito": "AREQUIPA",
+      "locales": [
+        { "codigo": "024001", "nombre": "I.E. Independencia Americana", "direccion": "Av. Independencia, Arequipa", "mesas": ["024001", "024002", "024003", "024004"] }
+      ]
+    },
+    "040201": {
+      "distrito": "CAMANA",
+      "locales": [
+        { "codigo": "025001", "nombre": "I.E. San Martín de Socabaya", "direccion": "Camana", "mesas": ["025001", "025002", "025003", "025004"] }
+      ]
+    },
+    "040301": {
+      "distrito": "CARAVELI",
+      "locales": [
+        { "codigo": "026001", "nombre": "I.E. José Carlos Mariátegui", "direccion": "Caravelí", "mesas": ["026001", "026002", "026003", "026004"] }
+      ]
+    },
+    "040401": {
+      "distrito": "APLAO",
+      "locales": [
+        { "codigo": "027001", "nombre": "I.E. Miguel Grau", "direccion": "Aplao, Castilla", "mesas": ["027001", "027002", "027003", "027004"] }
+      ]
+    },
+    "040501": {
+      "distrito": "CHIVAY",
+      "locales": [
+        { "codigo": "028001", "nombre": "I.E. Coronel Francisco Bolognesi", "direccion": "Chivay, Caylloma", "mesas": ["028001", "028002", "028003", "028004"] }
+      ]
+    },
+    "040601": {
+      "distrito": "CHUQUIBAMBA",
+      "locales": [
+        { "codigo": "029001", "nombre": "I.E. Sagrado Corazón de Jesús", "direccion": "Chuquibamba, Condesuyos", "mesas": ["029001", "029002", "029003", "029004"] }
+      ]
+    },
+    "040701": {
+      "distrito": "MOLLENDO",
+      "locales": [
+        { "codigo": "030001", "nombre": "I.E. Dean Valdivia", "direccion": "Mollendo, Islay", "mesas": ["030001", "030002", "030003", "030004"] }
+      ]
+    },
+    "040801": {
+      "distrito": "COTAHUASI",
+      "locales": [
+        { "codigo": "031001", "nombre": "I.E. Nuestra Señora del Carmen", "direccion": "Cotahuasi, La Unión", "mesas": ["031001", "031002", "031003", "031004"] }
+      ]
+    }
+  }
+}

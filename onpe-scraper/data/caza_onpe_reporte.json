@@ -1,0 +1,769 @@
+{
+ "generado_en": "2026-09-18T04:10:22.832352+00:00",
+ "enfoque": "a",
+ "distritos": [
+  {
+   "ubigeo": "040101",
+   "distrito": "AREQUIPA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040102",
+   "distrito": "ALTO SELVA ALEGRE",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040103",
+   "distrito": "CAYMA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040104",
+   "distrito": "CERRO COLORADO",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040105",
+   "distrito": "CHARACATO",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040106",
+   "distrito": "CHIGUATA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040107",
+   "distrito": "JACOBO HUNTER",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040108",
+   "distrito": "LA JOYA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040109",
+   "distrito": "MARIANO MELGAR",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040110",
+   "distrito": "MIRAFLORES",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040111",
+   "distrito": "MOLLEBAYA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040112",
+   "distrito": "PAUCARPATA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040113",
+   "distrito": "POCSI",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040114",
+   "distrito": "POLOBAYA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040115",
+   "distrito": "QUEQUEÑA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040116",
+   "distrito": "SABANDIA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040117",
+   "distrito": "SACHACA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040118",
+   "distrito": "SAN JUAN DE SIGUAS",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040119",
+   "distrito": "SAN JUAN DE TARUCANI",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040120",
+   "distrito": "SANTA ISABEL DE SIGUAS",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040121",
+   "distrito": "SANTA RITA DE SIGUAS",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040122",
+   "distrito": "SOCABAYA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040123",
+   "distrito": "TIABAYA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040124",
+   "distrito": "UCHUMAYO",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040125",
+   "distrito": "VITOR",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040126",
+   "distrito": "YANAHUARA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040127",
+   "distrito": "YARABAMBA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040128",
+   "distrito": "YURA",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040129",
+   "distrito": "JOSE LUIS BUSTAMANTE Y RIVERO",
+   "provincia": "AREQUIPA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040201",
+   "distrito": "CAMANA",
+   "provincia": "CAMANA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040202",
+   "distrito": "JOSE MARIA QUIMPER",
+   "provincia": "CAMANA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040203",
+   "distrito": "MARIANO NICOLAS VALCARCEL",
+   "provincia": "CAMANA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040204",
+   "distrito": "MARISCAL CACERES",
+   "provincia": "CAMANA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040205",
+   "distrito": "NICOLAS DE PIEROLA",
+   "provincia": "CAMANA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040206",
+   "distrito": "OCOÑA",
+   "provincia": "CAMANA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040207",
+   "distrito": "QUILCA",
+   "provincia": "CAMANA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040208",
+   "distrito": "SAMUEL PASTOR",
+   "provincia": "CAMANA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040301",
+   "distrito": "CARAVELI",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040302",
+   "distrito": "ACARI",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040303",
+   "distrito": "ATICO",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040304",
+   "distrito": "ATIQUIPA",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040305",
+   "distrito": "BELLA UNION",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040306",
+   "distrito": "CAHUACHO",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040307",
+   "distrito": "CHALA",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040308",
+   "distrito": "CHAPARRA",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040309",
+   "distrito": "HUANUHUANU",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040310",
+   "distrito": "JAQUI",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040311",
+   "distrito": "LOMAS",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040312",
+   "distrito": "QUICACHA",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040313",
+   "distrito": "YAUCA",
+   "provincia": "CARAVELI",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040401",
+   "distrito": "APLAO",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040402",
+   "distrito": "ANDAGUA",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040403",
+   "distrito": "AYO",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040404",
+   "distrito": "CHACHAS",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040405",
+   "distrito": "CHILCAYMARCA",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040406",
+   "distrito": "CHOCO",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040407",
+   "distrito": "HUANCARQUI",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040408",
+   "distrito": "MACHAGUAY",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040409",
+   "distrito": "ORCOPAMPA",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040410",
+   "distrito": "PAMPACOLCA",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040411",
+   "distrito": "TIPAN",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040412",
+   "distrito": "UÑON",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040413",
+   "distrito": "URACA",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040414",
+   "distrito": "VIRACO",
+   "provincia": "CASTILLA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040501",
+   "distrito": "CHIVAY",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040502",
+   "distrito": "ACHOMA",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040503",
+   "distrito": "CABANACONDE",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040504",
+   "distrito": "CALLALLI",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040505",
+   "distrito": "CAYLLOMA",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040506",
+   "distrito": "COPORAQUE",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040507",
+   "distrito": "HUAMBO",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040508",
+   "distrito": "HUANCA",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040509",
+   "distrito": "ICHUPAMPA",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040510",
+   "distrito": "LARI",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040511",
+   "distrito": "LLUTA",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040512",
+   "distrito": "MACA",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040513",
+   "distrito": "MADRIGAL",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040514",
+   "distrito": "SAN ANTONIO DE CHUCA",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040515",
+   "distrito": "SIBAYO",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040516",
+   "distrito": "TAPAY",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040517",
+   "distrito": "TISCO",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040518",
+   "distrito": "TUTI",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040519",
+   "distrito": "YANQUE",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040520",
+   "distrito": "MAJES",
+   "provincia": "CAYLLOMA",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040601",
+   "distrito": "CHUQUIBAMBA",
+   "provincia": "CONDESUYOS",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040602",
+   "distrito": "ANDARAY",
+   "provincia": "CONDESUYOS",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040603",
+   "distrito": "CAYARANI",
+   "provincia": "CONDESUYOS",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040604",
+   "distrito": "CHICHAS",
+   "provincia": "CONDESUYOS",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040605",
+   "distrito": "IRAY",
+   "provincia": "CONDESUYOS",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040606",
+   "distrito": "RIO GRANDE",
+   "provincia": "CONDESUYOS",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040607",
+   "distrito": "SALAMANCA",
+   "provincia": "CONDESUYOS",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040608",
+   "distrito": "YANAQUIHUA",
+   "provincia": "CONDESUYOS",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040701",
+   "distrito": "MOLLENDO",
+   "provincia": "ISLAY",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040702",
+   "distrito": "COCACHACRA",
+   "provincia": "ISLAY",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040703",
+   "distrito": "DEAN VALDIVIA",
+   "provincia": "ISLAY",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040704",
+   "distrito": "ISLAY",
+   "provincia": "ISLAY",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040705",
+   "distrito": "MEJIA",
+   "provincia": "ISLAY",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040706",
+   "distrito": "PUNTA DE BOMBON",
+   "provincia": "ISLAY",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040801",
+   "distrito": "COTAHUASI",
+   "provincia": "LA UNION",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040802",
+   "distrito": "ALCA",
+   "provincia": "LA UNION",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040803",
+   "distrito": "CHARCANA",
+   "provincia": "LA UNION",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040804",
+   "distrito": "HUAYNACOTAS",
+   "provincia": "LA UNION",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040805",
+   "distrito": "PAMPAMARCA",
+   "provincia": "LA UNION",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040806",
+   "distrito": "PUYCA",
+   "provincia": "LA UNION",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040807",
+   "distrito": "QUECHUALLA",
+   "provincia": "LA UNION",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040808",
+   "distrito": "SAYLA",
+   "provincia": "LA UNION",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040809",
+   "distrito": "TAURIA",
+   "provincia": "LA UNION",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040810",
+   "distrito": "TOMEPAMPA",
+   "provincia": "LA UNION",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  },
+  {
+   "ubigeo": "040811",
+   "distrito": "TORO",
+   "provincia": "LA UNION",
+   "estado": "pendiente-fuente",
+   "detalle": "sin endpoint bulk configurado"
+  }
+ ]
+}

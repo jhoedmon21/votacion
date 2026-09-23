@@ -1,0 +1,168 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://computoarequipa.gob.pe/schemas/plantilla-acta-v1.json",
+  "title": "Plantilla dinámica de acta — contrato API ↔ formulario",
+  "description": "Lo que responde GET /api/actas/plantilla?numero_mesa=XXXXXX. Consolida la oferta oficial (del crawler ONPE/JNE) con los datos de la mesa para que el formulario de captura pinte el acta digital de los tres niveles sin hardcodear candidatos. El orden de organizaciones = orden físico de la columna del acta física.",
+  "type": "object",
+  "required": ["numero_mesa", "local", "ubigeo_distrito", "electores_habiles", "elecciones", "generada_en"],
+  "additionalProperties": false,
+  "properties": {
+    "numero_mesa": {
+      "type": "string",
+      "pattern": "^[0-9]{6}$",
+      "description": "Mesa consultada (6 dígitos, ceros a la izquierda preservados)."
+    },
+    "local": {
+      "type": "object",
+      "required": ["id", "nombre", "direccion", "latitud", "longitud"],
+      "properties": {
+        "id": { "type": "integer" },
+        "nombre": { "type": "string" },
+        "direccion": { "type": ["string", "null"] },
+        "pabellon": { "type": ["string", "null"] },
+        "piso": { "type": ["string", "null"] },
+        "latitud": { "type": ["number", "null"] },
+        "longitud": { "type": ["number", "null"] }
+      }
+    },
+    "ubigeo_distrito": {
+      "type": "string",
+      "pattern": "^[0-9]{6}$",
+      "description": "Ubigeo INEI del distrito del local: resuelve el alcance de las elecciones DISTRITAL."
+    },
+    "electores_habiles": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Electores hábiles de la mesa (padrón ONPE): tope para la regla R2."
+    },
+    "acta_existente": {
+      "description": "Acta previa de esta mesa, si la hay (idempotencia de la cola offline: el reintento devuelve la existente en lugar de duplicar).",
+      "oneOf": [{ "$ref": "#/definitions/actaExistente" }, { "type": "null" }]
+    },
+    "elecciones": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "description": "Las tres elecciones concurrentes de la jornada, cada una con su oferta oficial consolidada.",
+      "items": { "$ref": "#/definitions/eleccion" }
+    },
+    "generada_en": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp de generación de la plantilla (UTC)."
+    }
+  },
+  "definitions": {
+    "eleccion": {
+      "type": "object",
+      "required": ["tipo_eleccion", "columnas"],
+      "properties": {
+        "tipo_eleccion": {
+          "type": "string",
+          "enum": ["REGIONAL", "PROVINCIAL", "DISTRITAL"]
+        },
+        "cargos": {
+          "type": "string",
+          "description": "Etiqueta humana para el encabezado del formulario.",
+          "examples": ["Gobernador Regional y Vice", "Alcalde Provincial de Arequipa", "Alcalde Distrital de Paucarpata"]
+        },
+        "columnas": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "description": "Columnas del acta física: A (ALCALDE o GOBERNADOR_VICE) y B (REGIDORES o CONSEJEROS). Cada columna tiene su propio cómputo de blancos/nulos/impugnados/total en el papel.",
+          "items": { "$ref": "#/definitions/columna" }
+        }
+      }
+    },
+    "columna": {
+      "type": "object",
+      "required": ["columna", "etiqueta", "organizaciones"],
+      "properties": {
+        "columna": {
+          "type": "string",
+          "enum": ["ALCALDE", "REGIDORES", "GOBERNADOR_VICE", "CONSEJEROS"]
+        },
+        "etiqueta": {
+          "type": "string",
+          "description": "Encabezado de la columna en el papel.",
+          "examples": ["ALCALDE", "REGIDORES", "GOBERNADOR Y VICEGOBERNADOR REGIONAL", "CONSEJEROS REGIONALES"]
+        },
+        "es_principal": {
+          "type": "boolean",
+          "description": "La columna principal define el cómputo del cargo principal (lo que muestra el dashboard)."
+        },
+        "total_votantes_papel": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Total de votantes escrito en el papel para esta columna (el personero lo digita)."
+        },
+        "votos_blancos": { "type": ["integer", "null"], "minimum": 0 },
+        "votos_nulos": { "type": ["integer", "null"], "minimum": 0 },
+        "votos_impugnados": { "type": ["integer", "null"], "minimum": 0 },
+        "organizaciones": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Organizaciones en el orden del acta. numero = posición en la columna.",
+          "items": { "$ref": "#/definitions/organizacionColumna" }
+        }
+      }
+    },
+    "organizacionColumna": {
+      "type": "object",
+      "required": ["numero", "organizacion_id", "nombre", "votos"],
+      "properties": {
+        "numero": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Número de la organización en el acta (fila de la columna)."
+        },
+        "organizacion_id": {
+          "type": "integer",
+          "description": "FK a organizaciones_politicas: lo envía el formulario en detalle_votos."
+        },
+        "nombre": { "type": "string" },
+        "logo_url": { "type": ["string", "null"] },
+        "color": {
+          "type": ["string", "null"],
+          "description": "Color institucional para el dashboard (hex)."
+        },
+        "candidatos": {
+          "type": "array",
+          "description": "Personas que encabeza la organización en esta columna (alcalde, o lista de regidores).",
+          "items": {
+            "type": "object",
+            "required": ["nombre_completo"],
+            "properties": {
+              "nombre_completo": { "type": "string" },
+              "cargo": { "type": "string" },
+              "foto_url": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "votos": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Votos digitados para esta organización. NULL = aún no digitado (el formulario usa null para distinguir vacío de cero)."
+        }
+      }
+    },
+    "actaExistente": {
+      "type": "object",
+      "required": ["id", "estado"],
+      "properties": {
+        "id": { "type": "integer" },
+        "estado": {
+          "type": "string",
+          "enum": ["PENDIENTE", "DIGITADA", "OBSERVADA", "CONTABILIZADA", "ANULADA"]
+        },
+        "digitada_por": { "type": ["string", "null"] },
+        "created_at": { "type": "string", "format": "date-time" },
+        "editable": {
+          "type": "boolean",
+          "description": "false si el usuario actual no puede editarla (estado CONTABILIZADA, o fuera de su alcance)."
+        }
+      }
+    }
+  }
+}

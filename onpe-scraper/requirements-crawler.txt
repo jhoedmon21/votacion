@@ -1,0 +1,16 @@
+# Dependencias del crawler de locales de votación y mesas de la ONPE.
+#
+# El portal de consulta (consultaelectoral.onpe.gob.pe) está detrás de AWS WAF
+# con challenge de JavaScript, así que --descubrir necesita un navegador real
+# que resuelva el reto. --estado, --dry-run y --importar sólo usan la librería
+# estándar y no requieren nada de esto.
+#
+# Instalación:
+#     python -m pip install -r onpe-scraper/requirements-crawler.txt
+#     python -m playwright install chromium
+#
+# Nota: la versión de Playwright y la del navegador descargado deben coincidir.
+# Si ya hay un Chromium en la caché de Playwright de OTRA versión, no se
+# reutiliza: hay que ejecutar `playwright install chromium` una vez.
+
+playwright>=1.49
