@@ -17,45 +17,12 @@
   --color-fa-ink-2: #232a35;
 }
 
-/* Sala de cómputo (dashboard oscuro): fondo #0F172A sobre tokens FA. */
-@theme {
-  --color-fa-noche: #0F172A;
-  --color-fa-borde: #334155;
-}
-
 :root {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
   margin: 0;
-}
-
-/* Tooltip oscuro del mapa de sala (DashboardDark). */
-.leaflet-tooltip.tooltip-dark {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #1e293b;
-  border-radius: 0.5rem;
-  font-size: 11px;
-  line-height: 1.5;
-  box-shadow: 0 8px 24px rgb(15 23 42 / 0.18);
-}
-.leaflet-tooltip.tooltip-dark::before {
-  border-top-color: #cbd5e1;
-}
-
-/* Scrollbar discreto para los paneles oscuros. */
-.scroll-dark {
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
-}
-.scroll-dark::-webkit-scrollbar {
-  width: 6px;
-}
-.scroll-dark::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 9999px;
 }
 
 /* Impresión de credencial: solo el fotocheck (90x140mm), sin app. */

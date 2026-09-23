@@ -4,13 +4,12 @@ import {
   ROLES_GESTORES_CAMPO, sesionGuardada,
 } from "./api";
 import {
-  BarChart3, ClipboardList,  Globe2, IdCard, LayoutDashboard, MapPin, PieChart, ShieldCheck, UserCheck, Users, Vote,
+  BarChart3, ClipboardList, IdCard, LayoutDashboard, MapPin, PieChart, ShieldCheck, UserCheck, Users, Vote,
 } from "lucide-react";
 import Actas from "./Actas";
 import CoberturaPanel from "./components/CoberturaPanel";
 import Credenciales from "./components/Credenciales";
 import Dashboard from "./Dashboard";
-import DashboardDark from "./DashboardDark";
 import MapView from "./MapView";
 import ChoroplethMap from "./components/ChoroplethMap";
 import MaterialShell, { type NavItem } from "./components/MaterialShell";
@@ -38,7 +37,7 @@ const TABS: Array<{ value: Scope; desc: string }> = [
 /* Vistas del panel. Cada una tiene su hash en la URL (#actas, #computo…) para
    compartir el enlace, que el botón atrás del navegador funcione y que recargar
    la página no devuelva siempre al panel principal. */
-const VISTAS = ["panel", "actas", "computo", "salacomputo", "credenciales",
+const VISTAS = ["panel", "actas", "computo", "credenciales",
   "personeros", "usuarios"] as const;
 type Vista = (typeof VISTAS)[number];
 
@@ -113,7 +112,7 @@ export default function ONPEPaucarpataDashboard() {
   const puedeVerPersoneros = ROLES_GESTORES_CAMPO.includes(miRol);
 
   const vistasPermitidas = new Set<Vista>([
-    "panel", "actas", "computo", "salacomputo", "credenciales",
+    "panel", "actas", "computo", "credenciales",
     ...(puedeVerPersoneros ? (["personeros"] as Vista[]) : []),
     ...(puedeGestionarUsuarios ? (["usuarios"] as Vista[]) : []),
   ]);
@@ -350,7 +349,6 @@ export default function ONPEPaucarpataDashboard() {
     panel: ["Panel principal", `${etiquetaAmbito} · Regionales y Municipales 2026 · ${fechaHoy()}`],
     actas: ["Gestión de Actas", "Registro, revisión y validación"],
     computo: ["Cómputo Electoral", "KPIs y resultados en vivo"],
-    salacomputo: ["Sala de Cómputo", "Mapa de ganadores por distrito"],
     personeros: ["Personeros en Campo", "Equipo, cobertura y check-ins"],
     usuarios: ["Gestión de Usuarios", "Alta y alcance por rol"],
     credenciales: ["Credenciales FA", "Fotochecks Fuerza Arequipeña + QR"],
@@ -366,9 +364,6 @@ export default function ONPEPaucarpataDashboard() {
           { id: "computo", etiqueta: "Cómputo", icono: <BarChart3 className="h-5 w-5" />,
             activo: vistaActual === "computo",
             onClick: () => irA("computo") },
-          { id: "salacomputo", etiqueta: "Sala de cómputo", icono: <Globe2 className="h-5 w-5" />,
-            activo: vistaActual === "salacomputo",
-            onClick: () => irA("salacomputo") },
           { id: "credenciales", etiqueta: "Credenciales", icono: <IdCard className="h-5 w-5" />,
             activo: vistaActual === "credenciales",
             onClick: () => irA("credenciales") },
@@ -417,7 +412,6 @@ export default function ONPEPaucarpataDashboard() {
         </div>
       )}
 
-      {vista === "salacomputo" && <DashboardDark />}
 
       {vista === "credenciales" && (
         <div className="rounded-2xl bg-white p-4 shadow-md sm:p-6">
@@ -562,42 +556,55 @@ export default function ONPEPaucarpataDashboard() {
             </div>
           </nav>
 
-          {/* PROGRESS STATUS */}
-          <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
-              <div>
-                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                  Actas Contabilizadas
+          {/* PROGRESS STATUS — cabecera de métricas estilo Sala de Cómputo */}
+          <section className="mb-8 rounded-2xl border border-slate-200 border-t-[3px] border-t-[#E02020] bg-white px-5 py-4 shadow-xs">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              {/* Marca + progreso */}
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E02020] text-sm font-black text-white shadow-lg shadow-red-900/40">
+                  FA
                 </span>
-                <div className="mt-1 flex items-baseline gap-3">
-                  <span className="text-4xl font-black text-[#E02020]">{progressPct} %</span>
-                  <span className="text-xs font-bold text-slate-600">
-                    Total de actas: <strong>{summary.total_tables}</strong> ({etiquetaAmbito})
+                <span>
+                  <span className="block text-sm font-black tracking-wide text-slate-900">
+                    Cómputo Electoral · Arequipa 2026
+                  </span>
+                  <span className="block text-[11px] font-semibold text-slate-500">
+                    {etiquetaAmbito} · {fechaHoy()}
+                  </span>
+                </span>
+              </div>
+
+              <div className="ml-auto flex flex-wrap items-center gap-x-7 gap-y-2">
+                <div className="w-44">
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-[#C41616]">
+                    Actas procesadas
+                  </span>
+                  <span className="flex items-baseline gap-2">
+                    <span className="font-mono text-xl font-black text-slate-900">{progressPct}%</span>
+                    <span className="font-mono text-[11px] text-slate-500">
+                      {formatVotes(processed)}/{formatVotes(summary.total_tables)}
+                    </span>
+                  </span>
+                  <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <span
+                      className="block h-full rounded-full bg-gradient-to-r from-[#E02020] to-[#A01010] transition-all duration-700"
+                      style={{ width: `${progressPct}%` }}
+                    />
                   </span>
                 </div>
+                {([
+                  ["Contabilizadas", formatVotes(processed), "text-slate-900"],
+                  ["Observadas JEE", formatVotes(observed), "text-amber-600"],
+                  ["Pendientes", formatVotes(pending), "text-slate-500"],
+                ] as const).map(([k, v, cls]) => (
+                  <div key={k} className="max-w-52">
+                    <span className="block text-[10px] font-black uppercase tracking-wider text-[#C41616]">
+                      {k}
+                    </span>
+                    <span className={`block font-mono text-sm font-black ${cls}`}>{v}</span>
+                  </div>
+                ))}
               </div>
-
-              <div className="flex items-center gap-5 text-xs font-bold text-slate-600">
-                <span className="flex items-center gap-2">
-                  <span className="h-3.5 w-3.5 rounded-full bg-[#E02020]"></span> Contabilizadas
-                  ({processed})
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="h-3.5 w-3.5 rounded-full bg-amber-500"></span> Observadas JEE
-                  ({observed})
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="h-3.5 w-3.5 rounded-full bg-slate-300"></span> Pendientes (
-                  {pending})
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-4 h-3.5 w-full overflow-hidden rounded-full bg-slate-100">
-              <div
-                className="h-full bg-[#E02020] transition-all duration-700"
-                style={{ width: `${progressPct}%` }}
-              />
             </div>
           </section>
 
@@ -618,70 +625,71 @@ export default function ONPEPaucarpataDashboard() {
                 return (
                   <article
                     key={c.candidate_id}
-                    className="overflow-hidden rounded-2xl bg-white shadow-md transition duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+                    className="overflow-hidden rounded-2xl border border-slate-200 border-t-[3px] bg-white shadow-md transition duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+                    style={{ borderTopColor: base }}
                   >
-                    {/* Franja superior en degradado del partido */}
+                    {/* Identidad estilo Sala: foto + insignia + % en una fila */}
                     <div
-                      className="px-5 py-4"
+                      className="flex items-center gap-4 px-5 py-4"
                       style={{
-                        background: `linear-gradient(135deg, ${base} 0%, ${sombrear(base, 0.55)} 100%)`,
+                        background: `linear-gradient(135deg, ${base}1A 0%, transparent 70%)`,
                       }}
                     >
-                      <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-white">
-                        #{idx + 1} en {activeScope.toLowerCase()}
-                      </span>
-                      <p className="mt-1.5 font-mono text-3xl font-black tabular-nums text-white">
-                        {pctValidos.toFixed(1)}
-                        <span className="text-lg">%</span>
-                        <span className="ml-2 align-middle text-[11px] font-semibold uppercase tracking-wider text-white/70">
-                          de votos válidos
-                        </span>
-                      </p>
-                    </div>
-                    {/* Identidad: foto + datos + logo, sin superposiciones */}
-                    <div className="flex items-center gap-3 px-5 py-4">
                       {c.photo_url ? (
                         <img
                           src={c.photo_url}
                           alt={c.name}
-                          className="h-16 w-16 shrink-0 rounded-full bg-slate-100 object-cover shadow-md ring-2 ring-white"
+                          className="h-16 w-16 shrink-0 rounded-full border-2 border-slate-200 object-cover"
                         />
                       ) : (
-                        <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xl font-black text-slate-500 shadow-md">
+                        <span
+                          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-black text-white"
+                          style={{ backgroundColor: base }}
+                        >
                           {(c.name ?? "?").charAt(0)}
                         </span>
                       )}
                       <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-base font-black text-slate-900">
+                        <span
+                          className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-white"
+                          style={{ backgroundColor: base }}
+                        >
+                          #{idx + 1} · {etiquetaAmbito}
+                        </span>
+                        <h3 className="mt-1 truncate text-lg font-black text-slate-900">
                           {c.name}
                         </h3>
                         <p className="truncate text-xs font-bold uppercase tracking-wide text-slate-500">
                           {c.party}
                         </p>
-                        <p className="mt-0.5 font-mono text-xs text-slate-500">
-                          {formatVotes(c.votes)} votos
-                        </p>
                       </div>
+                      <div className="shrink-0 text-right">
+                        <p className="font-mono text-3xl font-black tabular-nums text-slate-900">
+                          {pctValidos.toFixed(1)}
+                          <span className="text-base">%</span>
+                        </p>
+                        <p className="font-mono text-xs text-slate-500">{formatVotes(c.votes)} votos</p>
+                      </div>
+                    </div>
+                    {/* Logo del partido + barra de progreso */}
+                    <div className="flex items-center gap-4 px-5 pb-5">
                       {c.symbol ? (
                         <img
                           src={c.symbol}
                           alt={c.party}
                           title={c.party}
-                          className="h-12 w-12 shrink-0 rounded-xl border border-slate-200 bg-white object-contain p-1 shadow-xs"
+                          className="h-10 w-10 shrink-0 rounded-xl border border-slate-200 bg-white object-contain p-1 shadow-xs"
                         />
                       ) : (
                         <span
-                          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-base font-black text-white shadow-xs"
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-black text-white shadow-xs"
                           style={{ backgroundColor: base }}
                           title={c.party}
                         >
                           {(c.party ?? "?").charAt(0)}
                         </span>
                       )}
-                    </div>
-                    {/* Barra de progreso */}
-                    <div className="px-5 pb-5">
-                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
                         <div
                           className="h-full rounded-full"
                           style={{
