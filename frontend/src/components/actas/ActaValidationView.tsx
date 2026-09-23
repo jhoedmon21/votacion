@@ -157,7 +157,7 @@ export default function ActaValidationView({ acta, onClose, onValidated }: ActaV
       >
         <div className="flex items-center justify-between p-4 bg-slate-100 border-b sticky top-0 z-10">
           <div className="flex items-center gap-4">
-            <h2 className="text-xl font-bold text-[#002B66]">
+            <h2 className="text-xl font-bold text-[#E02020]">
               Validación Visual contra Acta Original
               <span className="ml-2 text-sm font-normal text-slate-600">Mesa {acta.numero_mesa}</span>
             </h2>
@@ -319,7 +319,7 @@ export default function ActaValidationView({ acta, onClose, onValidated }: ActaV
                         type="text"
                         value={validatorName}
                         onChange={(e) => setValidatorName(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                         placeholder="Juan Pérez García"
                       />
                     </div>
@@ -329,7 +329,7 @@ export default function ActaValidationView({ acta, onClose, onValidated }: ActaV
                         type="text"
                         value={validatorDni}
                         onChange={(e) => setValidatorDni(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                         placeholder="12345678"
                         inputMode="numeric"
                         maxLength={8}

@@ -4,14 +4,13 @@ import {
   ROLES_GESTORES_CAMPO, sesionGuardada,
 } from "./api";
 import {
-  BarChart3, ClipboardList, IdCard, LayoutDashboard, MapPin, PieChart, Search,
-  ShieldCheck, UserCheck, Users, Vote,
+  BarChart3, ClipboardList,  Globe2, IdCard, LayoutDashboard, MapPin, PieChart, ShieldCheck, UserCheck, Users, Vote,
 } from "lucide-react";
 import Actas from "./Actas";
 import CoberturaPanel from "./components/CoberturaPanel";
-import ConsultaONPE from "./components/ConsultaONPE";
 import Credenciales from "./components/Credenciales";
 import Dashboard from "./Dashboard";
+import DashboardDark from "./DashboardDark";
 import MapView from "./MapView";
 import ChoroplethMap from "./components/ChoroplethMap";
 import MaterialShell, { type NavItem } from "./components/MaterialShell";
@@ -39,7 +38,7 @@ const TABS: Array<{ value: Scope; desc: string }> = [
 /* Vistas del panel. Cada una tiene su hash en la URL (#actas, #computo…) para
    compartir el enlace, que el botón atrás del navegador funcione y que recargar
    la página no devuelva siempre al panel principal. */
-const VISTAS = ["panel", "actas", "computo", "consulta", "credenciales",
+const VISTAS = ["panel", "actas", "computo", "salacomputo", "credenciales",
   "personeros", "usuarios"] as const;
 type Vista = (typeof VISTAS)[number];
 
@@ -54,7 +53,7 @@ function formatVotes(n: number): string {
 
 /* Sombrea un color hex para degradados estilo Material. */
 function sombrear(hex: string, factor: number): string {
-  const h = (hex || "#002B66").replace("#", "");
+  const h = (hex || "#E02020").replace("#", "");
   const n = parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16);
   const f = (v: number) => Math.max(0, Math.min(255, Math.round(v * factor)));
   const r = f((n >> 16) & 255);
@@ -66,7 +65,7 @@ function sombrear(hex: string, factor: number): string {
 const ROL_BADGE: Record<string, string> = {
   SUPER_ADMIN: "bg-violet-600",
   DIGITADOR_GLOBAL: "bg-indigo-600",
-  COORD_PROVINCIAL: "bg-blue-700",
+  COORD_PROVINCIAL: "bg-red-700",
   RESPONSABLE_DISTRITAL: "bg-sky-600",
   COORD_LOCAL: "bg-cyan-700",
   DELEGADO_MESA: "bg-emerald-700",
@@ -114,7 +113,7 @@ export default function ONPEPaucarpataDashboard() {
   const puedeVerPersoneros = ROLES_GESTORES_CAMPO.includes(miRol);
 
   const vistasPermitidas = new Set<Vista>([
-    "panel", "actas", "computo", "consulta", "credenciales",
+    "panel", "actas", "computo", "salacomputo", "credenciales",
     ...(puedeVerPersoneros ? (["personeros"] as Vista[]) : []),
     ...(puedeGestionarUsuarios ? (["usuarios"] as Vista[]) : []),
   ]);
@@ -229,7 +228,7 @@ export default function ONPEPaucarpataDashboard() {
           <div className="mt-6">
             <button 
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-[#002B66] text-white rounded hover:bg-[#003366]"
+              className="px-4 py-2 bg-[#E02020] text-white rounded hover:bg-[#A01010]"
             >
               Recargar
             </button>
@@ -246,7 +245,7 @@ export default function ONPEPaucarpataDashboard() {
           <h2 className="text-2xl font-bold mb-4">Cargando Dashboard...</h2>
           <p className="text-lg">Espere un momento mientras se cargan los datos...</p>
           <div className="mt-6 flex justify-center space-x-4">
-            <div className="w-8 h-8 border-3 border-t-2 border-l-2 border-r-transparent border-b-transparent rounded-full animate-spin border-[#002B66]"></div>
+            <div className="w-8 h-8 border-3 border-t-2 border-l-2 border-r-transparent border-b-transparent rounded-full animate-spin border-[#E02020]"></div>
             <span className="ml-2 text-sm text-slate-600">Cargando...</span>
           </div>
         </div>
@@ -351,9 +350,9 @@ export default function ONPEPaucarpataDashboard() {
     panel: ["Panel principal", `${etiquetaAmbito} · Regionales y Municipales 2026 · ${fechaHoy()}`],
     actas: ["Gestión de Actas", "Registro, revisión y validación"],
     computo: ["Cómputo Electoral", "KPIs y resultados en vivo"],
+    salacomputo: ["Sala de Cómputo", "Mapa de ganadores por distrito — vista oscura"],
     personeros: ["Personeros en Campo", "Equipo, cobertura y check-ins"],
     usuarios: ["Gestión de Usuarios", "Alta y alcance por rol"],
-    consulta: ["Consulta ONPE", "Local de votación por DNI o mesa"],
     credenciales: ["Credenciales FA", "Fotochecks Fuerza Arequipeña + QR"],
   };
 
@@ -367,9 +366,9 @@ export default function ONPEPaucarpataDashboard() {
           { id: "computo", etiqueta: "Cómputo", icono: <BarChart3 className="h-5 w-5" />,
             activo: vistaActual === "computo",
             onClick: () => irA("computo") },
-          { id: "consulta", etiqueta: "Consulta", icono: <Search className="h-5 w-5" />,
-            activo: vistaActual === "consulta",
-            onClick: () => irA("consulta") },
+          { id: "salacomputo", etiqueta: "Sala de cómputo", icono: <Globe2 className="h-5 w-5" />,
+            activo: vistaActual === "salacomputo",
+            onClick: () => irA("salacomputo") },
           { id: "credenciales", etiqueta: "Credenciales", icono: <IdCard className="h-5 w-5" />,
             activo: vistaActual === "credenciales",
             onClick: () => irA("credenciales") },
@@ -394,6 +393,7 @@ export default function ONPEPaucarpataDashboard() {
       nav={nav}
       titulo={tituloVista}
       bajada={bajadaVista}
+      tema={vistaActual === "salacomputo" ? "fa" : "claro"}
       usuario={sesionGuardada()?.usuario.nombre_completo ?? ""}
       insignia={ROL_CORTO[miRol] ?? miRol}
       colorInsignia={ROL_BADGE[miRol] ?? "bg-slate-500"}
@@ -418,11 +418,7 @@ export default function ONPEPaucarpataDashboard() {
         </div>
       )}
 
-      {vista === "consulta" && (
-        <div className="rounded-2xl bg-white p-4 shadow-md sm:p-6">
-          <ConsultaONPE />
-        </div>
-      )}
+      {vista === "salacomputo" && <DashboardDark />}
 
       {vista === "credenciales" && (
         <div className="rounded-2xl bg-white p-4 shadow-md sm:p-6">
@@ -469,13 +465,13 @@ export default function ONPEPaucarpataDashboard() {
           <section aria-label="Indicadores" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
             {([
               ["Mesas en padrón", formatVotes(summary.total_tables ?? 0), "locales en tu alcance",
-                <ClipboardList key="k1" className="h-5 w-5" />, "bg-[#002B66]"],
+                <ClipboardList key="k1" className="h-5 w-5" />, "bg-[#E02020]"],
               ["Contabilizadas", formatVotes(processed), `${formatVotes(observed)} observadas`,
                 <BarChart3 key="k2" className="h-5 w-5" />, "bg-emerald-600"],
               ["Observadas", formatVotes(observed), "requieren revisión",
                 <ShieldCheck key="k3" className="h-5 w-5" />, "bg-amber-500"],
               ["Avance", `${progressPct}%`, "actas sobre mesas",
-                <PieChart key="k4" className="h-5 w-5" />, "bg-blue-700"],
+                <PieChart key="k4" className="h-5 w-5" />, "bg-red-700"],
               ["Sin cubrir", formatVotes(coberturaResumen?.rojos ?? 0), `de ${formatVotes(coberturaResumen?.total ?? 0)} locales`,
                 <MapPin key="k5" className="h-5 w-5" />, "bg-red-600"],
             ] as const).map(([etiqueta, valor, bajada, icono, color]) => (
@@ -508,7 +504,7 @@ export default function ONPEPaucarpataDashboard() {
                 aria-pressed={seccion === valor}
                 className={`flex min-h-[64px] items-center gap-3 rounded-xl px-4 py-2.5 text-left transition active:scale-[0.99] ${
                   seccion === valor
-                    ? "bg-[#002B66] text-white shadow"
+                    ? "bg-[#E02020] text-white shadow"
                     : "bg-white text-slate-500 hover:bg-slate-50"
                 }`}
               >
@@ -519,7 +515,7 @@ export default function ONPEPaucarpataDashboard() {
                 </span>
                 <span>
                   <span className="block text-sm font-black">{titulo}</span>
-                  <span className={`block text-[11px] ${seccion === valor ? "text-blue-200" : "text-slate-400"}`}>
+                  <span className={`block text-[11px] ${seccion === valor ? "text-red-200" : "text-slate-400"}`}>
                     {bajada}
                   </span>
                 </span>
@@ -538,7 +534,7 @@ export default function ONPEPaucarpataDashboard() {
                   onClick={() => setActiveScope(value)}
                   className={`flex items-center gap-2 border-b-4 px-6 py-3.5 text-xs font-black transition ${
                     activeScope === value
-                      ? "border-[#002B66] bg-white text-[#002B66]"
+                      ? "border-[#E02020] bg-white text-[#E02020]"
                       : "border-transparent text-slate-500 hover:bg-slate-200"
                   }`}
                 >
@@ -575,7 +571,7 @@ export default function ONPEPaucarpataDashboard() {
                   Actas Contabilizadas
                 </span>
                 <div className="mt-1 flex items-baseline gap-3">
-                  <span className="text-4xl font-black text-[#002B66]">{progressPct} %</span>
+                  <span className="text-4xl font-black text-[#E02020]">{progressPct} %</span>
                   <span className="text-xs font-bold text-slate-600">
                     Total de actas: <strong>{summary.total_tables}</strong> ({etiquetaAmbito})
                   </span>
@@ -584,7 +580,7 @@ export default function ONPEPaucarpataDashboard() {
 
               <div className="flex items-center gap-5 text-xs font-bold text-slate-600">
                 <span className="flex items-center gap-2">
-                  <span className="h-3.5 w-3.5 rounded-full bg-[#002B66]"></span> Contabilizadas
+                  <span className="h-3.5 w-3.5 rounded-full bg-[#E02020]"></span> Contabilizadas
                   ({processed})
                 </span>
                 <span className="flex items-center gap-2">
@@ -600,14 +596,14 @@ export default function ONPEPaucarpataDashboard() {
 
             <div className="mt-4 h-3.5 w-full overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full bg-[#002B66] transition-all duration-700"
+                className="h-full bg-[#E02020] transition-all duration-700"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
           </section>
 
           {/* TOP 2 — tarjetas estilo Material con logo del partido */}
-          <div className="mb-6 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#002B66]">
+          <div className="mb-6 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E02020]">
             <PieChart className="h-4 w-4" />
             <span>Primeros Lugares (Top 2 Candidatos)</span>
           </div>
@@ -617,7 +613,7 @@ export default function ONPEPaucarpataDashboard() {
           ) : (
             <section className="mb-10 grid grid-cols-1 gap-6 md:grid-cols-2">
               {topTwo.map((c, idx) => {
-                const base = c.color || "#002B66";
+                const base = c.color || "#E02020";
                 const pctValidos =
                   totalValidVotes > 0 ? (100 * c.votes) / totalValidVotes : 0;
                 return (
@@ -706,7 +702,7 @@ export default function ONPEPaucarpataDashboard() {
           <section>
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
               <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#002B66]">
+                <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E02020]">
                   <BarChart3 className="h-4 w-4" />
                   <span>Resultados Generales por Agrupación Política</span>
                 </h3>
@@ -723,7 +719,7 @@ export default function ONPEPaucarpataDashboard() {
                       title="Orden de la cédula (sorteo de la ONPE): nacionales primero, movimientos regionales después"
                       className={`rounded-md px-2.5 py-1 text-[11px] font-black uppercase transition ${
                         ordenPartidos === "cedula"
-                          ? "bg-white text-[#002B66] shadow-xs"
+                          ? "bg-white text-[#E02020] shadow-xs"
                           : "text-slate-500 hover:text-slate-700"
                       }`}
                     >
@@ -736,7 +732,7 @@ export default function ONPEPaucarpataDashboard() {
                       title="Ordenar por votos (ranking)"
                       className={`rounded-md px-2.5 py-1 text-[11px] font-black uppercase transition ${
                         ordenPartidos === "votos"
-                          ? "bg-white text-[#002B66] shadow-xs"
+                          ? "bg-white text-[#E02020] shadow-xs"
                           : "text-slate-500 hover:text-slate-700"
                       }`}
                     >
@@ -791,7 +787,7 @@ export default function ONPEPaucarpataDashboard() {
                           <p className="truncate text-sm font-black text-slate-800">
                             {p.party}
                           </p>
-                          <p className="shrink-0 font-mono text-xs font-bold text-[#002B66]">
+                          <p className="shrink-0 font-mono text-xs font-bold text-[#E02020]">
                             {pct}% · {formatVotes(p.votes)}
                           </p>
                         </div>
@@ -831,17 +827,17 @@ export default function ONPEPaucarpataDashboard() {
           {/* Acceso directo a la gestión del equipo */}
           <button
             onClick={() => irA("personeros")}
-            className="mb-6 flex w-full min-h-[64px] items-center justify-between gap-3 rounded-2xl border-2 border-[#002B66] bg-blue-50 px-5 py-3 text-left transition hover:bg-blue-100 active:scale-[0.99]"
+            className="mb-6 flex w-full min-h-[64px] items-center justify-between gap-3 rounded-2xl border-2 border-[#E02020] bg-red-50 px-5 py-3 text-left transition hover:bg-red-100 active:scale-[0.99]"
           >
             <span>
-              <span className="block text-sm font-black text-[#002B66]">
+              <span className="block text-sm font-black text-[#E02020]">
                 🦺 Gestionar personeros y asignaciones
               </span>
               <span className="block text-[11px] text-slate-500">
                 Equipo de campo, mesas asignadas y check-ins del día
               </span>
             </span>
-            <span className="text-xl font-black text-[#002B66]">→</span>
+            <span className="text-xl font-black text-[#E02020]">→</span>
           </button>
 
           {/* Semáforo de cobertura */}
@@ -851,7 +847,7 @@ export default function ONPEPaucarpataDashboard() {
           <section>
             <div className="flex flex-col items-center justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
               <div className="mb-4 w-full border-b border-slate-100 pb-2 text-left">
-                <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#002B66]">
+                <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E02020]">
                   <MapPin className="h-4 w-4" />
                    <span>Ubicación Electoral: {etiquetaAmbito}</span>
                 </h3>
@@ -872,7 +868,7 @@ export default function ONPEPaucarpataDashboard() {
                       onClick={() => setVistaMapa(id)}
                       className={`px-3 py-1.5 text-[11px] font-black ${
                         vistaMapa === id
-                          ? "bg-[#002B66] text-white"
+                          ? "bg-[#E02020] text-white"
                           : "bg-white text-slate-600 hover:bg-slate-100"
                       }`}
                     >

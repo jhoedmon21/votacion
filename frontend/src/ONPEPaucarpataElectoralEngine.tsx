@@ -19,7 +19,7 @@ const SCOPE_LABEL: Record<Scope, string> = {
   REGIONAL: "GOBIERNO REGIONAL DE AREQUIPA",
 };
 
-const PARTY_COLORS = ["#002B66", "#0056B3", "#D97706", "#10B981", "#8B5CF6"];
+const PARTY_COLORS = ["#E02020", "#A01010", "#D97706", "#10B981", "#8B5CF6"];
 
 function formatVotes(n: number): string {
   return n.toLocaleString("es-PE");
@@ -50,16 +50,16 @@ function DonutCard({ candidate, total }: { candidate: RankingEntry; total: numbe
             fill="none"
             strokeDasharray={`${offset} ${circumference}`}
             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-            style={{ color: candidate.color || "#002B66", transition: "stroke-dasharray 0.6s ease" }}
+            style={{ color: candidate.color || "#E02020", transition: "stroke-dasharray 0.6s ease" }}
           />
         </svg>
-        <div className="absolute flex h-24 w-24 items-center justify-center rounded-full border-2 border-white bg-slate-100 text-xl font-black text-[#002B66] shadow-inner">
+        <div className="absolute flex h-24 w-24 items-center justify-center rounded-full border-2 border-white bg-slate-100 text-xl font-black text-[#E02020] shadow-inner">
           {candidate.party?.[0] ?? "?"}
         </div>
       </div>
 
       <div className="flex-1">
-        <div className="text-3xl font-black text-[#002B66]">{pct} %</div>
+        <div className="text-3xl font-black text-[#E02020]">{pct} %</div>
         <h3 className="mt-1 text-base font-extrabold leading-tight text-slate-900">
           {candidate.name}
         </h3>
@@ -121,24 +121,24 @@ export default function ONPEPaucarpataElectoralEngine() {
   return (
     <div className="min-h-screen bg-[#F8F9FA] font-sans text-slate-800">
       {/* ONPE OFFICIAL HEADER */}
-      <header className="bg-[#002B66] text-white shadow-md">
+      <header className="bg-[#E02020] text-white shadow-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3">
-            <span className="rounded bg-white px-2 py-0.5 text-lg font-black text-[#002B66]">
+            <span className="rounded bg-white px-2 py-0.5 text-lg font-black text-[#E02020]">
               ONPE
             </span>
-            <div className="border-l border-blue-400 pl-3">
+            <div className="border-l border-red-400 pl-3">
               <h1 className="text-sm font-bold tracking-wide">
                 SISTEMA INTEGRAL DE PRESENTACIÓN DE RESULTADOS
               </h1>
-              <p className="text-[11px] text-blue-200">
+              <p className="text-[11px] text-red-200">
                 Elecciones Municipales y Regionales - Paucarpata, Arequipa
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-lg border border-blue-700 bg-blue-900/60 px-3 py-1.5 text-xs">
+          <div className="flex items-center gap-2 rounded-lg border border-red-700 bg-red-900/60 px-3 py-1.5 text-xs">
             <Lock className="h-3.5 w-3.5 text-emerald-400" />
-            <span className="font-semibold text-blue-100">
+            <span className="font-semibold text-red-100">
               Cifrado E2E &amp; Audit-Trail VVAT Activo
             </span>
           </div>
@@ -149,11 +149,11 @@ export default function ONPEPaucarpataElectoralEngine() {
       <section className="border-b border-slate-200 bg-white shadow-xs">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-blue-50 p-3 text-[#002B66]">
+            <div className="rounded-xl bg-red-50 p-3 text-[#E02020]">
               <Upload className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-sm font-black uppercase text-[#002B66]">
+              <h2 className="text-sm font-black uppercase text-[#E02020]">
                 Carga Tripartita de Actas Electorales
               </h2>
               <p className="text-xs text-slate-500">
@@ -162,7 +162,7 @@ export default function ONPEPaucarpataElectoralEngine() {
             </div>
           </div>
 
-          <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-[#002B66] px-5 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:bg-blue-900 active:scale-95">
+          <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-[#E02020] px-5 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:bg-red-900 active:scale-95">
             <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
             <span>CARGAR 3 ACTAS (PDF / OCR)</span>
             <input type="file" multiple accept="image/*,.pdf" className="hidden" />
@@ -185,7 +185,7 @@ export default function ONPEPaucarpataElectoralEngine() {
               onClick={() => setActiveScope(scope)}
               className={`flex items-center gap-2 border-b-4 px-6 py-3.5 text-xs font-black transition ${
                 activeScope === scope
-                  ? "border-[#002B66] bg-white text-[#002B66]"
+                  ? "border-[#E02020] bg-white text-[#E02020]"
                   : "border-transparent text-slate-500 hover:bg-slate-200"
               }`}
             >
@@ -206,7 +206,7 @@ export default function ONPEPaucarpataElectoralEngine() {
                 Actas Contabilizadas
               </span>
               <div className="mt-1 flex items-baseline gap-3">
-                <span className="text-4xl font-black text-[#002B66]">{progressPct} %</span>
+                <span className="text-4xl font-black text-[#E02020]">{progressPct} %</span>
                 <span className="text-xs font-bold text-slate-600">
                   Total de actas: <strong>{totalTables}</strong> (Paucarpata)
                 </span>
@@ -215,7 +215,7 @@ export default function ONPEPaucarpataElectoralEngine() {
 
             <div className="flex items-center gap-5 text-xs font-bold text-slate-600">
               <span className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#002B66]"></span>{" "}
+                <span className="h-3.5 w-3.5 rounded-full bg-[#E02020]"></span>{" "}
                 Contabilizadas ({processed})
               </span>
               <span className="flex items-center gap-2">
@@ -231,7 +231,7 @@ export default function ONPEPaucarpataElectoralEngine() {
 
           <div className="mt-4 h-3.5 w-full overflow-hidden rounded-full bg-slate-100">
             <div
-              className="h-full bg-[#002B66] transition-all duration-700"
+              className="h-full bg-[#E02020] transition-all duration-700"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -255,7 +255,7 @@ export default function ONPEPaucarpataElectoralEngine() {
         {/* RECONCILIATION SUMMARY */}
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
           <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#002B66]">
+            <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E02020]">
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
               <span>Resumen de Reconciliación de Actas (Paucarpata)</span>
             </h3>

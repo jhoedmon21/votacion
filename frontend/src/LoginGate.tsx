@@ -35,16 +35,16 @@ export default function LoginGate({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen items-center justify-center bg-[#232a35] p-4">
       <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* Franja institucional estilo Material */}
-        <div className="bg-[#002B66] px-8 pb-6 pt-7">
+        <div className="bg-[#E02020] px-8 pb-6 pt-7">
           <div className="flex items-center gap-3">
-            <span className="rounded-lg bg-white px-2.5 py-1 text-lg font-black tracking-tight text-[#002B66] shadow">
-              ONPE
+            <span className="rounded-lg bg-white px-2.5 py-1 text-lg font-black tracking-tight text-[#E02020] shadow">
+              SISTEMA
             </span>
             <div>
               <p className="text-sm font-black uppercase tracking-wider text-white">
                 Cómputo Arequipa 2026
               </p>
-              <p className="text-[11px] text-blue-200">
+              <p className="text-[11px] text-red-200">
                 Regionales y Municipales · acceso autorizado
               </p>
             </div>
@@ -68,7 +68,7 @@ export default function LoginGate({ children }: { children: React.ReactNode }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="usuario@computoarequipa.gob.pe"
-                className="min-h-[44px] w-full rounded-xl border-2 border-gray-300 px-3 py-2 text-sm focus:border-[#002B66] focus:outline-none"
+                className="min-h-[44px] w-full rounded-xl border-2 border-gray-300 px-3 py-2 text-sm focus:border-[#E02020] focus:outline-none"
               />
             </div>
             <div>
@@ -83,7 +83,7 @@ export default function LoginGate({ children }: { children: React.ReactNode }) {
                 value={clave}
                 onChange={(e) => setClave(e.target.value)}
                 placeholder="••••••••"
-                className="min-h-[44px] w-full rounded-xl border-2 border-gray-300 px-3 py-2 text-sm focus:border-[#002B66] focus:outline-none"
+                className="min-h-[44px] w-full rounded-xl border-2 border-gray-300 px-3 py-2 text-sm focus:border-[#E02020] focus:outline-none"
               />
             </div>
             {error && (
@@ -94,7 +94,7 @@ export default function LoginGate({ children }: { children: React.ReactNode }) {
             <button
               type="submit"
               disabled={cargando}
-              className="min-h-[48px] w-full rounded-xl bg-[#002B66] py-2.5 font-bold text-white shadow-md transition hover:bg-[#003366] hover:shadow-lg active:scale-[0.99] disabled:opacity-50"
+              className="min-h-[48px] w-full rounded-xl bg-[#E02020] py-2.5 font-bold text-white shadow-md transition hover:bg-[#A01010] hover:shadow-lg active:scale-[0.99] disabled:opacity-50"
             >
               {cargando ? "Ingresando…" : "Ingresar →"}
             </button>

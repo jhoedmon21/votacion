@@ -159,7 +159,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
                   type="number"
                   value={formData.total_electores || 0}
                   onChange={(e) => handleInputChange('total_electores', Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                   min="0"
                 />
                 {errors.total_electores && <p className="text-xs text-red-600 mt-1">{errors.total_electores}</p>}
@@ -188,7 +188,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
                           type="number"
                           value={candidate.votes}
                           onChange={(e) => handleCandidateVoteChange('distrital', index, Number(e.target.value) || 0)}
-                          className="w-full px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                           min="0"
                         />
                       </div>
@@ -215,7 +215,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
                           type="number"
                           value={candidate.votes}
                           onChange={(e) => handleCandidateVoteChange('regional', index, Number(e.target.value) || 0)}
-                          className="w-full px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                           min="0"
                         />
                       </div>
@@ -236,7 +236,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
                     type="number"
                     value={formData.votos_blancos}
                     onChange={(e) => handleInputChange('votos_blancos', Number(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                     min="0"
                   />
                 </div>
@@ -246,7 +246,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
                     type="number"
                     value={formData.votos_nulos}
                     onChange={(e) => handleInputChange('votos_nulos', Number(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                     min="0"
                   />
                 </div>
@@ -256,7 +256,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
                     type="number"
                     value={formData.votos_impugnados}
                     onChange={(e) => handleInputChange('votos_impugnados', Number(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                     min="0"
                   />
                 </div>
@@ -298,7 +298,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
 
           <div className="flex justify-end space-x-3">
             <button onClick={onClose} className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50">Cancelar</button>
-            <button onClick={handleSave} disabled={isSaving || Object.keys(errors).length > 0} className={`px-4 py-2 bg-[#002B66] text-white rounded-md text-sm font-medium hover:bg-[#003366] disabled:bg-slate-400 disabled:cursor-not-allowed`}>
+            <button onClick={handleSave} disabled={isSaving || Object.keys(errors).length > 0} className={`px-4 py-2 bg-[#E02020] text-white rounded-md text-sm font-medium hover:bg-[#A01010] disabled:bg-slate-400 disabled:cursor-not-allowed`}>
               {isSaving ? "Guardando..." : "Guardar Cambios"}
             </button>
           </div>

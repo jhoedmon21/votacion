@@ -18,8 +18,8 @@ import { Alerta, Boton, Cargando } from "./ui";
 
 const ROL_COLOR: Record<string, string> = {
   SUPER_ADMIN: "#7c3aed",
-  COORD_PROVINCIAL: "#002B66",
-  RESPONSABLE_DISTRITAL: "#0056B3",
+  COORD_PROVINCIAL: "#E02020",
+  RESPONSABLE_DISTRITAL: "#A01010",
   COORD_LOCAL: "#0e7490",
   DELEGADO_MESA: "#15803d",
   PERSONERO: "#15803d",
@@ -146,7 +146,7 @@ export default function UsuariosPanel() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-sm font-black uppercase tracking-wider text-[#002B66]">
+        <h3 className="text-sm font-black uppercase tracking-wider text-[#E02020]">
           Usuarios ({usuarios.length}) · tu rol: {miRol}
         </h3>
         {rolesPermitidos.length > 0 && (
@@ -260,7 +260,7 @@ export default function UsuariosPanel() {
                       {u.activo ? "Desactivar" : "Activar"}
                     </button>
                     <button onClick={() => void restablecerClave(u)}
-                      className="rounded bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-800 hover:bg-blue-100">
+                      className="rounded bg-red-50 px-2.5 py-1 text-xs font-bold text-red-800 hover:bg-red-100">
                       Clave
                     </button>
                     <button onClick={() => void editarAlcance(u)}

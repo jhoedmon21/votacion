@@ -2,6 +2,8 @@
 
 Sistema de cómputo rápido y transmisión de actas para las **Elecciones Regionales y Municipales de Arequipa 2026**, sobre el padrón real de la ONPE.
 
+Identidad visual **Fuerza Arequipeña** (rojo `#E02020` · blanco · negro, según el Estatuto del partido, art. 3) y **Sala de Cómputo** oscura con mapa de ganadores por distrito.
+
 ## Qué incluye
 
 - **Padrón real ONPE**: 491 locales de votación y 4.194 mesas de los 109 distritos de Arequipa, importados desde el Excel oficial (`actas.xlsx`) con resolución de ubigeos RENIEC → INEI.
@@ -9,6 +11,9 @@ Sistema de cómputo rápido y transmisión de actas para las **Elecciones Region
 - **Carga de actas** con OCR (GPT-4o-mini / Gemini Flash / Tesseract local como respaldo) y evidencia fotográfica.
 - **Ficha de acta/mesa**: ubicación, padrón, votos distrital/provincial/regional, checklist ONPE y visor de foto.
 - **Mapa coroplético vectorial** (Leaflet + GeoJSON INEI) con las siluetas de los 109 distritos: clic → zoom al distrito → KPIs y ranking recalculados en vivo. Niveles distrito/provincia, modos "por avance" y "por ganador".
+- **Sala de Cómputo** (`#salacomputo`): dashboard oscuro estilo sala electoral — header con % global, Top 2, lista de candidatos (40 %) y mapa vectorial por UBIGEO (60 %) coloreado por ganador distrital, con hover y clic que filtra toda la vista.
+- **Cobertura de personeros**: semáforo verde/amarillo/rojo por local de votación sobre `v_cobertura_locales`, con mapa Leaflet y detalle de mesas críticas.
+- **Credenciales FA**: fotochecks con QR y PDF por personero o por distrito.
 - **PWA móvil** de campo (`frontend/public/actas-movil.html`) y formulario raíz (`registro_acta.html`), ambos alimentados por el padrón real.
 - **Verificación de integridad**: reconciliación de actas y contratos JSON (`docs/schemas/`).
 
@@ -50,6 +55,14 @@ npm run dev
 - `backend/app/seed_padron_real.py` reemplaza locales/mesas sintéticos por el padrón oficial; es idempotente y no borra actas reales.
 - `backend/tools/ordenar_cedula.py` reordena los JSON de oferta electoral según la cédula del sorteo (verificador incluido).
 - `backend/tools/generar_geo_arequipa.py` genera las capas GeoJSON ligeras de Arequipa (región, provincias, distritos) a partir del GeoJSON nacional INEI.
+
+## Acceso demo
+
+| Campo | Valor |
+|---|---|
+| Correo | `admin@computoarequipa.gob.pe` |
+| Contraseña | `Admin.Arequipa2026` |
+| Rol | `SUPER_ADMIN` (sembrado por `backend/app/services/seed_auth.py`) |
 
 ## Convenciones clave
 

@@ -4,10 +4,10 @@ import type { InputHTMLAttributes, ReactNode } from "react";
  *  Kit UI — piezas compartidas para una UX simple y consistente
  *
  *  Reglas: objetivos táctiles grandes (mín. 44 px), lenguaje claro,
- *  un solo color primario (#002B66), estados vacíos y de carga explícitos.
+ *  un solo color primario (#E02020), estados vacíos y de carga explícitos.
  * ==================================================================== */
 
-export const COLOR_PRIMARIO = "#002B66";
+export const COLOR_PRIMARIO = "#E02020";
 
 type Tono = "info" | "exito" | "aviso" | "error";
 
@@ -31,11 +31,11 @@ interface BotonProps {
 }
 
 const VARIANTES: Record<string, string> = {
-  primario: "bg-[#002B66] text-white hover:bg-[#003366]",
+  primario: "bg-[#E02020] text-white hover:bg-[#A01010]",
   exito: "bg-emerald-700 text-white hover:bg-emerald-800",
   peligro: "bg-red-600 text-white hover:bg-red-700",
   suave: "bg-slate-100 text-slate-700 hover:bg-slate-200",
-  borde: "border-2 border-[#002B66] text-[#002B66] hover:bg-blue-50",
+  borde: "border-2 border-[#E02020] text-[#E02020] hover:bg-red-50",
 };
 
 export function Boton({
@@ -94,7 +94,7 @@ export function Input({
 export function TituloVista({ titulo, bajada }: { titulo: string; bajada?: string }) {
   return (
     <div className="mb-1">
-      <h3 className="text-base font-black text-[#002B66]">{titulo}</h3>
+      <h3 className="text-base font-black text-[#E02020]">{titulo}</h3>
       {bajada && <p className="mt-0.5 text-xs text-slate-500">{bajada}</p>}
     </div>
   );
@@ -117,7 +117,7 @@ export function Alerta({ tono, children }: { tono: Tono; children: ReactNode }) 
 export function Cargando({ texto = "Cargando…" }: { texto?: string }) {
   return (
     <div className="flex items-center justify-center gap-3 py-10 text-sm font-semibold text-slate-500">
-      <span className="h-6 w-6 animate-spin rounded-full border-[3px] border-slate-300 border-t-[#002B66]" />
+      <span className="h-6 w-6 animate-spin rounded-full border-[3px] border-slate-300 border-t-[#E02020]" />
       {texto}
     </div>
   );
@@ -174,7 +174,7 @@ export function Campo({ etiqueta, children, ayuda, clase = "" }: CampoProps) {
 }
 
 export const CLASE_INPUT =
-  "w-full rounded-xl border-2 border-slate-300 px-3 py-2.5 text-sm focus:border-[#002B66] focus:outline-none disabled:bg-slate-100 disabled:text-slate-500";
+  "w-full rounded-xl border-2 border-slate-300 px-3 py-2.5 text-sm focus:border-[#E02020] focus:outline-none disabled:bg-slate-100 disabled:text-slate-500";
 
 /* ---------------- Contacto (llamada + WhatsApp) ---------------- */
 
@@ -193,7 +193,7 @@ export function Contacto({ telefono, compacto }: { telefono: string | null; comp
     : "inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold";
   return (
     <span className="inline-flex items-center gap-1.5">
-      <a href={`tel:${telefono.replace(/\s/g, "")}`} className={`${base} bg-blue-50 text-blue-800 hover:bg-blue-100`}>
+      <a href={`tel:${telefono.replace(/\s/g, "")}`} className={`${base} bg-red-50 text-red-800 hover:bg-red-100`}>
         📞 {telefono}
       </a>
       {wa && (

@@ -321,13 +321,13 @@ export default function ActaIngresoForm({ onGuardada, onCancelar }: Props) {
               value={mesa}
               onChange={(e) => setMesa(e.target.value.replace(/\D/g, ""))}
               placeholder="023002"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-lg tracking-widest focus:border-[#002B66] focus:outline-none"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-lg tracking-widest focus:border-[#E02020] focus:outline-none"
             />
           </label>
           <button
             onClick={cargarMesa}
             disabled={cargando || !/^\d{6}$/.test(mesa)}
-            className="rounded-lg bg-[#002B66] px-5 py-2 text-sm font-bold text-white hover:bg-[#003366] disabled:bg-slate-300"
+            className="rounded-lg bg-[#E02020] px-5 py-2 text-sm font-bold text-white hover:bg-[#A01010] disabled:bg-slate-300"
           >
             {cargando ? "Buscando…" : "Cargar acta"}
           </button>
@@ -391,7 +391,7 @@ export default function ActaIngresoForm({ onGuardada, onCancelar }: Props) {
                 return (
                   <div key={col.columna} className="space-y-2">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                      <span className="text-xs font-black uppercase tracking-wider text-[#002B66]">
+                      <span className="text-xs font-black uppercase tracking-wider text-[#E02020]">
                         Columna {col.etiqueta}
                       </span>
                       <div className="flex items-center gap-4 text-xs font-bold">
@@ -446,7 +446,7 @@ export default function ActaIngresoForm({ onGuardada, onCancelar }: Props) {
                             )
                           }
                           placeholder="—"
-                          className="w-20 rounded border border-slate-300 px-2 py-1.5 text-right font-mono focus:border-[#002B66] focus:outline-none"
+                          className="w-20 rounded border border-slate-300 px-2 py-1.5 text-right font-mono focus:border-[#E02020] focus:outline-none"
                         />
                       </div>
                     ))}
@@ -571,7 +571,7 @@ export default function ActaIngresoForm({ onGuardada, onCancelar }: Props) {
                 onClick={enviar}
                 disabled={enviando || !!motivoBloqueo || !plantilla}
                 title={motivoBloqueo ?? undefined}
-                className="rounded-lg bg-[#002B66] px-6 py-2 text-sm font-bold text-white hover:bg-[#003366] disabled:bg-slate-300"
+                className="rounded-lg bg-[#E02020] px-6 py-2 text-sm font-bold text-white hover:bg-[#A01010] disabled:bg-slate-300"
               >
                 {enviando ? "Enviando…" : "Registrar acta"}
               </button>

@@ -28,6 +28,8 @@ class StorageService:
         dest_dir = Path(settings.storage_local_dir)
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest = dest_dir / key
+        # La clave puede traer subcarpetas (p. ej. "actas/xxx.jpg").
+        dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source_path, dest)
         return f"/storage/{key}"
 

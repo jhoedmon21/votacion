@@ -114,7 +114,7 @@ export default function ActaDetailModal({
           <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
             {titulo}
           </span>
-          <span className="font-mono text-[11px] font-bold text-[#002B66]">
+          <span className="font-mono text-[11px] font-bold text-[#E02020]">
             {num(total)} votos
           </span>
         </div>
@@ -152,7 +152,7 @@ export default function ActaDetailModal({
                       <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                         <span
                           className="block h-full rounded-full"
-                          style={{ width: `${pct}%`, backgroundColor: c.color || "#002B66" }}
+                          style={{ width: `${pct}%`, backgroundColor: c.color || "#E02020" }}
                         />
                       </span>
                     </span>
@@ -185,7 +185,7 @@ export default function ActaDetailModal({
             <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">
               Acta de la mesa
             </p>
-            <h2 className="font-mono text-xl font-black tabular-nums text-[#002B66]">
+            <h2 className="font-mono text-xl font-black tabular-nums text-[#E02020]">
               {mesa}
             </h2>
           </div>

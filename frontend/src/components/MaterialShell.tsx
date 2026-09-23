@@ -22,17 +22,23 @@ interface Props {
   usuario: string;
   insignia: string;
   colorInsignia: string;
+  /** Tema visual: "claro" (Material) o "fa" (sala de cómputo Fuerza Arequipeña). */
+  tema?: "claro" | "fa";
   onSalir: () => void;
   children: ReactNode;
 }
 
 export default function MaterialShell({
-  nav, titulo, bajada, usuario, insignia, colorInsignia, onSalir, children,
+  nav, titulo, bajada, usuario, insignia, colorInsignia, tema = "claro", onSalir, children,
 }: Props) {
+  const fa = tema === "fa";
   const [abierto, setAbierto] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#f1f2f7] font-sans text-slate-800 antialiased">
+    <div className={fa
+      ? "min-h-screen bg-[#12090B] font-sans text-slate-200 antialiased"
+      : "min-h-screen bg-[#f1f2f7] font-sans text-slate-800 antialiased"
+    }>
       {/* Overlay móvil */}
       {abierto && (
         <button
@@ -44,13 +50,17 @@ export default function MaterialShell({
 
       {/* Sidebar oscuro */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-[#232a35] text-slate-300 shadow-2xl transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col shadow-2xl transition-transform duration-300 lg:translate-x-0 ${
+          fa ? "bg-[#1B0D10] text-slate-300" : "bg-[#232a35] text-slate-300"
+        } ${
           abierto ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex items-center gap-3 px-5 pb-5 pt-6">
-          <span className="rounded-lg bg-white px-2.5 py-1 text-lg font-black tracking-tight text-[#002B66] shadow">
-            ONPE
+          <span className={`rounded-lg px-2.5 py-1 text-lg font-black tracking-tight shadow ${
+            fa ? "bg-[#E02020] text-white" : "bg-white text-[#E02020]"
+          }`}>
+            SISTEMA
           </span>
           <div>
             <p className="text-sm font-black uppercase leading-tight tracking-wider text-white">
@@ -77,7 +87,7 @@ export default function MaterialShell({
             >
               <span
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                  item.activo ? "bg-[#002B66] text-white shadow" : "bg-white/5 text-slate-300"
+                  item.activo ? "bg-[#E02020] text-white shadow" : "bg-white/5 text-slate-300"
                 }`}
               >
                 {item.icono}
@@ -92,7 +102,7 @@ export default function MaterialShell({
 
         <div className="border-t border-white/10 p-4">
           <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#002B66] text-sm font-black text-white">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E02020] text-sm font-black text-white">
               {(usuario || "?").charAt(0).toUpperCase()}
             </span>
             <div className="min-w-0 flex-1">
@@ -117,30 +127,40 @@ export default function MaterialShell({
       {/* Columna principal */}
       <div className="lg:pl-64">
         {/* Topbar */}
-        <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 shadow-xs backdrop-blur">
+        <header className={`sticky top-0 z-20 border-b shadow-xs backdrop-blur ${
+          fa ? "border-[#3A1418] bg-[#1B0E11]/90" : "border-slate-200 bg-white/90"
+        }`}>
           <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
             <button
               onClick={() => setAbierto(true)}
               aria-label="Abrir menú"
-              className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+              className={`rounded-lg p-2 lg:hidden ${
+                fa ? "text-slate-300 hover:bg-white/10" : "text-slate-600 hover:bg-slate-100"
+              }`}
             >
               ☰
             </button>
             <div className="min-w-0">
-              <h1 className="truncate text-base font-black text-slate-900 sm:text-lg">
+              <h1 className={`truncate text-base font-black sm:text-lg ${fa ? "text-white" : "text-slate-900"}`}>
                 {titulo}
               </h1>
-              <p className="truncate text-[11px] text-slate-500">{bajada}</p>
+              <p className={`truncate text-[11px] ${fa ? "text-slate-400" : "text-slate-500"}`}>{bajada}</p>
             </div>
-            <span className="ml-auto hidden items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700 sm:flex">
+            <span className={`ml-auto hidden items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black sm:flex ${
+              fa ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-700"
+            }`}>
               <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
               EN VIVO
             </span>
           </div>
         </header>
 
-        {/* Contenido */}
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">{children}</main>
+        {/* Contenido: la sala de cómputo es full-bleed (trae su propio lienzo oscuro). */}
+        {fa ? (
+          <main className="py-6">{children}</main>
+        ) : (
+          <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">{children}</main>
+        )}
       </div>
     </div>
   );

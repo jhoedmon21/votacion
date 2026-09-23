@@ -229,6 +229,9 @@ class V1RegistrarIn(BaseModel):
     total_emitidos: int = Field(default=0, ge=0)
     impugnada: bool = False
     motivo_impugnacion: Optional[str] = None
+    # URL pública de la foto del acta (opcional; la sube antes
+    # POST /api/v1/actas/foto y el formulario la asocia aquí).
+    image_url: Optional[str] = None
     foto_hash_sha256: Optional[str] = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
@@ -285,6 +288,13 @@ class V1ActaObservada(BaseModel):
     distrito: str
 
 
+class V1GanadorDistrito(BaseModel):
+    """Organización ganadora (o más votada) en un distrito para el mapa."""
+    organizacion: str
+    color: str = "#6b7280"
+    votos: int = 0
+
+
 class V1ResumenOut(BaseModel):
     total_mesas: int
     total_actas: int
@@ -303,6 +313,8 @@ class V1ResumenOut(BaseModel):
     partidos: list[V1PartidoResumen] = Field(default_factory=list)
     distritos: list[V1DistritoAvance] = Field(default_factory=list)
     observadas: list[V1ActaObservada] = Field(default_factory=list)
+    # Ganador por distrito (ubigeo -> org/color/votos) para el mapa de resultados.
+    ganadores: dict[str, V1GanadorDistrito] = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -429,6 +441,21 @@ class V1AsignarIn(BaseModel):
     numero_mesa: str = Field(min_length=6, max_length=6, pattern=r"^[0-9]{6}$")
     tipo: str = Field(default="TITULAR", pattern=r"^(TITULAR|SUPLENTE)$")
     notas: Optional[str] = None
+
+
+class V1AsignarLoteIn(BaseModel):
+    """Asignación masiva: un personero a varias mesas de un mismo local."""
+    usuario_id: int
+    numero_mesas: list[str] = Field(
+        min_length=1, max_length=200,
+        description="N° de mesa (6 dígitos) de las mesas a asignar")
+    tipo: str = Field(default="TITULAR", pattern=r"^(TITULAR|SUPLENTE)$")
+    notas: Optional[str] = None
+
+
+class V1DesasignarIn(BaseModel):
+    """Quita una asignación personero↔mesa por su id."""
+    asignacion_id: int
 
 
 class V1CheckinIn(BaseModel):

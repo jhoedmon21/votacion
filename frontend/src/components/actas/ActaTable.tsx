@@ -18,7 +18,7 @@ const BADGE: Record<string, string> = {
   REGISTRADA: "bg-emerald-100 text-emerald-800",
   PENDIENTE: "bg-slate-200 text-slate-700",
   OBSERVADA: "bg-amber-100 text-amber-800",
-  EN_DIGITACION: "bg-blue-100 text-blue-800",
+  EN_DIGITACION: "bg-red-100 text-red-800",
   DIGITADA: "bg-indigo-100 text-indigo-800",
   EN_REVISION: "bg-yellow-100 text-yellow-800",
   VALIDADA: "bg-emerald-100 text-emerald-800",
@@ -168,7 +168,7 @@ export default function ActaTable({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-black uppercase tracking-wider text-[#002B66]">Gestión de actas por territorio</h3>
+        <h3 className="text-sm font-black uppercase tracking-wider text-[#E02020]">Gestión de actas por territorio</h3>
         <button onClick={() => void cargar()} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50">↻ Actualizar</button>
       </div>
 
@@ -222,7 +222,7 @@ export default function ActaTable({
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
             <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">Total mesas</p>
-            <p className="mt-1 font-mono text-2xl font-black tabular-nums text-[#002B66]">{totales.total.toLocaleString()}</p>
+            <p className="mt-1 font-mono text-2xl font-black tabular-nums text-[#E02020]">{totales.total.toLocaleString()}</p>
             <p className="mt-0.5 font-mono text-[11px] tabular-nums text-slate-400">avance {totales.avance_pct}%</p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
@@ -274,7 +274,7 @@ export default function ActaTable({
               <tbody>
                 {data.filas.map((f) => (
                   <tr key={f.numero_mesa} className="border-t border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-2.5 font-mono font-black tabular-nums text-[#002B66]">{f.numero_mesa}</td>
+                    <td className="px-4 py-2.5 font-mono font-black tabular-nums text-[#E02020]">{f.numero_mesa}</td>
                     <td className="px-4 py-2.5 text-xs font-bold text-slate-700">
                       {f.distrito}
                       <span className="block font-mono text-[10px] font-normal text-slate-400">{f.ubigeo}</span>
@@ -292,14 +292,14 @@ export default function ActaTable({
                         {f.estado === "PENDIENTE" ? (
                           <button
                             onClick={() => onEdit?.({ id: f.acta_id!, numero_mesa: f.numero_mesa } as ActaRecord)}
-                            className="rounded-lg bg-[#002B66] px-2.5 py-1.5 text-[11px] font-black text-white hover:bg-[#003a8c]"
+                            className="rounded-lg bg-[#E02020] px-2.5 py-1.5 text-[11px] font-black text-white hover:bg-[#003a8c]"
                           >
                             ⬆ Cargar
                           </button>
                         ) : (
                           <>
                             <button onClick={() => abrirVer(f.acta_id)} className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-200">Ver</button>
-                            <button onClick={() => abrirEditar(f.acta_id)} className="rounded-lg bg-blue-100 px-2.5 py-1.5 text-[11px] font-bold text-blue-800 hover:bg-blue-200">Editar</button>
+                            <button onClick={() => abrirEditar(f.acta_id)} className="rounded-lg bg-red-100 px-2.5 py-1.5 text-[11px] font-bold text-red-800 hover:bg-red-200">Editar</button>
                             <button onClick={() => abrirValidar(f.acta_id)} className="rounded-lg bg-amber-100 px-2.5 py-1.5 text-[11px] font-bold text-amber-800 hover:bg-amber-200">Validar</button>
                             <button onClick={() => abrirHistorial(f.acta_id)} className="rounded-lg bg-violet-100 px-2.5 py-1.5 text-[11px] font-bold text-violet-800 hover:bg-violet-200">Historial</button>
                             {f.tiene_foto && <button onClick={() => abrirFoto(f.acta_id)} className="rounded-lg bg-violet-100 px-2.5 py-1.5 text-[11px] font-bold text-violet-800 hover:bg-violet-200">Foto</button>}
@@ -318,7 +318,7 @@ export default function ActaTable({
             <div className="flex items-center gap-1.5">
               <button disabled={data.pagina <= 1} onClick={() => setPagina((p) => p - 1)} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-40">← Anterior</button>
               {paginas.map((p) => (
-                <button key={p} onClick={() => setPagina(p)} className={`rounded-lg px-3 py-1.5 ${p === data.pagina ? "bg-[#002B66] text-white" : "border border-slate-300 bg-white"}`}>{p}</button>
+                <button key={p} onClick={() => setPagina(p)} className={`rounded-lg px-3 py-1.5 ${p === data.pagina ? "bg-[#E02020] text-white" : "border border-slate-300 bg-white"}`}>{p}</button>
               ))}
               <button disabled={data.pagina >= data.total_paginas} onClick={() => setPagina((p) => p + 1)} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 disabled:opacity-40">Siguiente →</button>
               <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPagina(1); }} className="ml-2 rounded-lg border border-slate-300 bg-white px-2 py-1.5">

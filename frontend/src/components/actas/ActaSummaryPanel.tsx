@@ -23,9 +23,9 @@ export default function ActaSummaryPanel({ totales, loading = false }: ActaSumma
   const pct = (n: number, total: number) => total > 0 ? `${((100 * n) / total).toFixed(1)}%` : "—";
 
   const cards = [
-    { label: "Total Mesas", value: totales.total.toLocaleString(), sub: `avance ${totales.avance_pct}%`, color: "text-[#002B66]", colSpan: 2 },
+    { label: "Total Mesas", value: totales.total.toLocaleString(), sub: `avance ${totales.avance_pct}%`, color: "text-[#E02020]", colSpan: 2 },
     { label: "Registradas", value: totales.registradas.toLocaleString(), sub: `${pct(totales.registradas, totales.total)} del total`, color: "text-emerald-700", colSpan: 2 },
-    { label: "En Digitación", value: "—", sub: "pendientes de digitación", color: "text-blue-700", colSpan: 1 },
+    { label: "En Digitación", value: "—", sub: "pendientes de digitación", color: "text-red-700", colSpan: 1 },
     { label: "Digitadas", value: "—", sub: "completas sin validar", color: "text-indigo-700", colSpan: 1 },
     { label: "En Revisión", value: "—", sub: "pendientes de validación", color: "text-yellow-700", colSpan: 1 },
     { label: "Observadas", value: totales.observadas.toLocaleString(), sub: "para rectificar", color: "text-amber-600", colSpan: 1 },
@@ -50,7 +50,7 @@ export default function ActaSummaryPanel({ totales, loading = false }: ActaSumma
         <div className="lg:col-span-8 mt-2">
           <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100">
             <div className="h-full bg-emerald-500 transition-all" style={{ width: `${(100 * totales.registradas) / totales.total}%` }} title="Registradas" />
-            <div className="h-full bg-blue-500 transition-all" style={{ width: "0%" }} title="En Digitación" />
+            <div className="h-full bg-red-500 transition-all" style={{ width: "0%" }} title="En Digitación" />
             <div className="h-full bg-indigo-500 transition-all" style={{ width: "0%" }} title="Digitadas" />
             <div className="h-full bg-yellow-500 transition-all" style={{ width: "0%" }} title="En Revisión" />
             <div className="h-full bg-amber-500 transition-all" style={{ width: `${(100 * totales.observadas) / totales.total}%` }} title="Observadas" />

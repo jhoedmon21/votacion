@@ -354,7 +354,7 @@ export default function VotosMesaForm({ onGuardada, onCancelar }: Props) {
     return (
       <div key={col.columna} className="space-y-2">
         <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-          <span className="text-xs font-black uppercase tracking-wider text-[#002B66]">
+          <span className="text-xs font-black uppercase tracking-wider text-[#E02020]">
             Columna {col.etiqueta}
           </span>
           <div className="flex items-center gap-4 text-xs font-bold">
@@ -399,7 +399,7 @@ export default function VotosMesaForm({ onGuardada, onCancelar }: Props) {
                 setVoto(tipo, col.columna, o.numero, ev.target.value === "" ? null : Number(ev.target.value))
               }
               placeholder="—"
-              className="w-20 rounded border border-slate-300 px-2 py-1.5 text-right font-mono focus:border-[#002B66] focus:outline-none"
+              className="w-20 rounded border border-slate-300 px-2 py-1.5 text-right font-mono focus:border-[#E02020] focus:outline-none"
             />
           </div>
         ))}
@@ -479,13 +479,13 @@ export default function VotosMesaForm({ onGuardada, onCancelar }: Props) {
               value={mesa}
               onChange={(e) => setMesa(e.target.value.replace(/\D/g, ""))}
               placeholder="023002"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-lg tracking-widest focus:border-[#002B66] focus:outline-none"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-lg tracking-widest focus:border-[#E02020] focus:outline-none"
             />
           </label>
           <button
             onClick={cargarMesa}
             disabled={cargando || !/^\d{6}$/.test(mesa)}
-            className="rounded-lg bg-[#002B66] px-5 py-2 text-sm font-bold text-white hover:bg-[#003366] disabled:bg-slate-300"
+            className="rounded-lg bg-[#E02020] px-5 py-2 text-sm font-bold text-white hover:bg-[#A01010] disabled:bg-slate-300"
           >
             {cargando ? "Buscando…" : "Cargar acta"}
           </button>
@@ -525,7 +525,7 @@ export default function VotosMesaForm({ onGuardada, onCancelar }: Props) {
                   accept="image/*"
                   capture="environment"
                   onChange={(e) => onSeleccionarFoto(e.target.files?.[0] ?? null)}
-                  className="mt-2 w-full text-xs text-slate-500 file:mr-3 file:rounded file:border-0 file:bg-[#002B66] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white"
+                  className="mt-2 w-full text-xs text-slate-500 file:mr-3 file:rounded file:border-0 file:bg-[#E02020] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white"
                 />
                 {fotoPreview && (
                   <img
@@ -567,7 +567,7 @@ export default function VotosMesaForm({ onGuardada, onCancelar }: Props) {
                   onChange={(e) => setObservaciones(e.target.value)}
                   rows={4}
                   placeholder="Retraso en instalación, material incompleto, diferencia declarada al cotejar, etc."
-                  className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#002B66] focus:outline-none"
+                  className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#E02020] focus:outline-none"
                 />
                 <p className="mt-1 text-[11px] text-slate-400">
                   Las observaciones bloqueantes se generan solas (R1/R2); aquí van las
@@ -589,7 +589,7 @@ export default function VotosMesaForm({ onGuardada, onCancelar }: Props) {
                   onClick={() => setTab(e.tipo_eleccion)}
                   className={`rounded-lg px-4 py-2 text-xs font-black uppercase tracking-wider transition ${
                     tab === e.tipo_eleccion
-                      ? "bg-[#002B66] text-white"
+                      ? "bg-[#E02020] text-white"
                       : "border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
                   }`}
                 >
@@ -674,7 +674,7 @@ export default function VotosMesaForm({ onGuardada, onCancelar }: Props) {
                     ? "El acta activa tiene validaciones bloqueantes (R1/R2)."
                     : undefined
                 }
-                className="rounded-lg bg-[#002B66] px-6 py-2 text-sm font-bold text-white hover:bg-[#003366] disabled:bg-slate-300"
+                className="rounded-lg bg-[#E02020] px-6 py-2 text-sm font-bold text-white hover:bg-[#A01010] disabled:bg-slate-300"
               >
                 {enviando
                   ? "Enviando…"

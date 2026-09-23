@@ -227,7 +227,7 @@ export default function GestionActas({ onCargarMesa }: {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-black uppercase tracking-wider text-[#002B66]">
+        <h3 className="text-sm font-black uppercase tracking-wider text-[#E02020]">
           Gestión de actas por territorio
         </h3>
         <button
@@ -300,7 +300,7 @@ export default function GestionActas({ onCargarMesa }: {
       {/* Tarjetas KPI del filtro */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi etiqueta="Total mesas" valor={String(totales?.total ?? "—")}
-          sub={data ? `avance ${totales?.avance_pct ?? 0}%` : "cargando…"} color="text-[#002B66]" />
+          sub={data ? `avance ${totales?.avance_pct ?? 0}%` : "cargando…"} color="text-[#E02020]" />
         <Kpi etiqueta="Registradas" valor={String(totales?.registradas ?? "—")}
           sub={totales ? pct(totales.registradas, totales.total) + " del total" : "cargando…"}
           color="text-emerald-700" />
@@ -344,7 +344,7 @@ export default function GestionActas({ onCargarMesa }: {
               <tbody>
                 {data.filas.map((f) => (
                   <tr key={f.numero_mesa} className="border-t border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-2.5 font-mono font-black tabular-nums text-[#002B66]">
+                    <td className="px-4 py-2.5 font-mono font-black tabular-nums text-[#E02020]">
                       {f.numero_mesa}
                     </td>
                     <td className="px-4 py-2.5 text-xs font-bold text-slate-700">
@@ -373,14 +373,14 @@ export default function GestionActas({ onCargarMesa }: {
                         {f.estado === "PENDIENTE" ? (
                           <button
                             onClick={() => onCargarMesa?.(f.numero_mesa)}
-                            className="rounded-lg bg-[#002B66] px-2.5 py-1.5 text-[11px] font-black text-white hover:bg-[#003a8c]"
+                            className="rounded-lg bg-[#E02020] px-2.5 py-1.5 text-[11px] font-black text-white hover:bg-[#003a8c]"
                           >
                             ⬆ Cargar
                           </button>
                         ) : (
                           <>
                             <button onClick={() => void abrirEditar(f.acta_id)}
-                              className="rounded-lg bg-blue-100 px-2.5 py-1.5 text-[11px] font-bold text-blue-800 hover:bg-blue-200">
+                              className="rounded-lg bg-red-100 px-2.5 py-1.5 text-[11px] font-bold text-red-800 hover:bg-red-200">
                               Editar
                             </button>
                             {f.tiene_foto && (
@@ -413,7 +413,7 @@ export default function GestionActas({ onCargarMesa }: {
               {paginas.map((p) => (
                 <button key={p} onClick={() => setPagina(p)}
                   className={`rounded-lg px-3 py-1.5 ${p === data.pagina
-                    ? "bg-[#002B66] text-white" : "border border-slate-300 bg-white"}`}>
+                    ? "bg-[#E02020] text-white" : "border border-slate-300 bg-white"}`}>
                   {p}
                 </button>
               ))}

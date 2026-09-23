@@ -88,7 +88,7 @@ export default function ActaHistoryPanel({ acta, onClose }: ActaHistoryPanelProp
   const getActionColor = (action: string) => {
     const colors: Record<string, string> = {
       CREAR: "bg-emerald-100 text-emerald-800",
-      MODIFICAR: "bg-blue-100 text-blue-800",
+      MODIFICAR: "bg-red-100 text-red-800",
       VALIDAR: "bg-amber-100 text-amber-800",
       CERRAR: "bg-slate-100 text-slate-800",
       OBSERVAR: "bg-red-100 text-red-800",
@@ -116,7 +116,7 @@ export default function ActaHistoryPanel({ acta, onClose }: ActaHistoryPanelProp
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="relative w-[90vw] max-w-[1000px] h-[90vh] mx-4 bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-4 bg-slate-100 border-b sticky top-0 z-10">
-          <h2 className="text-xl font-bold text-[#002B66]">
+          <h2 className="text-xl font-bold text-[#E02020]">
             Historial de Cambios - Mesa {acta.numero_mesa}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 p-2">✕</button>

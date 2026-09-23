@@ -93,6 +93,7 @@ export interface MesaAsignada {
   tipo: string;
   estado: string;
   checkin_hoy: boolean;
+  asignacion_id?: number;
 }
 
 export interface MiEstado {
@@ -267,6 +268,20 @@ export const api = {
     request<{ id: number; usuario: string; numero_mesa: string; tipo: string; estado: string }>(
       "/v1/campo/asignar", { method: "POST", body: JSON.stringify(payload) }
     ),
+  asignarLote: (payload: { usuario_id: number; numero_mesas: string[]; tipo: string; notas?: string }) =>
+    request<{ usuario: string; tipo: string; total: number; mesas: Array<{ numero_mesa: string; resultado: string }> }>(
+      "/v1/campo/asignar-lote", { method: "POST", body: JSON.stringify(payload) }
+    ),
+  desasignar: (asignacion_id: number) =>
+    request<{ ok: boolean; asignacion_id: number }>(
+      "/v1/campo/desasignar", { method: "POST", body: JSON.stringify({ asignacion_id }) }
+    ),
+  mesasDeLocal: (venueId: number, usuarioId?: number) =>
+    request<Array<{
+      id: number; numero_mesa: string; electores_habiles: number | null;
+      estado: string | null; asignacion_id: number | null; asignado_a: string | null;
+      asignado_a_id: number | null; tipo: string | null; es_del_personero: boolean;
+    }>>(`/v1/campo/mesas-local?venue_id=${venueId}${usuarioId ? `&usuario_id=${usuarioId}` : ""}`),
   checkin: (payload: { numero_mesa: string; latitud: number; longitud: number; precision_m?: number | null; dispositivo?: string }) =>
     request<{ dentro_de_radio: boolean; distancia_m: number; estado: string; local: string; mensaje: string }>(
       "/v1/campo/checkin", { method: "POST", body: JSON.stringify(payload) }

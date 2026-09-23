@@ -33,8 +33,9 @@ from app.core.database import get_db
 from app.core.models import (AsignacionPersonero, CheckinPersonero,
                               DistrictCandidate, ProvincialCandidate, Record,
                               RegionalCandidate, Table, Usuario, Venue)
-from app.core.schemas import (V1AsignarIn, V1CheckinIn, V1CheckinOut,
-                               V1ChecklistOut, V1MiEstadoOut)
+from app.core.schemas import (V1AsignarIn, V1AsignarLoteIn, V1CheckinIn,
+                               V1CheckinOut, V1ChecklistOut, V1DesasignarIn,
+                               V1MiEstadoOut)
 from app.core.ubigeo import candidatos_del_ambito, ubigeo_de_nivel
 
 logger = logging.getLogger(__name__)
@@ -179,6 +180,122 @@ def asignar(payload: V1AsignarIn, db: Session = Depends(get_db),
             "estado": fila.estado}
 
 
+@router.post("/campo/asignar-lote")
+def asignar_lote(payload: V1AsignarLoteIn, db: Session = Depends(get_db),
+                 usuario: Usuario = Depends(requerir_rol(*ROLES_GESTORES))):
+    """Asigna un personero a varias mesas de golpe (misma pantalla del local).
+
+    Idempotente por usuario/mesa/tipo. Devuelve por-mesa el resultado para
+    pintar la grilla: "creada", "reactivada" o "ya_estaba"; 404 con detalle
+    si alguna mesa no existe o está fuera del alcance del gestor.
+    """
+    objetivo = db.query(Usuario).filter(Usuario.id == payload.usuario_id).first()
+    if objetivo is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    if objetivo.rol not in ROLES_CAMPO:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Sólo PERSONERO/DELEGADO_MESA, no {objetivo.rol}")
+    if not objetivo.activo:
+        raise HTTPException(status_code=422, detail="El usuario está inactivo")
+
+    orden = sorted(set(m for m in payload.numero_mesas if m.strip()))
+    resultados: list[dict] = []
+    for numero in orden:
+        try:
+            table = _mesa_en_alcance(db, usuario, numero)
+        except HTTPException as e:
+            raise HTTPException(status_code=e.status_code,
+                                detail=f"Mesa {numero}: {e.detail}")
+        fila = (
+            db.query(AsignacionPersonero)
+            .filter(AsignacionPersonero.usuario_id == objetivo.id,
+                    AsignacionPersonero.mesa_id == table.id,
+                    AsignacionPersonero.tipo == payload.tipo)
+            .first()
+        )
+        if fila is None:
+            db.add(AsignacionPersonero(
+                usuario_id=objetivo.id, mesa_id=table.id, tipo=payload.tipo,
+                estado="ASIGNADO", asignado_por=usuario.id, notas=payload.notas))
+            resultados.append({"numero_mesa": numero, "resultado": "creada"})
+        else:
+            reactivada = fila.estado != "ASIGNADO"
+            fila.estado = "ASIGNADO"
+            fila.asignado_por = usuario.id
+            if payload.notas is not None:
+                fila.notas = payload.notas
+            resultados.append({"numero_mesa": numero,
+                               "resultado": "reactivada" if reactivada else "ya_estaba"})
+    db.commit()
+    logger.info("asignar-lote %s: %d mesas a %s (por %s)",
+                payload.tipo, len(orden), objetivo.email, usuario.email)
+    return {"usuario": objetivo.email, "tipo": payload.tipo,
+            "total": len(orden), "mesas": resultados}
+
+
+@router.post("/campo/desasignar")
+def desasignar(payload: V1DesasignarIn, db: Session = Depends(get_db),
+               usuario: Usuario = Depends(requerir_rol(*ROLES_GESTORES))):
+    """Quita una asignación personero↔mesa. La mesa vuelve a quedar libre."""
+    fila = (
+        db.query(AsignacionPersonero)
+        .filter(AsignacionPersonero.id == payload.asignacion_id).first()
+    )
+    if fila is None:
+        raise HTTPException(status_code=404, detail="Asignación no encontrada")
+    # El gestor sólo toca mesas dentro de su alcance.
+    table = db.query(Table).filter(Table.id == fila.mesa_id).first()
+    _mesa_en_alcance(db, usuario, table.numero_mesa if table else "000000")
+    db.delete(fila)
+    db.commit()
+    return {"ok": True, "asignacion_id": payload.asignacion_id}
+
+
+@router.get("/campo/mesas-local")
+def mesas_de_local(venue_id: int = Query(...),
+                   usuario_id: int | None = Query(default=None),
+                   db: Session = Depends(get_db),
+                   usuario: Usuario = Depends(usuario_actual)):
+    """Mesas de un local con su estado de asignación (para la grilla).
+
+    Con ``usuario_id`` marca además qué mesas tiene ESE personero (y el id de
+    asignación) para resaltarlas y permitir desasignar desde la grilla.
+    """
+    venue = db.query(Venue).filter(Venue.id == venue_id).first()
+    if venue is None:
+        raise HTTPException(status_code=404, detail="Local no encontrado")
+    validar_alcance_venue(db, usuario, venue.id)
+
+    filas = (
+        db.query(Table, AsignacionPersonero, Usuario)
+        .outerjoin(AsignacionPersonero,
+                   (AsignacionPersonero.mesa_id == Table.id)
+                   & (AsignacionPersonero.estado.in_(("ASIGNADO", "CONFIRMADO", "PRESENTE"))))
+        .outerjoin(Usuario, Usuario.id == AsignacionPersonero.usuario_id)
+        .filter(Table.venue_id == venue.id)
+        .order_by(Table.numero_mesa)
+        .limit(600)
+        .all()
+    )
+    salida = []
+    for mesa, asign, persona in filas:
+        item = {
+            "id": mesa.id,
+            "numero_mesa": mesa.numero_mesa,
+            "electores_habiles": mesa.electores_habiles,
+            "estado": mesa.status,
+            "asignacion_id": asign.id if asign else None,
+            "asignado_a": (persona.nombre_completo if persona else None),
+            "asignado_a_id": (persona.id if persona else None),
+            "tipo": asign.tipo if asign else None,
+            "es_del_personero": bool(
+                usuario_id is not None and persona and persona.id == usuario_id),
+        }
+        salida.append(item)
+    return salida
+
+
 @router.post("/campo/checkin", response_model=V1CheckinOut)
 def checkin(payload: V1CheckinIn, db: Session = Depends(get_db),
             usuario: Usuario = Depends(usuario_actual)):
@@ -316,7 +433,7 @@ def listar_personeros(db: Session = Depends(get_db),
             mesas.append({
                 "numero_mesa": mesa.numero_mesa, "local": local.name,
                 "ubigeo": local.ubigeo, "tipo": asign.tipo,
-                "estado": asign.estado,
+                "estado": asign.estado, "asignacion_id": asign.id,
                 "ultimo_checkin": (check.created_at.isoformat()
                                    if check and check.created_at else None),
                 "dentro_de_radio": bool(check.dentro_de_radio) if check else None,

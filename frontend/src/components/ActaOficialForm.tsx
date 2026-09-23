@@ -47,8 +47,8 @@ interface Hallazgo {
  * ------------------------------------------------------------------ */
 
 const COLORES = {
-  azulOscuro: "#002B66",
-  azulMedio: "#003366",
+  azulOscuro: "#E02020",
+  azulMedio: "#A01010",
   azulClaro: "#1e40af",
   rojo: "#dc2626",
   rojoBg: "#fef2f2",

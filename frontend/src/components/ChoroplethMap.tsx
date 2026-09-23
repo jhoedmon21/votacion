@@ -26,6 +26,8 @@ interface Props {
   /** Al hacer clic en un distrito: sincroniza el filtro y los KPIs del tablero. */
   onSelectUbigeo: (ubigeo: string) => void;
   alto?: string;
+  /** Modo de coloreado inicial (el usuario puede alternar en el mapa). */
+  modoInicial?: "avance" | "ganador";
 }
 
 type Nivel = "distritos" | "provincias";
@@ -38,7 +40,7 @@ const RAMPA: Array<{ hasta: number; color: string; etiqueta: string }> = [
   { hasta: 50, color: "#8FB3E3", etiqueta: "25–50 %" },
   { hasta: 75, color: "#4E7DC4", etiqueta: "50–75 %" },
   { hasta: 99.9, color: "#2C5BA8", etiqueta: "75–99 %" },
-  { hasta: 100, color: "#002B66", etiqueta: "100 %" },
+  { hasta: 100, color: "#E02020", etiqueta: "100 %" },
 ];
 
 function colorAvance(avance: number): string {
@@ -65,12 +67,12 @@ function Enfoque({ objetivo, llave }: { objetivo: Geometry | null; llave: string
   return null;
 }
 
-export default function ChoroplethMap({ ubigeoSel, onSelectUbigeo, alto = "100%" }: Props) {
+export default function ChoroplethMap({ ubigeoSel, onSelectUbigeo, alto = "100%", modoInicial = "avance" }: Props) {
   const [datos, setDatos] = useState<DatosGeo | null>(null);
   const [stats, setStats] = useState<ChoroplethDistrito[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [nivel, setNivel] = useState<Nivel>("distritos");
-  const [modo, setModo] = useState<Modo>("avance");
+  const [modo, setModo] = useState<Modo>(modoInicial);
   const [provinciaFoco, setProvinciaFoco] = useState<string | null>(null);
 
   useEffect(() => {
@@ -230,7 +232,7 @@ export default function ChoroplethMap({ ubigeoSel, onSelectUbigeo, alto = "100%"
               layer.bindTooltip(tooltipDistrito(p), { sticky: true });
               layer.on({
                 click: () => onSelectUbigeo(p.u === ubigeoSel ? "" : p.u),
-                mouseover: (e) => (e.target as L.Path).setStyle({ weight: 2, color: "#002B66" }),
+                mouseover: (e) => (e.target as L.Path).setStyle({ weight: 2, color: "#E02020" }),
                 mouseout: (e) =>
                   (e.target as L.Path).setStyle({
                     weight: p.u === ubigeoSel ? 2.5 : 0.8,
@@ -244,7 +246,7 @@ export default function ChoroplethMap({ ubigeoSel, onSelectUbigeo, alto = "100%"
                   setProvinciaFoco(p.u);
                   setNivel("distritos");
                 },
-                mouseover: (e) => (e.target as L.Path).setStyle({ weight: 2, color: "#002B66" }),
+                mouseover: (e) => (e.target as L.Path).setStyle({ weight: 2, color: "#E02020" }),
                 mouseout: (e) => (e.target as L.Path).setStyle({ weight: 1, color: "#FFFFFF" }),
               });
             }
@@ -263,7 +265,7 @@ export default function ChoroplethMap({ ubigeoSel, onSelectUbigeo, alto = "100%"
                 if (n === "provincias") setProvinciaFoco(null);
               }}
               className={`px-2.5 py-1 text-[11px] font-black ${
-                nivel === n ? "bg-[#002B66] text-white" : "text-slate-600 hover:bg-slate-100"
+                nivel === n ? "bg-[#E02020] text-white" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               {n === "distritos" ? "Distritos" : "Provincias"}
@@ -338,7 +340,7 @@ export default function ChoroplethMap({ ubigeoSel, onSelectUbigeo, alto = "100%"
       </div>
 
       {/* Contador del ámbito */}
-      <span className="absolute right-2 top-2 z-[400] rounded-lg border border-slate-200 bg-white/95 px-2.5 py-1 text-[11px] font-black text-[#002B66] shadow-xs">
+      <span className="absolute right-2 top-2 z-[400] rounded-lg border border-slate-200 bg-white/95 px-2.5 py-1 text-[11px] font-black text-[#E02020] shadow-xs">
         {totalProc}/{totalMesas} actas · {nivel === "distritos" ? "109 distritos" : "8 provincias"}
       </span>
     </div>

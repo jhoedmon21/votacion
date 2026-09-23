@@ -226,7 +226,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                     type="text"
                     value={formData.numero_mesa}
                     onChange={(e) => handleInputChange('numero_mesa', e.target.value)}
-                    className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${
                       errors.numero_mesa ? "border-red-500" : ""
                     }`}
                   />
@@ -242,7 +242,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                     type="number"
                     value={formData.total_electores}
                     onChange={(e) => handleInputChange('total_electores', Number(e.target.value) || 0)}
-                    className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${
                       errors.total_electores ? "border-red-500" : ""
                     }`}
                     min="0"
@@ -278,7 +278,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                               type="number"
                               value={formData.votos_distrital[index].votes}
                               onChange={(e) => handleCandidateVoteChange('distrital', index, Number(e.target.value) || 0)}
-                              className={`w-full px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                              className={`w-full px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${
                                 // Highlight if this specific field has error (simplified)
                                 errors[`voto_distrital_${index}`] ? "border-red-500" : ""
                               }`}
@@ -310,7 +310,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                               type="number"
                               value={formData.votos_regional[index].votes}
                               onChange={(e) => handleCandidateVoteChange('regional', index, Number(e.target.value) || 0)}
-                              className={`w-full px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                              className={`w-full px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${
                                 errors[`voto_regional_${index}`] ? "border-red-500" : ""
                               }`}
                               min="0"
@@ -336,7 +336,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                     type="number"
                     value={formData.votos_blancos}
                     onChange={(e) => handleInputChange('votos_blancos', Number(e.target.value) || 0)}
-                    className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${
                       errors.votos_blancos ? "border-red-500" : ""
                     }`}
                     min="0"
@@ -353,7 +353,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                     type="number"
                     value={formData.votos_nulos}
                     onChange={(e) => handleInputChange('votos_nulos', Number(e.target.value) || 0)}
-                    className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${
                       errors.votos_nulos ? "border-red-500" : ""
                     }`}
                     min="0"
@@ -372,7 +372,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                   type="number"
                   value={formData.votos_impugnados}
                   onChange={(e) => handleInputChange('votos_impugnados', Number(e.target.value) || 0)}
-                  className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${
                     errors.votos_impugnados ? "border-red-500" : ""
                   }`}
                     min="0"
@@ -469,7 +469,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
               <button
                 onClick={handleSave}
                 disabled={isSaving || Object.keys(errors).length > 0}
-                className={`px-4 py-2 bg-[#002B66] text-white rounded-md text-sm font-medium hover:bg-[#003366] disabled:bg-slate-400 disabled:cursor-not-allowed`}
+                className={`px-4 py-2 bg-[#E02020] text-white rounded-md text-sm font-medium hover:bg-[#A01010] disabled:bg-slate-400 disabled:cursor-not-allowed`}
               >
                 {isSaving ? "Guardando..." : "Confirmar y Guardar Acta"}
               </button>

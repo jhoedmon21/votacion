@@ -175,7 +175,7 @@ export default function Credenciales() {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-sm font-black uppercase tracking-wider text-[#002B66]">
+      <h3 className="text-sm font-black uppercase tracking-wider text-[#E02020]">
         Credenciales Fuerza Arequipeña
       </h3>
       {error && (

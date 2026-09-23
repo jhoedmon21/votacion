@@ -31,8 +31,9 @@ from app.core.models import (ActaMetadata, DistrictCandidate,
                               ProvincialCandidate, Record, RegionalCandidate,
                               Table, Usuario, Venue)
 from app.core.schemas import (V1ActaStatusFila, V1ActaStatusTotales,
-                               V1LocalOpt, V1OcrPreviewOut, V1RegistrarIn,
-                               V1RegistrarOut, V1ResumenOut, V1ResumenStatusOut)
+                               V1GanadorDistrito, V1LocalOpt, V1OcrPreviewOut,
+                               V1RegistrarIn, V1RegistrarOut, V1ResumenOut,
+                               V1ResumenStatusOut)
 from app.core.ubigeo import candidatos_del_ambito, nivel_desde_tipo
 from app.core.ubigeo import ubigeo_de_nivel
 from app.services.acta_validator import (COLUMNA_PRINCIPAL, ColumnaActa,
@@ -59,6 +60,30 @@ def _oferta(db: Session, venue_ubigeo: str, clave: str):
     por_nombre = {c.party: c for c in filas if c.party}
     por_orden = {str(c.sort_order): c for c in filas}
     return filas, por_nombre, por_orden
+
+
+@router.post("/actas/foto")
+async def subir_foto_acta(file: UploadFile = File(...),
+                          usuario: Usuario = Depends(requerir_rol(*ROLES_REGISTRO))):
+    """Sube la imagen del acta y devuelve su URL pública.
+
+    No registra nada: el formulario la asocia vía ``image_url`` al momento de
+    ``POST /actas/registrar`` (así la foto puede subirse antes de digitar).
+    """
+    tipo = (file.content_type or "").lower()
+    if not tipo.startswith("image/"):
+        raise HTTPException(status_code=422, detail="Sólo se aceptan imágenes del acta")
+    from app.services.storage import storage_service
+    tmp_dir = Path("./tmp")
+    tmp_dir.mkdir(exist_ok=True)
+    suffix = Path(file.filename or "acta.jpg").suffix or ".jpg"
+    tmp_path = tmp_dir / f"foto_acta_{uuid4().hex}{suffix}"
+    try:
+        tmp_path.write_bytes(await file.read())
+        url = storage_service.upload(str(tmp_path), filename=f"actas/{uuid4().hex}{suffix}")
+    finally:
+        tmp_path.unlink(missing_ok=True)
+    return {"url": url}
 
 
 @router.post("/actas/registrar", response_model=V1RegistrarOut)
@@ -164,6 +189,8 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
     meta.votos_nulos = payload.votos_nulos
     meta.votos_impugnados = payload.votos_impugnados
     meta.total_electores = habiles
+    if payload.image_url:
+        table.image_url = payload.image_url
     db.commit()
     db.refresh(table)
 
@@ -339,6 +366,7 @@ def mesas_por_ubigeo(ubigeo: str = Query(..., min_length=6, max_length=6),
 @router.get("/resultados/resumen", response_model=V1ResumenOut)
 def resumen(tipo_eleccion: str = Query("DISTRITAL"),
             top: int = Query(10, ge=1, le=50),
+            ubigeo: str = Query("", description="Foca el cómputo a un distrito (6d) o provincia (4d)"),
             db: Session = Depends(get_db),
             usuario: Usuario = Depends(usuario_actual)):
     """KPIs consolidados del cómputo: actas, avance, participación y partidos."""
@@ -355,6 +383,13 @@ def resumen(tipo_eleccion: str = Query("DISTRITAL"),
         ubigeos = alcance_ubigeos(usuario)
         prefijos = sorted({(u or "").rstrip("0") or u for u in ubigeos})
         venues = venues.filter(Venue.ubigeo.like(prefijos[0] + "%")) if prefijos else venues.filter(Venue.id < 0)
+    # Foco geográfico del cómputo (clic en el mapa o filtro del tablero):
+    # 6 dígitos = distrito exacto; 4 = toda la provincia.
+    if ubigeo:
+        if len(ubigeo) <= 4:
+            venues = venues.filter(Venue.ubigeo.like(ubigeo + "%"))
+        else:
+            venues = venues.filter(Venue.ubigeo == ubigeo)
     venues = venues.all()
     vids = [v.id for v in venues]
 
@@ -411,7 +446,34 @@ def resumen(tipo_eleccion: str = Query("DISTRITAL"),
         key=lambda r: (r["avance_pct"], -r["mesas"]))
 
     venue_por_id = {v.id: v for v in venues}
-    obs_lista = sorted(
+
+    # Ganador (organización más votada) por distrito para el mapa de resultados:
+    # sólo mesas contabilizadas, empate -> primera alfabéticamente (determinista).
+    ganadores: dict[str, V1GanadorDistrito] = {}
+    if pids:
+        filas_g = (
+            db.query(Venue.ubigeo, modelo.party, modelo.color,
+                     func.sum(Record.votes))
+            .join(Table, Table.venue_id == Venue.id)
+            .join(Record, (Record.table_id == Table.id)
+                  & (Record.candidate_type == clave))
+            .join(modelo, modelo.id == Record.candidate_id)
+            .filter(Table.id.in_(pids), Venue.ubigeo != None)  # noqa: E711
+            .group_by(Venue.ubigeo, modelo.party, modelo.color).all()
+        )
+        mejor: dict[str, tuple[int, str, str]] = {}
+        for ubigeo, org, color, votos in filas_g:
+            if not org:
+                continue
+            v = int(votos or 0)
+            actual = mejor.get(ubigeo)
+            if actual is None or v > actual[0] or (v == actual[0] and org < actual[1]):
+                mejor[ubigeo] = (v, org, color or "#6b7280")
+        for ubigeo, (v, org, color) in mejor.items():
+            ganadores[ubigeo] = V1GanadorDistrito(
+                organizacion=org, color=color, votos=v)
+
+    obs_lista = sorted( 
         ({"numero_mesa": t.numero_mesa,
           "local": venue_por_id.get(t.venue_id).name
           if venue_por_id.get(t.venue_id) else "",
@@ -441,6 +503,7 @@ def resumen(tipo_eleccion: str = Query("DISTRITAL"),
         partidos=partidos,
         distritos=distritos,
         observadas=obs_lista,
+        ganadores=ganadores,
     )
 
 

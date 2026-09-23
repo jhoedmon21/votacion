@@ -277,7 +277,7 @@ function SideBySideDigitizationInner({
   const getStatusBadge = (status: string) => {
     const badges: Record<string, string> = {
       PENDIENTE: "bg-slate-100 text-slate-700",
-      EN_DIGITACION: "bg-blue-100 text-blue-800",
+      EN_DIGITACION: "bg-red-100 text-red-800",
       DIGITADA: "bg-indigo-100 text-indigo-800",
       EN_REVISION: "bg-yellow-100 text-yellow-800",
       OBSERVADA: "bg-amber-100 text-amber-800",
@@ -315,7 +315,7 @@ function SideBySideDigitizationInner({
       >
         <div className="flex items-center justify-between p-4 bg-slate-100 border-b sticky top-0 z-10">
           <div className="flex items-center gap-4">
-            <h2 className="text-xl font-bold text-[#002B66]">
+            <h2 className="text-xl font-bold text-[#E02020]">
               {mode === "validate" ? "Validar contra Acta" : mode === "view" ? "Ver Acta" : "Editar Acta"}
               <span className="ml-2 text-sm font-normal text-slate-600">Mesa {acta.numero_mesa}</span>
             </h2>
@@ -456,7 +456,7 @@ function SideBySideDigitizationInner({
               {/* METADATOS */}
               <Card className="p-4">
                 <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#002B66] text-white text-xs flex items-center justify-center">1</span>
+                  <span className="w-6 h-6 rounded-full bg-[#E02020] text-white text-xs flex items-center justify-center">1</span>
                   Identificación del Acta
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
@@ -551,7 +551,7 @@ function SideBySideDigitizationInner({
                   </div>
                   <div className="flex justify-between border-t border-slate-200 pt-2">
                     <span className="text-slate-600 font-medium">Total votos válidos:</span>
-                    <span className="font-mono font-bold text-[#002B66]">{totalValidVotes.toLocaleString()}</span>
+                    <span className="font-mono font-bold text-[#E02020]">{totalValidVotes.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">Blancos + Nulos + Impugnados:</span>
@@ -577,7 +577,7 @@ function SideBySideDigitizationInner({
                   )}
                   <div className="flex justify-between border-t border-slate-200 pt-2 mt-2">
                     <span className="text-slate-600">Participación:</span>
-                    <span className="font-mono font-bold text-[#002B66]">{participationRate.toFixed(1)}%</span>
+                    <span className="font-mono font-bold text-[#E02020]">{participationRate.toFixed(1)}%</span>
                   </div>
                 </div>
               </Card>

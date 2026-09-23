@@ -134,7 +134,7 @@ export default function CoberturaPanel() {
 
   return (
     <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-6">
-      <h3 className="text-base font-black text-[#002B66]">
+      <h3 className="text-base font-black text-[#E02020]">
         ¿Dónde falta gente?
       </h3>
       <p className="mt-0.5 text-xs text-slate-500">
@@ -179,7 +179,7 @@ export default function CoberturaPanel() {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="🔍 Buscar colegio, sector o distrito…"
-          className="min-h-[44px] flex-1 rounded-xl border-2 border-slate-300 px-4 text-sm focus:border-[#002B66] focus:outline-none"
+          className="min-h-[44px] flex-1 rounded-xl border-2 border-slate-300 px-4 text-sm focus:border-[#E02020] focus:outline-none"
         />
         <div className="flex gap-2">
           {ubigeos.length > 0 && (
@@ -203,7 +203,7 @@ export default function CoberturaPanel() {
                 key={v}
                 onClick={() => setVista(v)}
                 className={`min-h-[44px] px-4 text-sm font-bold capitalize ${
-                  vista === v ? "bg-[#002B66] text-white" : "bg-white text-slate-500"
+                  vista === v ? "bg-[#E02020] text-white" : "bg-white text-slate-500"
                 }`}
               >
                 {v === "lista" ? "📋 Lista" : "🗺 Mapa"}

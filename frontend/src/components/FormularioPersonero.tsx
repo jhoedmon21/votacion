@@ -230,7 +230,7 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
       value={v ?? ""}
       onChange={(e) => on(e.target.value === "" ? null : Math.max(0, Number(e.target.value)))}
       placeholder="0"
-      className="h-14 w-24 rounded-xl border-2 border-slate-300 text-center font-mono text-2xl font-black text-[#002B66] focus:border-[#002B66] focus:outline-none"
+      className="h-14 w-24 rounded-xl border-2 border-slate-300 text-center font-mono text-2xl font-black text-[#E02020] focus:border-[#E02020] focus:outline-none"
     />
   );
 
@@ -245,10 +245,10 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
           return (
             <div key={et} className="flex flex-1 items-center gap-1">
               <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black text-white ${
-                listo ? "bg-emerald-600" : activo ? "bg-[#002B66]" : "bg-slate-300"}`}>
+                listo ? "bg-emerald-600" : activo ? "bg-[#E02020]" : "bg-slate-300"}`}>
                 {listo ? "✓" : n}
               </span>
-              <span className={`text-xs font-bold ${activo ? "text-[#002B66]" : "text-slate-400"}`}>{et}</span>
+              <span className={`text-xs font-bold ${activo ? "text-[#E02020]" : "text-slate-400"}`}>{et}</span>
               {n < 3 && <span className="mx-1 h-0.5 flex-1 rounded bg-slate-200" />}
             </div>
           );
@@ -261,7 +261,7 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
       {/* PASO 1 · Mesa */}
       {paso === 1 && (
         <Tarjeta>
-          <p className="mb-3 text-sm font-black text-[#002B66]">1 · Elige tu mesa</p>
+          <p className="mb-3 text-sm font-black text-[#E02020]">1 · Elige tu mesa</p>
           {esCampo && asignadas.length > 0 && (
             <div className="mb-3 grid gap-2">
               {asignadas.map((m) => (
@@ -271,10 +271,10 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
                     setMesa(m.numero_mesa);
                     void cargarMesa(m.numero_mesa);
                   }}
-                  className="flex min-h-[56px] items-center justify-between rounded-xl border-2 border-slate-200 px-4 text-left hover:border-[#002B66]"
+                  className="flex min-h-[56px] items-center justify-between rounded-xl border-2 border-slate-200 px-4 text-left hover:border-[#E02020]"
                 >
                   <span>
-                    <span className="block font-mono text-lg font-black text-[#002B66]">{m.numero_mesa}</span>
+                    <span className="block font-mono text-lg font-black text-[#E02020]">{m.numero_mesa}</span>
                     <span className="block text-[11px] text-slate-500">{m.local} · {m.tipo}</span>
                   </span>
                   <span className="text-xl">→</span>
@@ -289,7 +289,7 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
               maxLength={6}
               onChange={(e) => setMesa(e.target.value.replace(/\D/g, ""))}
               placeholder="N° de mesa (6 dígitos)"
-              className="h-14 min-w-0 flex-1 rounded-xl border-2 border-slate-300 px-4 font-mono text-xl tracking-[0.2em] focus:border-[#002B66] focus:outline-none"
+              className="h-14 min-w-0 flex-1 rounded-xl border-2 border-slate-300 px-4 font-mono text-xl tracking-[0.2em] focus:border-[#E02020] focus:outline-none"
             />
             <Boton onClick={() => void cargarMesa(mesa.trim())} deshabilitado={cargando || !/^\d{6}$/.test(mesa)}>
               {cargando ? "…" : "Ir →"}
@@ -305,7 +305,7 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
       {/* PASO 2 · Nivel */}
       {paso === 2 && plantilla && (
         <Tarjeta>
-          <p className="text-sm font-black text-[#002B66]">
+          <p className="text-sm font-black text-[#E02020]">
             2 · Nivel · Mesa {plantilla.numero_mesa} ({habiles} hábiles)
           </p>
           <p className="mb-3 text-xs text-slate-500">{plantilla.local.nombre}</p>
@@ -327,10 +327,10 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
                 className={`min-h-[56px] rounded-xl border-2 px-2 py-2 text-center transition ${
                   registradas.includes(t)
                     ? "border-emerald-500 bg-emerald-50"
-                    : "border-slate-200 hover:border-[#002B66]"
+                    : "border-slate-200 hover:border-[#E02020]"
                 }`}
               >
-                <span className="block text-xs font-black uppercase text-[#002B66]">
+                <span className="block text-xs font-black uppercase text-[#E02020]">
                   {t}{registradas.includes(t) ? " ✓" : ""}
                 </span>
                 <span className="block text-[10px] text-slate-400">
@@ -350,7 +350,7 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
       {paso === 3 && plantilla && eleccion && columna && dig && (
         <div className="space-y-3">
           <Tarjeta>
-            <p className="mb-1 text-sm font-black text-[#002B66]">
+            <p className="mb-1 text-sm font-black text-[#E02020]">
               3 · Votos · {eleccion.tipo_eleccion} · Mesa {plantilla.numero_mesa}
             </p>
             <p className="mb-3 text-xs text-slate-500">
@@ -363,7 +363,7 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
                     <img src={o.logo_url} alt={o.nombre} className="h-10 w-10 shrink-0 rounded-lg bg-slate-50 object-contain" />
                   ) : (
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-black text-white"
-                      style={{ backgroundColor: o.color ?? "#002B66" }}>
+                      style={{ backgroundColor: o.color ?? "#E02020" }}>
                       {o.numero}
                     </span>
                   )}
@@ -396,7 +396,7 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
               ))}
             </div>
             <div className={`mt-3 flex items-center justify-between rounded-xl px-4 py-3 ${
-              excede ? "bg-red-600 text-white" : "bg-[#002B66] text-white"}`}>
+              excede ? "bg-red-600 text-white" : "bg-[#E02020] text-white"}`}>
               <span className="text-xs font-black uppercase tracking-wider">
                 {excede ? "⛔ Acta observada" : "Total emitido"}
               </span>

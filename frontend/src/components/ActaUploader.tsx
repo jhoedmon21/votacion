@@ -103,14 +103,14 @@ export default function ActaUploader({ onSuccess }: ActaUploaderProps) {
           <div className="grid gap-4 md:grid-cols-2">
             <button
               onClick={() => setStep('ocr')}
-              className="flex flex-col items-center justify-center p-6 border border-dashed rounded-lg hover:border-[#002B66] hover:bg-blue-50 transition"
+              className="flex flex-col items-center justify-center p-6 border border-dashed rounded-lg hover:border-[#E02020] hover:bg-red-50 transition"
             >
               <div className="mb-3">
                 {/* Upload icon */}
-                <svg className="h-8 w-8 text-[#002B66] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-8 w-8 text-[#E02020] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 12m-2 2l-1.586-1.586a2 2 0 00-2.828 0L4 12m-2 2l1.586 1.586a2 2 0 002.828 0L12 16m5-9V4a2 2 0 00-2-2H6a2 2 0 00-2 2v2"></path>
                 </svg>
-                <p className="text-sm font-medium text-[#002B66]">Subir Imagen</p>
+                <p className="text-sm font-medium text-[#E02020]">Subir Imagen</p>
               </div>
               <p className="text-xs text-slate-500 text-center">
                 Use OCR para extraer datos automáticamente de una foto del acta
@@ -118,14 +118,14 @@ export default function ActaUploader({ onSuccess }: ActaUploaderProps) {
             </button>
             <button
               onClick={() => setStep('manual')}
-              className="flex flex-col items-center justify-center p-6 border border-dashed rounded-lg hover:border-[#002B66] hover:bg-blue-50 transition"
+              className="flex flex-col items-center justify-center p-6 border border-dashed rounded-lg hover:border-[#E02020] hover:bg-red-50 transition"
             >
               <div className="mb-3">
                 {/* Edit icon */}
-                <svg className="h-8 w-8 text-[#002B66] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-8 w-8 text-[#E02020] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 013.536 3.536L19.5 12l-4 4 2 2 4-4c.895-1.135.25-2.508-1.508-2.508H4.75a2 2 0 00-2 2v1.268c0 .271.11.528.292.707l1.768 1.768a2.5 2.5 0 003.536 3.536l1.242-1.242a2.5 2.5 0 013.536-3.536z"></path>
                 </svg>
-                <p className="text-sm font-medium text-[#002B66]">Entrada Manual</p>
+                <p className="text-sm font-medium text-[#E02020]">Entrada Manual</p>
               </div>
               <p className="text-xs text-slate-500 text-center">
                 Ingrese los datos del acta manualmente en un formulario
@@ -145,7 +145,7 @@ export default function ActaUploader({ onSuccess }: ActaUploaderProps) {
               <input
                 type="file"
                 accept="image/*"
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
@@ -157,7 +157,7 @@ export default function ActaUploader({ onSuccess }: ActaUploaderProps) {
             {processing && (
               <div className="flex items-center justify-center py-4">
                 <div className="flex items-center space-x-3">
-                  <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
                   <span className="text-sm text-slate-600">Procesando acta con OCR...</span>
                 </div>
               </div>
@@ -277,7 +277,7 @@ function ManualEntryForm({ onSubmit, onError }: { onSubmit: (acta: ActaRecord) =
           type="text"
           value={formData.numero_mesa}
           onChange={(e) => setFormData({ ...formData, numero_mesa: e.target.value })}
-          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
         />
       </div>
 
@@ -289,7 +289,7 @@ function ManualEntryForm({ onSubmit, onError }: { onSubmit: (acta: ActaRecord) =
           type="number"
           value={formData.total_electores}
           onChange={(e) => setFormData({ ...formData, total_electores: Number(e.target.value) || 0 })}
-          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
           min="0"
         />
       </div>
@@ -314,7 +314,7 @@ function ManualEntryForm({ onSubmit, onError }: { onSubmit: (acta: ActaRecord) =
                     ),
                   });
                 }}
-                className="w-20 px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-20 px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                 min="0"
               />
             </div>
@@ -342,7 +342,7 @@ function ManualEntryForm({ onSubmit, onError }: { onSubmit: (acta: ActaRecord) =
                     ),
                   });
                 }}
-                className="w-20 px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-20 px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                 min="0"
               />
             </div>
@@ -359,7 +359,7 @@ function ManualEntryForm({ onSubmit, onError }: { onSubmit: (acta: ActaRecord) =
             type="number"
             value={formData.votos_blancos}
             onChange={(e) => setFormData({ ...formData, votos_blancos: Number(e.target.value) || 0 })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
             min="0"
           />
         </div>
@@ -371,7 +371,7 @@ function ManualEntryForm({ onSubmit, onError }: { onSubmit: (acta: ActaRecord) =
             type="number"
             value={formData.votos_nulos}
             onChange={(e) => setFormData({ ...formData, votos_nulos: Number(e.target.value) || 0 })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
             min="0"
           />
         </div>
@@ -385,7 +385,7 @@ function ManualEntryForm({ onSubmit, onError }: { onSubmit: (acta: ActaRecord) =
           type="number"
           value={formData.votos_impugnados}
           onChange={(e) => setFormData({ ...formData, votos_impugnados: Number(e.target.value) || 0 })}
-          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
           min="0"
         />
       </div>
@@ -393,7 +393,7 @@ function ManualEntryForm({ onSubmit, onError }: { onSubmit: (acta: ActaRecord) =
       <div className="flex justify-end">
         <button
           type="submit"
-          className="px-4 py-2 bg-[#002B66] text-white rounded-md text-sm font-medium hover:bg-[#003366] disabled:bg-slate-400 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-[#E02020] text-white rounded-md text-sm font-medium hover:bg-[#A01010] disabled:bg-slate-400 disabled:cursor-not-allowed"
         >
           Continuar a Verificación
         </button>

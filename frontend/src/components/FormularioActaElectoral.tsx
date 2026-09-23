@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ColumnaActa, OrgColumna, PlantillaActa } from "./ActaIngresoForm";
 import { sesionGuardada } from "../api";
 
@@ -97,6 +97,11 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
   const [avisos, setAvisos] = useState<string[]>([]);
   const [checklist, setChecklist] = useState<Checklist | null>(null);
   const [localizando, setLocalizando] = useState(false);
+
+  /* Evidencia fotográfica del acta (se sube aparte y se asocia al registrar). */
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const fotoRef = useRef<HTMLInputElement>(null);
 
   /* Catálogo de distritos */
   useEffect(() => {
@@ -275,6 +280,38 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
     setDigitado((p) => ({ ...p, [tab]: { ...p[tab], [campo]: valor } }));
   };
 
+  const subirFoto = async (file: File) => {
+    setSubiendoFoto(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/v1/actas/foto", {
+        method: "POST",
+        headers: authHeaders(),
+        body: fd,
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        let detail = `Error ${res.status} al subir la foto`;
+        try { detail = JSON.parse(txt)?.detail ?? detail; } catch { /* cuerpo no JSON */ }
+        setError(typeof detail === "string" ? detail : detail);
+        return;
+      }
+      const body = await res.json();
+      setFotoUrl(body.url);
+      setAvisos((prev) => [
+        ...prev.filter((a) => !a.startsWith("📷")),
+        "📷 Foto del acta cargada. Se asociará al registrar la primera elección.",
+      ]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSubiendoFoto(false);
+      if (fotoRef.current) fotoRef.current.value = "";
+    }
+  };
+
   const registrar = async () => {
     if (!plantilla || !eleccion || !dig || incompleto || excedePadron) return;
     setEnviando(true);
@@ -293,6 +330,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
           votos_impugnados: dig.impugnados ?? 0,
           total_emitidos: totalReferencia,
           impugnada: false,
+          image_url: fotoUrl,
         }),
       });
       const body = await res.json();
@@ -330,7 +368,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
         ) : (
           <span
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-lg font-black text-white"
-            style={{ backgroundColor: o.color ?? "#002B66" }}
+            style={{ backgroundColor: o.color ?? "#E02020" }}
           >
             {o.numero}
           </span>
@@ -343,7 +381,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
               <div
                 className="h-full rounded-full"
-                style={{ width: `${calculo.pct[o.numero] ?? 0}%`, backgroundColor: o.color ?? "#002B66" }}
+                style={{ width: `${calculo.pct[o.numero] ?? 0}%`, backgroundColor: o.color ?? "#E02020" }}
               />
             </div>
           )}
@@ -360,7 +398,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
             onChange={(e) => setVoto(o.numero, e.target.value === "" ? null : Math.max(0, Number(e.target.value)))}
             placeholder="0"
             aria-label={`Votos ${o.nombre}`}
-            className="mt-0.5 h-12 w-24 rounded-xl border-2 border-slate-300 text-center font-mono text-xl font-black text-[#002B66] focus:border-[#002B66] focus:outline-none"
+            className="mt-0.5 h-12 w-24 rounded-xl border-2 border-slate-300 text-center font-mono text-xl font-black text-[#E02020] focus:border-[#E02020] focus:outline-none"
           />
         </div>
       </div>
@@ -370,7 +408,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       {/* Encabezado oficial */}
-      <div className="rounded-2xl bg-[#002B66] p-5 text-center text-white shadow">
+      <div className="rounded-2xl bg-[#E02020] p-5 text-center text-white shadow">
         <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/70">
           República del Perú · ONPE · Provincia de Arequipa
         </p>
@@ -416,7 +454,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
             <input type="number" min={1} value={habilesInput ?? ""}
               onChange={(e) => setHabilesInput(e.target.value === "" ? null : Number(e.target.value))}
               placeholder="del padrón"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-mono text-lg font-black text-[#002B66]" />
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-mono text-lg font-black text-[#E02020]" />
           </label>
         </div>
 
@@ -427,24 +465,48 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
                 onClick={() => { setMesa(m.numero_mesa); void cargarMesa(m.numero_mesa); }}
                 title={`${m.local} · ${m.electores_habiles ?? "?"} hábiles`}
                 className={`rounded px-2 py-1 font-mono text-xs font-bold ${
-                  mesa === m.numero_mesa ? "bg-[#002B66] text-white" : "bg-white text-slate-600 hover:bg-slate-200"}`}>
+                  mesa === m.numero_mesa ? "bg-[#E02020] text-white" : "bg-white text-slate-600 hover:bg-slate-200"}`}>
                 {m.numero_mesa}
               </button>
             ))}
           </div>
         )}
 
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <button onClick={() => void cargarMesa(mesa)} disabled={cargando || !/^\d{6}$/.test(mesa)}
-            className="rounded-lg bg-[#002B66] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">
+            className="rounded-lg bg-[#E02020] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">
             {cargando ? "Buscando…" : "Cargar acta"}
           </button>
+
+          {/* Evidencia fotográfica del acta: se sube aquí y se asocia al registrar */}
+          <button onClick={() => fotoRef.current?.click()} disabled={subiendoFoto}
+            className="rounded-lg border-2 border-[#E02020] px-4 py-2 text-sm font-bold text-[#E02020] disabled:opacity-50">
+            {subiendoFoto ? "⏳ Subiendo…" : fotoUrl ? "📷 Cambiar foto" : "📷 Cargar foto del acta"}
+          </button>
+          <input ref={fotoRef} type="file" accept="image/*" capture="environment" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void subirFoto(f); }} />
+
           {plantilla && (
             <p className="text-xs text-slate-500">
               <strong>{plantilla.local.nombre}</strong> · padrón: {plantilla.electores_habiles ?? "—"}
             </p>
           )}
         </div>
+        {fotoUrl && (
+          <div className="mt-3 flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-2">
+            <img src={fotoUrl} alt="Foto del acta cargada"
+              className="h-28 w-auto max-w-[45%] cursor-zoom-in rounded border object-contain"
+              onClick={() => window.open(fotoUrl, "_blank")} />
+            <div className="text-xs text-slate-500">
+              <p className="font-bold text-slate-700">Foto lista ✓</p>
+              <p>Se asociará a esta mesa al registrar la primera elección.</p>
+              <button onClick={() => setFotoUrl(null)}
+                className="mt-1 text-[11px] font-bold text-red-600 hover:underline">
+                Quitar foto
+              </button>
+            </div>
+          </div>
+        )}
         {error && <p className="mt-2 rounded bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{error}</p>}
         {avisos.map((a, i) => (
           <p key={i} className="mt-2 rounded bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">{a}</p>
@@ -461,7 +523,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
             </h3>
             {!checklist.presencia_validada && (
               <button onClick={hacerCheckin} disabled={localizando}
-                className="rounded-lg bg-[#002B66] px-4 py-2 text-xs font-black uppercase tracking-wider text-white disabled:opacity-50">
+                className="rounded-lg bg-[#E02020] px-4 py-2 text-xs font-black uppercase tracking-wider text-white disabled:opacity-50">
                 {localizando ? "Localizando…" : "📍 Registrar check-in"}
               </button>
             )}
@@ -496,7 +558,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
             {ORDEN_OFICIAL.filter((t) => plantilla.elecciones.some((e) => e.tipo_eleccion === t)).map((t, i) => (
               <button key={t} onClick={() => setTab(t)}
                 className={`rounded-xl px-2 py-3 text-center transition ${
-                  tab === t ? "bg-[#002B66] text-white shadow" : "border bg-white text-slate-500"}`}>
+                  tab === t ? "bg-[#E02020] text-white shadow" : "border bg-white text-slate-500"}`}>
                 <span className="block text-[10px] font-bold opacity-70">{i + 1}º ELECCIÓN</span>
                 <span className="block text-xs font-black uppercase tracking-wider">
                   {t}{registradas.includes(t) ? " ✓" : ""}
@@ -525,7 +587,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
                   value={dig[campo] ?? ""}
                   onChange={(e) => setCampo(campo, e.target.value === "" ? null : Math.max(0, Number(e.target.value)))}
                   placeholder="0"
-                  className="h-12 w-full rounded-xl border-2 border-slate-300 text-center font-mono text-xl font-black focus:border-[#002B66] focus:outline-none" />
+                  className="h-12 w-full rounded-xl border-2 border-slate-300 text-center font-mono text-xl font-black focus:border-[#E02020] focus:outline-none" />
               </div>
             ))}
           </section>
@@ -537,7 +599,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
                 <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">
                   Total de votos emitidos (automático)
                 </p>
-                <p className="font-mono text-3xl font-black text-[#002B66]">{calculo.total}</p>
+                <p className="font-mono text-3xl font-black text-[#E02020]">{calculo.total}</p>
                 <p className="text-[11px] text-slate-400">
                   válidos {calculo.validos} + blancos {dig.blancos ?? "—"} + nulos {dig.nulos ?? "—"} + impugnados {dig.impugnados ?? "—"}
                 </p>
@@ -583,7 +645,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
                   : incompleto ? "Completa todos los campos (organizaciones + pie de acta)"
                   : checklist && !checklist.puede_registrar ? "Check de validación pendiente (presencia/padrón/oferta)" : undefined
                 }
-                className="rounded-lg bg-[#002B66] px-6 py-2.5 text-sm font-black uppercase tracking-wider text-white disabled:opacity-40">
+                className="rounded-lg bg-[#E02020] px-6 py-2.5 text-sm font-black uppercase tracking-wider text-white disabled:opacity-40">
                 {enviando ? "Registrando…" : `Registrar ${tab}`}
               </button>
             </div>

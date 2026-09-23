@@ -1,26 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
 import type { ActaRecord, CandidateVotes } from "./types";
 import ActaDetailModal from "./components/ActaDetailModal";
 import ActaEditModal from "./components/ActaEditModal";
-import ActaIngresoForm from "./components/ActaIngresoForm";
 import FormularioActaElectoral from "./components/FormularioActaElectoral";
-import FormularioPersonero from "./components/FormularioPersonero";
 import GestionActas from "./components/GestionActas";
-import { Alerta, Boton } from "./components/ui";
+import { Boton } from "./components/ui";
 
 export default function Actas() {
   const [review, setReview] = useState<ActaRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [selectedActa, setSelectedActa] = useState<ActaRecord | null>(null);
   const [actaToEdit, setActaToEdit] = useState<ActaRecord | null>(null);
-  const [mostrarIngreso, setMostrarIngreso] = useState(false);
   const [mostrarOficial, setMostrarOficial] = useState(false);
-  const [mostrarRapido, setMostrarRapido] = useState(false);
   const [mesaCargar, setMesaCargar] = useState<string | undefined>(undefined);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(() => {
     api
@@ -30,26 +23,6 @@ export default function Actas() {
   }, []);
 
   useEffect(load, [load]);
-
-  const onUpload = async () => {
-    const file = fileRef.current?.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setMessage(null);
-    try {
-      const res = await api.process(file);
-      setMessage(
-        `Acta ${res.numero_mesa} procesada (confianza ${(res.ocr_confidence * 100).toFixed(0)}%)`
-      );
-      load();
-    } catch (e) {
-      setMessage(`Error: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setUploading(false);
-      // Allow re-selecting the same file
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  };
 
   const approve = async (a: ActaRecord) => {
     const district = a.votos_distrital.map(
@@ -77,119 +50,47 @@ export default function Actas() {
           onCargarMesa={(mesa) => {
             setMesaCargar(mesa);
             setMostrarOficial(true);
-            setMostrarIngreso(false);
-            setMostrarRapido(false);
           }}
         />
       </div>
 
-      {/* Header with two buttons: Cargar Acta and Acta */}
-      <div className="mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Button 1: Cargar Acta */}
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="w-full px-6 py-3 bg-[#002B66] text-white rounded-lg text-base font-medium hover:bg-[#003366] transition-all duration-200 flex items-center justify-center space-x-2 shadow-md hover:shadow-lg disabled:opacity-60"
-              >
-                {uploading ? "⏳ Procesando…" : "📄 Cargar Acta"}
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                onChange={onUpload}
-                className="hidden"
-              />
-            </div>
-          </div>
-          
-          {/* Ingresar acta (plantilla dinámica) */}
-          <Boton
-            variante="exito"
-            onClick={() => {
-              setMostrarIngreso((v) => !v);
-              setMostrarOficial(false);
-              setMostrarRapido(false);
-            }}
-          >
-            {mostrarIngreso ? "✕ Cerrar" : "✏️ Ingresar acta"}
-          </Boton>
+      {/* Único flujo de captura: el formulario réplica del acta ONPE (la foto
+          se carga dentro del propio formulario) */}
+      <div className="mb-6 flex flex-wrap items-center gap-4">
+        <Boton
+          onClick={() => {
+            setMostrarOficial((v) => !v);
+            if (mostrarOficial) setMesaCargar(undefined);
+          }}
+        >
+          {mostrarOficial ? "✕ Cerrar formulario" : "📋 Acta ONPE"}
+        </Boton>
 
-          {/* Acta ONPE oficial */}
-          <Boton
-            onClick={() => {
-              setMostrarOficial((v) => !v);
-              setMostrarIngreso(false);
-              setMostrarRapido(false);
-            }}
-          >
-            {mostrarOficial ? "✕ Cerrar" : "📋 Acta ONPE"}
-          </Boton>
-
-          {/* Registro rápido del personero */}
-          <Boton
-            variante="exito"
-            onClick={() => {
-              setMostrarRapido((v) => !v);
-              setMostrarIngreso(false);
-              setMostrarOficial(false);
-            }}
-          >
-            {mostrarRapido ? "✕ Cerrar" : "🧾 Registro rápido"}
-          </Boton>
-
-          {/* Button 3: Acta */}
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => {
-                // Focus on the actas table section
-                const element = document.getElementById('actas-table-section');
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  // Brief highlight effect
-                  const originalBg = element.style.backgroundColor;
-                  element.style.backgroundColor = '#f0f9ff';
-                  setTimeout(() => {
-                    element.style.backgroundColor = originalBg;
-                  }, 2000);
-                }
-              }}
-              className="w-full px-6 py-3 bg-gray-100 text-gray-800 rounded-lg text-base font-medium hover:bg-gray-200 transition-all duration-200 flex items-center justify-center space-x-2 shadow-md hover:shadow-lg"
-            >
-              📋 Acta
-              <span className="ml-2 text-xs bg-blue-100 text-blue-800 rounded-full px-2 py-0.5">
-                {review.length}
-              </span>
-            </button>
-          </div>
-          
-          {message && (
-            <Alerta tono={message.startsWith("Error") ? "error" : "exito"}>
-              {message}
-            </Alerta>
-          )}
-        </div>
+        <button
+          onClick={() => {
+            const element = document.getElementById('actas-table-section');
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              const originalBg = element.style.backgroundColor;
+              element.style.backgroundColor = '#f0f9ff';
+              setTimeout(() => {
+                element.style.backgroundColor = originalBg;
+              }, 2000);
+            }
+          }}
+          className="px-6 py-3 bg-gray-100 text-gray-800 rounded-lg text-base font-medium hover:bg-gray-200 transition-all duration-200 flex items-center justify-center space-x-2 shadow-md hover:shadow-lg"
+        >
+          📋 Actas en revisión
+          <span className="ml-2 text-xs bg-red-100 text-red-800 rounded-full px-2 py-0.5">
+            {review.length}
+          </span>
+        </button>
       </div>
 
       {error && <div className="error">Error: {error}</div>}
 
-      {mostrarIngreso && (
-        <div className="mb-8 rounded-2xl border border-emerald-200 bg-slate-50 p-6">
-          <ActaIngresoForm
-            onGuardada={() => {
-              setMostrarIngreso(false);
-              load();
-            }}
-            onCancelar={() => setMostrarIngreso(false)}
-          />
-        </div>
-      )}
-
       {mostrarOficial && (
-        <div className="mb-8 rounded-2xl border-2 border-[#002B66] bg-slate-50 p-6">
+        <div className="mb-8 rounded-2xl border-2 border-[#E02020] bg-slate-50 p-6">
           <FormularioActaElectoral
             key={mesaCargar ?? "oficial"}
             mesaInicial={mesaCargar}
@@ -202,18 +103,6 @@ export default function Actas() {
               setMostrarOficial(false);
               setMesaCargar(undefined);
             }}
-          />
-        </div>
-      )}
-
-      {mostrarRapido && (
-        <div className="mb-8 rounded-2xl border-2 border-emerald-700 bg-slate-50 p-6">
-          <FormularioPersonero
-            onGuardada={() => {
-              setMostrarRapido(false);
-              load();
-            }}
-            onCancelar={() => setMostrarRapido(false)}
           />
         </div>
       )}
@@ -283,13 +172,13 @@ export default function Actas() {
                   <td className="px-6 py-4 text-left text-sm space-x-2">
                     <button
                       onClick={() => approve(a)}
-                      className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200 transition-colors"
+                      className="px-3 py-1.5 bg-red-100 text-red-800 rounded text-xs font-medium hover:bg-red-200 transition-colors"
                     >
                       Validar
                     </button>
                     <button
                       onClick={() => setSelectedActa(a)}
-                      className="px-3 py-1.5 bg-blue-50 text-blue-800 rounded text-xs font-medium hover:bg-blue-100 transition-colors"
+                      className="px-3 py-1.5 bg-red-50 text-red-800 rounded text-xs font-medium hover:bg-red-100 transition-colors"
                     >
                       Ver
                     </button>

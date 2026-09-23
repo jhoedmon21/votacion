@@ -1,11 +1,61 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   Identidad FUERZA AREQUIPEÑA
+   Paleta oficial del partido (Estatuto art. 3): rojo, blanco y negro.
+   Base #E02020 (sol del logo), hover #C41616 y activo #A01010.
+   ========================================================================== */
+@theme {
+  /* Primario del partido (rojo sol del logo) */
+  --color-fa-500: #E02020; /* base  */
+  --color-fa-600: #C41616; /* hover */
+  --color-fa-700: #A01010; /* activo */
+  --color-fa-50: #FEF2F2;  /* fondo suave */
+  --color-fa-100: #FEE2E2; /* fondo chip */
+  /* Secundarios (negro/gris del logo) */
+  --color-fa-ink: #1A1A1A;
+  --color-fa-ink-2: #232a35;
+}
+
+/* Sala de cómputo (dashboard oscuro): fondo #0F172A sobre tokens FA. */
+@theme {
+  --color-fa-noche: #0F172A;
+  --color-fa-borde: #334155;
+}
+
 :root {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
   margin: 0;
+}
+
+/* Tooltip oscuro del mapa de sala (DashboardDark). */
+.leaflet-tooltip.tooltip-dark {
+  background: #1B0E11;
+  border: 1px solid #3A1418;
+  color: #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 11px;
+  line-height: 1.5;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+}
+.leaflet-tooltip.tooltip-dark::before {
+  border-top-color: #3A1418;
+}
+
+/* Scrollbar discreto para los paneles oscuros. */
+.scroll-dark {
+  scrollbar-width: thin;
+  scrollbar-color: #3A1418 transparent;
+}
+.scroll-dark::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-dark::-webkit-scrollbar-thumb {
+  background: #3A1418;
+  border-radius: 9999px;
 }
 
 /* Impresión de credencial: solo el fotocheck (90x140mm), sin app. */

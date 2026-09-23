@@ -116,7 +116,7 @@ export default function MapView({ ubigeo, alto = "100%" }: Props) {
           </Marker>
         ))}
       </MapContainer>
-      <span className="absolute right-2 top-2 z-[400] rounded-lg border border-slate-200 bg-white/95 px-2.5 py-1 text-[11px] font-black text-[#002B66] shadow-xs">
+      <span className="absolute right-2 top-2 z-[400] rounded-lg border border-slate-200 bg-white/95 px-2.5 py-1 text-[11px] font-black text-[#E02020] shadow-xs">
         {visibles.length} local{visibles.length === 1 ? "" : "es"}
       </span>
     </div>

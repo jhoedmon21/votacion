@@ -32,3 +32,6 @@ nextjs-partidos/.next/
 
 # Proyecto embebido con su propio git (repo aparte)
 nextjs-partidos/
+
+# Evidencia fotográfica de actas (datos de operación, no código)
+backend/storage/actas/

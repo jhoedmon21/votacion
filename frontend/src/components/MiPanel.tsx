@@ -91,7 +91,7 @@ export default function MiPanel() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <div className="rounded-2xl bg-[#002B66] p-5 text-white">
+      <div className="rounded-2xl bg-[#E02020] p-5 text-white">
         <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/70">
           Panel del personero
         </p>
@@ -117,7 +117,7 @@ export default function MiPanel() {
             <div key={`${m.numero_mesa}-${m.tipo}`} className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="font-mono text-lg font-black text-[#002B66]">{m.numero_mesa}</p>
+                  <p className="font-mono text-lg font-black text-[#E02020]">{m.numero_mesa}</p>
                   <p className="text-xs text-slate-500">
                     {m.local} · {m.tipo}
                   </p>

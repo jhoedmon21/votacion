@@ -202,14 +202,14 @@ export default function FormularioActa({ onGuardada, onCancelar }: Props) {
       value={valor ?? ""}
       onChange={(e) => onChange(e.target.value === "" ? null : Math.max(0, Number(e.target.value)))}
       placeholder="—"
-      className={`${ancho} rounded border border-slate-300 px-2 py-1.5 text-right font-mono text-sm focus:border-[#002B66] focus:outline-none`}
+      className={`${ancho} rounded border border-slate-300 px-2 py-1.5 text-right font-mono text-sm focus:border-[#E02020] focus:outline-none`}
     />
   );
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       {/* Encabezado oficial */}
-      <div className="rounded-2xl bg-[#002B66] p-5 text-center text-white shadow">
+      <div className="rounded-2xl bg-[#E02020] p-5 text-center text-white shadow">
         <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/70">
           República del Perú · ONPE
         </p>
@@ -239,12 +239,12 @@ export default function FormularioActa({ onGuardada, onCancelar }: Props) {
           <label className="text-xs font-bold text-slate-600">
             Electores hábiles
             <input value={plantilla?.electores_habiles ?? "—"} disabled
-              className="mt-1 w-full rounded border bg-slate-50 px-3 py-2 font-mono text-sm font-black text-[#002B66]" />
+              className="mt-1 w-full rounded border bg-slate-50 px-3 py-2 font-mono text-sm font-black text-[#E02020]" />
           </label>
         </div>
         <div className="mt-3 flex items-center gap-3">
           <button onClick={cargarMesa} disabled={cargando || !/^\d{6}$/.test(mesa)}
-            className="rounded-lg bg-[#002B66] px-5 py-2 text-sm font-bold text-white disabled:opacity-50">
+            className="rounded-lg bg-[#E02020] px-5 py-2 text-sm font-bold text-white disabled:opacity-50">
             {cargando ? "Buscando…" : "Cargar mesa"}
           </button>
           {plantilla && (
@@ -272,7 +272,7 @@ export default function FormularioActa({ onGuardada, onCancelar }: Props) {
             {plantilla.elecciones.map((e) => (
               <button key={e.tipo_eleccion} onClick={() => setTab(e.tipo_eleccion)}
                 className={`rounded-lg px-4 py-2 text-xs font-black uppercase tracking-wider ${
-                  tab === e.tipo_eleccion ? "bg-[#002B66] text-white" : "border bg-white text-slate-500"}`}>
+                  tab === e.tipo_eleccion ? "bg-[#E02020] text-white" : "border bg-white text-slate-500"}`}>
                 {e.tipo_eleccion}
               </button>
             ))}
@@ -307,9 +307,9 @@ export default function FormularioActa({ onGuardada, onCancelar }: Props) {
               </div>
             ))}
             {/* Total emitidos */}
-            <div className="flex items-center gap-3 border-t-2 border-[#002B66] bg-slate-100 px-4 py-3">
+            <div className="flex items-center gap-3 border-t-2 border-[#E02020] bg-slate-100 px-4 py-3">
               <span className="w-6" />
-              <p className="flex-1 text-sm font-black uppercase text-[#002B66]">Total de votos emitidos</p>
+              <p className="flex-1 text-sm font-black uppercase text-[#E02020]">Total de votos emitidos</p>
               {inputNum(digitado.totalEmitidos, (v) => setCampo("totalEmitidos", v), "w-24")}
             </div>
           </section>
@@ -349,7 +349,7 @@ export default function FormularioActa({ onGuardada, onCancelar }: Props) {
                   setFotoNombre(f?.name ?? null);
                   setFotoHash(f ? await sha256(f) : null);
                 }}
-                className="mt-2 w-full text-xs text-slate-500 file:mr-2 file:rounded file:border-0 file:bg-[#002B66] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white" />
+                className="mt-2 w-full text-xs text-slate-500 file:mr-2 file:rounded file:border-0 file:bg-[#E02020] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white" />
               {fotoNombre && <p className="mt-1 truncate text-[11px] text-slate-500">{fotoNombre}</p>}
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -372,7 +372,7 @@ export default function FormularioActa({ onGuardada, onCancelar }: Props) {
             </button>
             <button onClick={registrar} disabled={bloqueado}
               title={excedePadron ? "R2: total emitido supera el padrón" : undefined}
-              className="rounded-lg bg-[#002B66] px-6 py-2 text-sm font-bold text-white disabled:opacity-50">
+              className="rounded-lg bg-[#E02020] px-6 py-2 text-sm font-bold text-white disabled:opacity-50">
               {enviando ? "Registrando…" : `Registrar ${eleccionActiva.tipo_eleccion}`}
             </button>
           </div>

@@ -125,7 +125,7 @@ export default function ActaCargaModal({ mesa, onClose, onSaved }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       role="dialog" aria-modal="true" aria-label={`Cargar acta de mesa ${mesa}`}>
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-        <div className="sticky top-0 flex items-center justify-between bg-[#002B66] px-6 py-4 text-white">
+        <div className="sticky top-0 flex items-center justify-between bg-[#E02020] px-6 py-4 text-white">
           <h3 className="font-black">📝 Acta de mesa {mesa}</h3>
           <button onClick={onClose} aria-label="Cerrar"
             className="rounded-lg bg-white/15 px-3 py-1.5 font-black hover:bg-white/25">✕</button>
