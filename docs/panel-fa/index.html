@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FA — Fuerza Arequipeña · Panel de Movilidad</title>
+<style>
+  /* ================================================================
+     FA · Fuerza Arequipeña — Panel premium (tema oscuro)
+     Paleta oficial: rojo #E02020 / blanco / negro
+     ================================================================ */
+  :root {
+    --fa: #E02020; --fa-hi: #FF4B4B; --fa-deep: #A01010;
+    --bg: #0B0A0C; --panel: #141216; --panel-2: #1A171C;
+    --line: rgba(255,255,255,.08);
+    --txt: #F4F1F2; --muted: #9B929A; --dim: #6E656D;
+    --ok: #35D07F; --amber: #F5B33B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background:
+      radial-gradient(1200px 500px at 75% -10%, rgba(224,32,32,.10), transparent 60%),
+      radial-gradient(900px 420px at 10% 110%, rgba(224,32,32,.07), transparent 60%),
+      var(--bg);
+    color: var(--txt);
+    font: 500 15px/1.5 "Segoe UI", -apple-system, Inter, sans-serif;
+    min-height: 100vh; overflow-x: hidden;
+  }
+  ::selection { background: rgba(224,32,32,.4); }
+  a { color: inherit; text-decoration: none; }
+
+  /* ---------- NAV superior ---------- */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 28px;
+    padding: 14px clamp(16px, 4vw, 48px);
+    background: rgba(12,10,13,.72);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .fa-mark {
+    width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--fa-hi), var(--fa-deep));
+    font: 900 19px/1 Georgia, serif; color: #fff; letter-spacing: .5px;
+    box-shadow: 0 8px 24px rgba(224,32,32,.45), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .brand b { font-size: 15px; font-weight: 800; letter-spacing: .2px; white-space: nowrap; }
+  .brand b small { display: block; font: 600 10px/1.2 inherit; letter-spacing: .18em; color: var(--muted); text-transform: uppercase; }
+  .nav .menu { display: flex; gap: 4px; margin-left: 8px; flex: 1; }
+  .nav .menu a {
+    padding: 9px 15px; border-radius: 10px;
+    font-size: 13.5px; font-weight: 700; color: var(--muted);
+    transition: .2s; white-space: nowrap;
+  }
+  .nav .menu a:hover { color: var(--txt); background: rgba(255,255,255,.05); }
+  .nav .menu a.on { color: #fff; background: rgba(224,32,32,.16); box-shadow: inset 0 0 0 1px rgba(224,32,32,.35); }
+  .nav .cta {
+    padding: 10px 18px; border-radius: 11px; font-size: 13.5px; font-weight: 800; color: #fff;
+    background: linear-gradient(135deg, var(--fa-hi), var(--fa-deep));
+    box-shadow: 0 8px 22px rgba(224,32,32,.4); white-space: nowrap; transition: .2s;
+  }
+  .nav .cta:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(224,32,32,.5); }
+
+  /* ---------- Layout principal ---------- */
+  .wrap {
+    max-width: 1440px; margin: 0 auto;
+    padding: 26px clamp(16px, 4vw, 48px) 60px;
+    display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 24px;
+  }
+  @media (max-width: 1080px) { .wrap { grid-template-columns: 1fr; } }
+
+  /* ---------- HERO / render de la ciudad ---------- */
+  .hero { position: relative; border-radius: 24px; overflow: hidden; border: 1px solid var(--line);
+    background: #0D0B10; box-shadow: 0 30px 80px rgba(0,0,0,.55); min-height: 560px; }
+  .hero .hud {
+    position: absolute; inset: 0; z-index: 5; pointer-events: none;
+    display: flex; flex-direction: column; justify-content: space-between; padding: 22px;
+  }
+  .chip-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip {
+    pointer-events: auto; display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 800;
+    background: rgba(14,12,16,.66); border: 1px solid var(--line); backdrop-filter: blur(10px);
+  }
+  .chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+  .chip.rojo i { background: var(--fa-hi); box-shadow: 0 0 10px var(--fa-hi); }
+  /* Botón de conexión al sistema de votación (CTA principal del hero) */
+  .btn-conectar {
+    pointer-events: auto; position: relative; display: inline-flex; align-items: center; gap: 12px;
+    padding: 16px 30px; border-radius: 16px;
+    font-size: 15.5px; font-weight: 900; color: #fff; letter-spacing: .02em;
+    background: linear-gradient(135deg, var(--fa-hi), var(--fa-deep));
+    box-shadow: 0 16px 44px rgba(224,32,32,.55), inset 0 1px 0 rgba(255,255,255,.3);
+    transition: .2s; animation: latido 2.6s ease-in-out infinite;
+  }
+  .btn-conectar:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 20px 54px rgba(224,32,32,.7); }
+  .btn-conectar .hex { font-size: 18px; }
+  .btn-conectar .pulso { position: absolute; inset: 0; border-radius: 16px;
+    border: 2px solid rgba(255,75,75,.55); animation: pulso 2.2s ease-out infinite; }
+  @keyframes pulso { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(1.14); opacity: 0; } }
+  @keyframes latido { 0%,100% { box-shadow: 0 16px 44px rgba(224,32,32,.5); } 50% { box-shadow: 0 16px 60px rgba(255,75,75,.75); } }
+  .hero-cta { margin-top: auto; padding: 26px 0 30px; text-align: center; }
+  .hero-cta .nota { display: block; margin-top: 9px; font-size: 10.5px; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.6); text-shadow: 0 2px 8px rgba(0,0,0,.85); }
+  .hero-title {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .hero-title h1 {
+    font-size: clamp(26px, 3.4vw, 40px); font-weight: 900; letter-spacing: -.02em; line-height: 1.08;
+    text-shadow: 0 4px 30px rgba(0,0,0,.6);
+  }
+  .hero-title h1 em { font-style: normal; color: var(--fa-hi); }
+  .hero-title .live {
+    display: flex; align-items: center; gap: 9px; padding: 10px 16px; border-radius: 12px;
+    background: rgba(14,12,16,.7); border: 1px solid var(--line); backdrop-filter: blur(10px);
+    font-size: 12.5px; font-weight: 800; color: var(--muted);
+  }
+  .hero-title .live b { color: #fff; font-variant-numeric: tabular-nums; }
+
+  /* ---------- Escena animada (CSS 3D) ---------- */
+  .scene { position: absolute; inset: 0; perspective: 1100px; overflow: hidden; }
+  .sky {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(700px 260px at 68% 24%, rgba(255,158,94,.20), transparent 60%),
+      linear-gradient(180deg, #0E0B14 0%, #171021 45%, #241321 72%, #2A1620 100%);
+  }
+  .stars { position: absolute; inset: 0; opacity: .5;
+    background-image:
+      radial-gradient(1.4px 1.4px at 12% 18%, #fff 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 30% 8%, #ffd9d9 50%, transparent 51%),
+      radial-gradient(1.3px 1.3px at 52% 22%, #fff 50%, transparent 51%),
+      radial-gradient(1.1px 1.1px at 71% 12%, #ffe9c9 50%, transparent 51%),
+      radial-gradient(1.4px 1.4px at 86% 26%, #fff 50%, transparent 51%),
+      radial-gradient(1px 1px at 44% 30%, #fff 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 8% 34%, #fff 50%, transparent 51%);
+  }
+  /* Misti (volcán) */
+  .misti {
+    position: absolute; left: 55%; bottom: 34%; width: 460px; height: 250px;
+    transform: translateX(-38%); filter: drop-shadow(0 10px 40px rgba(0,0,0,.5));
+  }
+  .misti .base {
+    position: absolute; inset: auto 0 0 0; height: 190px;
+    background: linear-gradient(180deg, #3A3340 0%, #241F2B 78%, #1A1620 100%);
+    clip-path: polygon(50% 0%, 100% 100%, 78% 96%, 62% 99%, 40% 95%, 0% 100%);
+  }
+  .misti .nevada {
+    position: absolute; left: 50%; bottom: 138px; width: 150px; height: 62px; transform: translateX(-50%);
+    background: linear-gradient(180deg, #F3EEF6 0%, #CFC5DC 90%);
+    clip-path: polygon(50% 0%, 100% 100%, 82% 92%, 64% 100%, 42% 91%, 0% 100%);
+    opacity: .96;
+  }
+  .misti .peak2 {
+    position: absolute; right: 2%; bottom: 0; width: 190px; height: 120px;
+    background: linear-gradient(180deg, #332D3B, #201B28);
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%); opacity: .9;
+  }
+  .misti .peak2::after { content: ""; position: absolute; left: 50%; bottom: 74px; width: 54px; height: 22px;
+    transform: translateX(-50%); background: linear-gradient(180deg, #E9E2F0, #C9BFDA);
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%); }
+  /* Catedral */
+  .catedral {
+    position: absolute; left: 50%; bottom: 21%; transform: translateX(-50%);
+    width: 420px; height: 190px;
+    filter: drop-shadow(0 18px 50px rgba(0,0,0,.6));
+  }
+  .catedral .cuerpo {
+    position: absolute; inset: auto 0 0 0; height: 96px; border-radius: 4px 4px 0 0;
+    background: linear-gradient(180deg, #57414A 0%, #3E2F3A 60%, #2C2128 100%);
+  }
+  .catedral .cuerpo::before { /* ventanas iluminadas */
+    content: ""; position: absolute; inset: 18px 26px auto 26px; height: 34px;
+    background:
+      radial-gradient(6px 14px at 10% 55%, #FFD9A0 50%, transparent 51%),
+      radial-gradient(6px 14px at 30% 55%, #FFC98F 50%, transparent 51%),
+      radial-gradient(6px 14px at 50% 55%, #FFD9A0 50%, transparent 51%),
+      radial-gradient(6px 14px at 70% 55%, #FFC98F 50%, transparent 51%),
+      radial-gradient(6px 14px at 90% 55%, #FFD9A0 50%, transparent 51%);
+    filter: drop-shadow(0 0 8px rgba(255,190,120,.55));
+  }
+  .catedral .torre { position: absolute; bottom: 90px; width: 74px; height: 92px;
+    background: linear-gradient(180deg, #5E4750, #352A34); border-radius: 37px 37px 0 0; }
+  .catedral .torre.t1 { left: 24px; }
+  .catedral .torre.t2 { right: 24px; }
+  .catedral .torre::after { content: ""; position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+    width: 10px; height: 18px; background: #C8A24A; border-radius: 2px; }
+  .catedral .central {
+    position: absolute; left: 50%; bottom: 88px; transform: translateX(-50%);
+    width: 96px; height: 118px; border-radius: 48px 48px 0 0;
+    background: linear-gradient(180deg, #6A5160, #3A2D38);
+  }
+  .catedral .central::before { content: ""; position: absolute; inset: 12px auto auto 50%; transform: translateX(-50%);
+    width: 30px; height: 44px; border-radius: 15px 15px 0 0; background: linear-gradient(180deg, #FFE2B0, #E8A45E);
+    box-shadow: 0 0 22px rgba(255,190,120,.65); }
+  .catedral .central::after { content: ""; position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+    width: 12px; height: 26px; background: #C8A24A; border-radius: 3px; }
+  .catedral .plaza {
+    position: absolute; inset: auto 0 -6px 0; height: 34px; border-radius: 8px;
+    background: linear-gradient(180deg, #2A2029, #17121A);
+  }
+  /* Edificio HQ FA con logo */
+  .hq {
+    position: absolute; left: 13%; bottom: 20.5%; width: 150px; height: 240px;
+    filter: drop-shadow(0 16px 46px rgba(0,0,0,.55));
+  }
+  .hq .torre1 {
+    position: absolute; inset: 40px 0 0 0; border-radius: 10px 10px 0 0;
+    background: linear-gradient(180deg, #1D1922 0%, #141019 100%);
+    border: 1px solid rgba(255,255,255,.06); overflow: hidden;
+  }
+  .hq .torre1::before { content: ""; position: absolute; inset: 12px 10px auto 10px; height: 150px; opacity: .85;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 18px, rgba(255,205,140,.16) 18px 22px),
+      repeating-linear-gradient(90deg, transparent 0 22px, rgba(255,205,140,.10) 22px 26px); }
+  .hq .sign {
+    position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+    width: 76px; height: 54px; border-radius: 13px; z-index: 2;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--fa-hi), var(--fa-deep));
+    box-shadow: 0 0 34px rgba(224,32,32,.65), inset 0 1px 0 rgba(255,255,255,.3);
+    font: 900 26px/1 Georgia, serif; color: #fff; letter-spacing: 1px;
+    animation: glow 3.2s ease-in-out infinite;
+  }
+  @keyframes glow { 0%,100% { box-shadow: 0 0 26px rgba(224,32,32,.55), inset 0 1px 0 rgba(255,255,255,.3); }
+                    50% { box-shadow: 0 0 46px rgba(255,75,75,.85), inset 0 1px 0 rgba(255,255,255,.35); } }
+  .hq .antena { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); width: 3px; height: 24px; background: #8f8791; }
+  .hq .antena::before { content: ""; position: absolute; top: -5px; left: -2px; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--fa-hi); box-shadow: 0 0 12px var(--fa-hi); animation: blink 1.6s infinite; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+
+  /* Calle con reflejo mojado */
+  .calle {
+    position: absolute; inset: auto 0 0 0; height: 23%;
+    background: linear-gradient(180deg, #191219 0%, #100B12 40%, #0B080E 100%);
+    transform-style: preserve-3d;
+  }
+  .calle::before { content: ""; position: absolute; inset: 0;
+    background:
+      linear-gradient(90deg, transparent 0 24%, rgba(224,32,32,.10) 24% 25%, transparent 25% 48%,
+        rgba(255,255,255,.07) 48% 50%, transparent 50% 74%, rgba(224,32,32,.10) 74% 75%, transparent 75%);
+  }
+  .reflejo { position: absolute; inset: 0; opacity: .30; filter: blur(6px) saturate(1.3); transform: scaleY(-1);
+    background:
+      radial-gradient(90px 24px at 13% 0%, rgba(224,32,32,.8), transparent 70%),
+      radial-gradient(70px 20px at 34% 0%, rgba(255,190,120,.55), transparent 70%),
+      radial-gradient(110px 26px at 52% 0%, rgba(224,32,32,.5), transparent 70%),
+      radial-gradient(80px 22px at 76% 0%, rgba(140,190,255,.4), transparent 70%),
+      radial-gradient(90px 22px at 92% 0%, rgba(255,255,255,.25), transparent 70%);
+    animation: shimmer 7s ease-in-out infinite;
+  }
+  @keyframes shimmer { 0%,100% { opacity: .22; } 50% { opacity: .38; } }
+  .charco { position: absolute; bottom: 12px; height: 3px; border-radius: 50%; filter: blur(1px);
+    background: rgba(255,255,255,.06); }
+
+  /* Vehículos: tranvía + autónomos con logo FA */
+  .tram {
+    position: absolute; bottom: 13%; left: -260px; width: 240px; height: 74px; z-index: 6;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #FBF7F8 0%, #DDD6DE 68%, #A9A1AD 100%);
+    box-shadow: 0 14px 30px rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.7);
+    animation: cruzar 16s linear infinite;
+  }
+  .tram .ventanas { position: absolute; inset: 12px 16px auto 16px; height: 30px; border-radius: 8px;
+    display: flex; gap: 6px; }
+  .tram .ventanas i { flex: 1; border-radius: 4px;
+    background: linear-gradient(180deg, #2E2530, #17121B);
+    box-shadow: inset 0 0 6px rgba(255,190,120,.25); }
+  .tram .faja { position: absolute; left: 0; right: 0; bottom: 12px; height: 12px;
+    background: linear-gradient(90deg, var(--fa-deep), var(--fa), var(--fa-deep)); }
+  .tram .logo {
+    position: absolute; right: 10px; top: -14px; width: 28px; height: 28px; border-radius: 8px;
+    display: grid; place-items: center; font: 900 12px/1 Georgia, serif; color: #fff;
+    background: linear-gradient(135deg, var(--fa-hi), var(--fa-deep));
+    box-shadow: 0 0 16px rgba(224,32,32,.7);
+  }
+  .tram .faro { position: absolute; left: 8px; bottom: 6px; width: 10px; height: 6px; border-radius: 3px;
+    background: #FFE9C0; box-shadow: 0 0 14px 4px rgba(255,230,180,.8); }
+  @keyframes cruzar { 0% { transform: translateX(-40px); } 100% { transform: translateX(calc(100vw + 60px)); } }
+
+  .auto {
+    position: absolute; width: 74px; height: 34px; border-radius: 10px 12px 8px 8px; z-index: 6;
+    background: linear-gradient(180deg, #26202B, #151019);
+    border: 1px solid rgba(255,255,255,.09);
+    box-shadow: 0 10px 22px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.14);
+    animation: cruzar 11s linear infinite;
+  }
+  .auto::before { /* cabina */
+    content: ""; position: absolute; inset: 4px 18px auto 14px; height: 12px; border-radius: 6px 8px 3px 3px;
+    background: linear-gradient(180deg, rgba(140,200,255,.34), rgba(30,40,60,.6));
+  }
+  .auto .fa-mini {
+    position: absolute; right: 5px; top: 4px; width: 15px; height: 15px; border-radius: 4px;
+    display: grid; place-items: center; font: 900 7.5px/1 Georgia, serif; color: #fff;
+    background: linear-gradient(135deg, var(--fa-hi), var(--fa-deep));
+    box-shadow: 0 0 10px rgba(224,32,32,.8);
+  }
+  .auto .luz-t { position: absolute; left: 4px; bottom: 5px; width: 7px; height: 4px; border-radius: 2px;
+    background: #FF6B6B; box-shadow: 0 0 8px rgba(255,80,80,.9); }
+  .auto .luz-f { position: absolute; right: 3px; bottom: 5px; width: 9px; height: 4px; border-radius: 2px;
+    background: #FFF3D8; box-shadow: 0 0 10px 2px rgba(255,240,200,.75); }
+  .auto.a1 { bottom: 6%;  animation-duration: 9s;  animation-delay: -2s; }
+  .auto.a2 { bottom: 16.5%; animation-duration: 13s; animation-delay: -6s; width: 62px; height: 29px; opacity: .92; }
+  .auto.a3 { bottom: 3.5%; animation-duration: 15s; animation-delay: -9s; width: 84px; height: 38px; }
+  .drone {
+    position: absolute; top: 17%; left: -60px; width: 46px; height: 12px; border-radius: 6px; z-index: 5;
+    background: linear-gradient(180deg, #2A2430, #17121B); border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 6px 16px rgba(0,0,0,.5); animation: cruzar 21s linear infinite; animation-delay: -5s;
+  }
+  .drone::before, .drone::after { content: ""; position: absolute; top: -5px; width: 14px; height: 3px; border-radius: 2px;
+    background: rgba(255,120,120,.85); box-shadow: 0 0 8px rgba(255,100,100,.8); animation: rotor .12s linear infinite; }
+  .drone::before { left: 4px; } .drone::after { right: 4px; }
+  .drone .fa-mini { position: absolute; inset: -2px auto auto 50%; transform: translateX(-50%); width: 13px; height: 13px;
+    border-radius: 4px; display: grid; place-items: center; font: 900 6.5px/1 Georgia, serif; color: #fff;
+    background: linear-gradient(135deg, var(--fa-hi), var(--fa-deep)); }
+  @keyframes rotor { from { transform: scaleX(1);} to { transform: scaleX(.25);} }
+  .spot { position: absolute; top: 14%; left: 30%; width: 2px; height: 60px;
+    background: linear-gradient(180deg, transparent, rgba(255,120,120,.5)); }
+
+  /* ---------- Widgets fila izquierda ---------- */
+  .widgets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px; }
+  @media (max-width: 860px) { .widgets { grid-template-columns: 1fr; } }
+  .card {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: 20px; padding: 20px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.35); position: relative; overflow: hidden;
+  }
+  .card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+    background: linear-gradient(90deg, var(--fa-hi), var(--fa-deep)); }
+  .card .num { font-size: 30px; font-weight: 900; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .card .num small { font-size: 16px; color: var(--fa-hi); }
+  .card .lbl { margin-top: 2px; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+  .donut { display: flex; align-items: center; gap: 16px; }
+  .donut .ring { width: 74px; height: 74px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center;
+    background: conic-gradient(var(--fa) 0 58%, rgba(255,255,255,.08) 58% 100%); position: relative; }
+  .donut .ring::before { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: var(--panel-2); }
+  .donut .ring b { position: relative; font-size: 17px; font-weight: 900; }
+  .donut .neg { font-size: 26px; font-weight: 900; color: var(--ok); }
+  .progress { height: 9px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 12px; }
+  .progress i { display: block; height: 100%; border-radius: 999px; width: 0;
+    background: linear-gradient(90deg, var(--fa-hi), var(--fa-deep));
+    animation: fill 1.6s cubic-bezier(.2,.7,.3,1) forwards; }
+  @keyframes fill { to { width: 88%; } }
+  .progress span { display: block; height: 100%; }
+
+  /* ---------- Mensaje central + CTA ---------- */
+  .mensaje { margin-top: 30px; max-width: 760px; }
+  .mensaje h2 { font-size: clamp(26px, 3vw, 38px); font-weight: 900; letter-spacing: -.02em; line-height: 1.12; }
+  .mensaje h2 em { font-style: normal; color: var(--fa-hi); }
+  .mensaje p { margin-top: 12px; color: var(--muted); font-size: 15.5px; max-width: 640px; }
+  .mensaje .acciones { margin-top: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .btn-fa {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 26px; border-radius: 14px; font-weight: 800; font-size: 14.5px; color: #fff;
+    background: linear-gradient(135deg, var(--fa-hi), var(--fa-deep));
+    box-shadow: 0 14px 34px rgba(224,32,32,.45); transition: .2s;
+  }
+  .btn-fa:hover { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(224,32,32,.55); }
+  .btn-fa .flecha { transition: .2s; }
+  .btn-fa:hover .flecha { transform: translateX(4px); }
+  .link-fa { font-size: 13.5px; font-weight: 700; color: var(--muted); transition: .2s; }
+  .link-fa:hover { color: #fff; }
+
+  /* ---------- Sidebar derecha ---------- */
+  .side { display: flex; flex-direction: column; gap: 16px; }
+  .panel-user {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: 20px; padding: 18px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.35);
+  }
+  .panel-user .titulo { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 800; }
+  .panel-user .titulo .fa-mark { width: 34px; height: 34px; border-radius: 10px; font-size: 15px; }
+  .panel-user .fila { display: flex; align-items: center; justify-content: space-between; padding: 11px 0;
+    border-top: 1px solid var(--line); font-size: 13px; }
+  .panel-user .fila:first-of-type { margin-top: 12px; }
+  .panel-user .fila b { font-variant-numeric: tabular-nums; }
+  .pill-ok { padding: 3px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 800;
+    background: rgba(53,208,127,.14); color: var(--ok); border: 1px solid rgba(53,208,127,.35); }
+  .likes { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+  .cora { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
+    background: rgba(224,32,32,.14); border: 1px solid rgba(224,32,32,.4); font-size: 16px; }
+  .likes b { font-size: 20px; font-weight: 900; }
+  .likes span { display: block; font-size: 11px; color: var(--muted); font-weight: 700; }
+  .btn-ghost {
+    display: block; text-align: center; margin-top: 14px; padding: 11px; border-radius: 12px;
+    font-weight: 800; font-size: 13px; color: var(--fa-hi);
+    border: 1px solid rgba(224,32,32,.45); background: rgba(224,32,32,.08); transition: .2s;
+  }
+  .btn-ghost:hover { background: rgba(224,32,32,.18); }
+  .card-user { text-align: center; padding: 26px 20px; }
+  .card-user .num { font-size: 40px; }
+  .card-user .avatars { display: flex; justify-content: center; margin: 10px 0 4px; }
+  .card-user .avatars i {
+    width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--panel-2); margin-left: -8px;
+    background: linear-gradient(135deg, #6b5f70, #463d4c);
+  }
+  .card-user .avatars i:first-child { margin-left: 0; }
+  .card-user .avatars i.fa1 { background: linear-gradient(135deg, var(--fa-hi), var(--fa-deep)); }
+  .trayectos { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+  .tray { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px;
+    background: rgba(255,255,255,.03); border: 1px solid var(--line); transition: .2s; cursor: pointer; }
+  .tray:hover { border-color: rgba(224,32,32,.45); transform: translateX(3px); }
+  .tray .ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 16px;
+    background: rgba(224,32,32,.12); border: 1px solid rgba(224,32,32,.3); }
+  .tray .txt { flex: 1; min-width: 0; }
+  .tray .txt b { display: block; font-size: 12.5px; }
+  .tray .txt span { font-size: 11px; color: var(--muted); }
+  .tray .min { font-weight: 900; font-size: 13px; color: var(--fa-hi); font-variant-numeric: tabular-nums; }
+
+  footer { text-align: center; padding: 22px 0 8px; font-size: 11.5px; color: var(--dim); }
+  footer b { color: var(--fa-hi); }
+</style>
+</head>
+<body>
+
+<!-- ================= NAV ================= -->
+<nav class="nav">
+  <a class="brand" href="#">
+    <span class="fa-mark">FA</span>
+    <b>Fuerza Arequipeña<small>Región · Perú</small></b>
+  </a>
+  <div class="menu">
+    <a class="on" href="#">Inicio</a>
+    <a href="#">NUEVO PCM</a>
+    <a href="#">Fondos Animados</a>
+    <a href="#">Academia</a>
+    <a href="#">Contacto</a>
+  </div>
+  <a class="cta" href="#">Descubra Nuestra Red</a>
+</nav>
+
+<div class="wrap">
+  <!-- ================= COLUMNA PRINCIPAL ================= -->
+  <main>
+    <!-- HERO con escena animada -->
+    <section class="hero">
+      <div class="scene">
+        <div class="sky"></div>
+        <div class="stars"></div>
+        <div class="misti"><span class="peak2"></span><span class="base"></span><span class="nevada"></span></div>
+        <div class="catedral">
+          <span class="torre t1"></span><span class="torre t2"></span>
+          <span class="central"></span><span class="cuerpo"></span><span class="plaza"></span>
+        </div>
+        <div class="hq"><span class="antena"></span><span class="sign">FA</span><span class="torre1"></span></div>
+        <div class="calle">
+          <div class="reflejo"></div>
+          <span class="charco" style="left:8%;  width:120px;"></span>
+          <span class="charco" style="left:38%; width:90px; bottom:26px;"></span>
+          <span class="charco" style="left:64%; width:150px;"></span>
+          <span class="charco" style="left:85%; width:70px; bottom:30px;"></span>
+        </div>
+        <div class="tram"><span class="logo">FA</span><span class="ventanas"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="faja"></span><span class="faro"></span></div>
+        <div class="auto a1"><span class="fa-mini">FA</span><span class="luz-f"></span><span class="luz-t"></span></div>
+        <div class="auto a2"><span class="fa-mini">FA</span><span class="luz-f"></span><span class="luz-t"></span></div>
+        <div class="auto a3"><span class="fa-mini">FA</span><span class="luz-f"></span><span class="luz-t"></span></div>
+        <div class="drone"><span class="fa-mini">FA</span></div>
+        <div class="spot"></div>
+      </div>
+
+      <div class="hud">
+        <div class="chip-row">
+          <span class="chip rojo"><i></i> FA · Red de Movilidad Activa</span>
+          <span class="chip"><i></i> Misti · 5.822 msnm</span>
+          <span class="chip"><i></i> Plaza de Armas · Arequipa</span>
+        </div>
+        <!-- CTA principal: conexión al cómputo electoral -->
+        <div class="hero-cta">
+          <a class="btn-conectar" href="http://localhost:3000" target="_blank" rel="noopener">
+            <span class="pulso"></span>
+            <span class="hex">⬢</span> Conectar al Sistema de Votación
+          </a>
+          <span class="nota">Cómputo electoral en vivo · Arequipa 2026</span>
+        </div>
+        <div class="hero-title">
+          <h1>Arequipa se mueve <em>en rojo.</em></h1>
+          <span class="live"><i class="chip rojo" style="padding:0;border:none;background:none;"><i></i></i> EN VIVO · <b>142</b> vehículos conectados</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- WIDGETS -->
+    <div class="widgets">
+      <div class="card">
+        <div class="num">4K</div>
+        <div class="lbl">Puntos de Movilidad Conectada</div>
+      </div>
+      <div class="card">
+        <div class="donut">
+          <div class="ring"><b>58%</b></div>
+          <div>
+            <div class="num">−42<small>%</small></div>
+            <div class="lbl">Emisiones</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="num">88<small>%</small></div>
+        <div class="lbl">Trayectos Eléctricos</div>
+        <div class="progress"><i></i></div>
+      </div>
+    </div>
+
+    <!-- MENSAJE -->
+    <section class="mensaje">
+      <h2>Menos fricción. <em>Más posibilidad.</em></h2>
+      <p>Una red conectada para una ciudad en movimiento. Fuerza Arequipeña acerca el transporte limpio
+         y la carga conveniente a cada vecindario.</p>
+      <div class="acciones">
+        <a class="btn-conectar" href="http://localhost:3000" target="_blank" rel="noopener">
+          <span class="pulso"></span>
+          <span class="hex">⬢</span> Conectar al Sistema de Votación
+        </a>
+        <a class="link-fa" href="#">Descubra Nuestra Red →</a>
+      </div>
+    </section>
+
+    <footer>Fuerza Arequipeña · <b>FA</b> Movilidad Urbana · Arequipa, Perú</footer>
+  </main>
+
+  <!-- ================= SIDEBAR DERECHA ================= -->
+  <aside class="side">
+    <div class="panel-user">
+      <div class="titulo">
+        <span class="fa-mark">FA</span>
+        Panel de Trayecto<br>Fuerza Arequipeña
+      </div>
+      <div class="fila"><span>Red activa</span><span class="pill-ok">OPERATIVA</span></div>
+      <div class="fila"><span>Tu línea habitual</span><b>Tranvía · Centro</b></div>
+      <div class="fila"><span>Próxima pasada</span><b>4 min</b></div>
+      <div class="likes">
+        <span class="cora">♥</span>
+        <span><b>54</b><span>me gusta</span></span>
+      </div>
+      <a class="btn-ghost" href="#">⚡ Hazte Ilimitado</a>
+    </div>
+
+    <div class="card card-user">
+      <div class="num">20K+</div>
+      <div class="lbl">Colaboradores</div>
+      <div class="avatars"><i class="fa1"></i><i></i><i></i><i></i><i></i></div>
+    </div>
+
+    <div class="panel-user">
+      <div class="titulo" style="margin-bottom:8px;">Mejores Trayectos</div>
+      <div class="trayectos">
+        <div class="tray">
+          <span class="ico">🚋</span>
+          <span class="txt"><b>Plaza de Armas → Cayma</b><span>Tranvía eléctrico · 0 emisiones</span></span>
+          <span class="min">12′</span>
+        </div>
+        <div class="tray">
+          <span class="ico">🚐</span>
+          <span class="txt"><b>Cerro Colorado → Paucarpata</b><span>Autónomo FA · carga conveniente</span></span>
+          <span class="min">24′</span>
+        </div>
+        <div class="tray">
+          <span class="ico">🛸</span>
+          <span class="txt"><b>Yanahuara → Sachaca</b><span>Corredor exprés · red conectada</span></span>
+          <span class="min">9′</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+</body>
+</html>
