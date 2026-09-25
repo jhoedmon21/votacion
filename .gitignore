@@ -35,3 +35,6 @@ nextjs-partidos/
 
 # Evidencia fotográfica de actas (datos de operación, no código)
 backend/storage/actas/
+
+# Artefacto incremental de TypeScript
+tsconfig.tsbuildinfo
