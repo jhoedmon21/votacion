@@ -340,6 +340,14 @@ export default function ONPEPaucarpataDashboard() {
   const totalValidVotes = porPartido.reduce((sum, p) => sum + p.votes, 0);
   const sorted = [...(summary.ranking ?? [])].sort((a, b) => b.votes - a.votes);
   const topTwo = sorted.slice(0, 2);
+  /* Consejo Regional POR PROVINCIA: cuando el tab CONSEJERO está activo, el
+     cómputo no se mezcla en un ranking general — cada provincia es una
+     circunscripción con sus propios curules y escaños (d'Hondt). */
+  const consejerosPorProvincia: Array<{
+    provincia: string; ubigeo: string; curules: number;
+    ganador: { organizacion: string; color: string; votos: number; electos: string[] } | null;
+    escanos: Array<{ organizacion: string; color: string; votos: number; electos: string[] }>;
+  }> = summary?.consejeros ?? [];
   /* Brecha del Top 2: votos y puntos porcentuales entre el 1º y el 2º. */
   const brechaVotos = topTwo.length === 2 ? topTwo[0].votes - topTwo[1].votes : 0;
   const brechaPp = topTwo.length === 2
@@ -619,7 +627,88 @@ export default function ONPEPaucarpataDashboard() {
             </div>
           </section>
 
-          {/* TOP 2 — tarjetas con brecha en vivo entre el 1º y el 2º */}
+          {/* CONSEJO REGIONAL POR PROVINCIA — sección dedicada del tab
+              CONSEJERO: una tarjeta legible por provincia con su ganador,
+              sus curules y sus escaños (cabeza de lista incluida). */}
+          {activeScope === "CONSEJERO" && consejerosPorProvincia.length > 0 && (
+            <section className="mb-10 overflow-hidden rounded-2xl border border-slate-200 border-t-[3px] border-t-[#E02020] bg-white shadow-md">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-3.5">
+                <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-700">
+                  <PieChart className="h-4 w-4 text-[#E02020]" />
+                  Consejo Regional · Resultado por Provincia
+                </h3>
+                <span className="rounded-full bg-red-50 px-3 py-1 text-[11px] font-black text-[#C41616]">
+                  16 curules · 8 circunscripciones provinciales
+                </span>
+              </div>
+              <p className="px-5 pt-3 text-[11px] text-slate-400">
+                Cada provincia elige sus consejeros con su propia columna del acta (lista cerrada,
+                sin voto preferencial). Escaños proyectados por cifra repartidora (d'Hondt) sobre
+                las actas procesadas; entran los primeros de cada lista.
+              </p>
+              <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+                {consejerosPorProvincia.map((p) => (
+                  <article key={p.ubigeo}
+                    className={`rounded-xl border p-4 transition hover:shadow-md ${
+                      p.ganador ? "border-slate-200 bg-white" : "border-dashed border-slate-200 bg-slate-50/60"}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="truncate text-sm font-black uppercase tracking-wide text-slate-800">
+                        {p.provincia}
+                      </h4>
+                      <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-500">
+                        {p.curules} {p.curules === 1 ? "curul" : "curules"}
+                      </span>
+                    </div>
+                    {p.ganador ? (
+                      <>
+                        <div className="mt-3 flex items-center gap-2">
+                          <span className="inline-block h-3.5 w-3.5 shrink-0 rounded-full ring-2 ring-white"
+                            style={{ backgroundColor: p.ganador.color }} />
+                          <span className="truncate text-[13px] font-bold text-slate-800" title={p.ganador.organizacion}>
+                            {p.ganador.organizacion}
+                          </span>
+                          <span className="ml-auto shrink-0 font-mono text-sm font-black tabular-nums text-[#E02020]">
+                            {formatVotes(p.ganador.votos)}
+                          </span>
+                        </div>
+                        {/* Escaños d'Hondt con cabeza de lista */}
+                        <div className="mt-3 space-y-1.5">
+                          {p.escanos.map((e) => (
+                            <div key={e.organizacion}
+                              className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1.5">
+                              <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm"
+                                style={{ backgroundColor: e.color }} />
+                              <span className="min-w-0 flex-1 truncate text-[11px] font-bold text-slate-700" title={e.organizacion}>
+                                {e.organizacion.split(" ")[0]}
+                                {e.electos.length > 0 && (
+                                  <span className="block truncate text-[10px] font-medium text-slate-400" title={e.electos.join(", ")}>
+                                    {e.electos.join(", ")}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="shrink-0 rounded-full bg-white px-1.5 font-mono text-[10px] font-black text-slate-600 shadow-xs">
+                                ×{Math.max(1, Math.round((e.votos / (p.ganador?.votos || e.votos || 1)) * (p.escanos.filter(x => x.organizacion === e.organizacion).length ? 1 : 1))) || 1}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
+                        Sin actas procesadas todavía.
+                        <span className="block">Sus {p.curules} consejeros se definen sólo con votos de esta provincia.</span>
+                      </p>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* TOP 2 — tarjetas con brecha en vivo entre el 1º y el 2º.
+              En CONSEJERO no aplica (la contienda es por provincia, no
+              regional): se omite el ranking general mezclado. */}
+          {activeScope !== "CONSEJERO" && (<>
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E02020]">
               <PieChart className="h-4 w-4" />
@@ -745,9 +834,13 @@ export default function ONPEPaucarpataDashboard() {
               })}
             </section>
           )}
+          </>) }
 
-          {/* RESULTADOS + MAPA lado a lado (3:2) */}
-          <section className="grid gap-4 lg:grid-cols-5 items-start">
+          {/* RESULTADOS + MAPA lado a lado (3:2). En CONSEJERO el ranking
+              general se omite: el cómputo legible es el de la sección por
+              provincia de arriba; el mapa sigue mostrando la cobertura. */}
+          <section className={`grid gap-4 items-start ${activeScope === "CONSEJERO" ? "" : "lg:grid-cols-5"}`}>
+            {activeScope !== "CONSEJERO" && (
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs lg:col-span-3">
               <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E02020]">
@@ -866,8 +959,10 @@ export default function ONPEPaucarpataDashboard() {
               </div>
             </div>
 
+            )}
+
             {/* MAPA ELECTORAL — ganadores por distrito (herencia de la Sala de Cómputo) */}
-            <div className="flex w-full flex-col items-center justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs lg:col-span-2">
+            <div className={`flex w-full flex-col items-center justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs ${activeScope === "CONSEJERO" ? "" : "lg:col-span-2"}`}>
               <div className="mb-4 w-full border-b border-slate-100 pb-2 text-left">
                 <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#E02020]">
                   <MapPin className="h-4 w-4" />

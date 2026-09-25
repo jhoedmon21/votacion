@@ -297,6 +297,9 @@ class V1GanadorDistrito(BaseModel):
     organizacion: str
     color: str = "#6b7280"
     votos: int = 0
+    # En consejeros: candidatos que entrarían por orden de lista (los primeros
+    # de la lista de la organización, uno por escaño ganado).
+    electos: list[str] = Field(default_factory=list)
 
 
 class V1ConsejeroProvincia(BaseModel):

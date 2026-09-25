@@ -93,6 +93,38 @@ def summary(scope: str = "district", ubigeo: str | None = None,
     else:
         ranking = base_ranking
 
+    # Consejo Regional por provincia (sólo scope=consejero): el panel pinta
+    # una tarjeta por circunscripción en lugar del ranking general mezclado.
+    consejeros: list = []
+    if scope == "consejero":
+        from app.services.consejeros import resultado_por_provincia
+        mesas_ok = [
+            t.id for t in db.query(Table.id)
+            .filter(Table.processed == True,  # noqa: E712
+                    Table.venue_id.in_(venues_ids)).all()
+        ]
+        consejeros = [
+            {
+                "provincia": p.provincia,
+                "ubigeo": p.ubigeo,
+                "curules": p.curules,
+                "ganador": ({
+                    "organizacion": p.ganador.organizacion,
+                    "color": p.ganador.color,
+                    "votos": p.ganador.votos,
+                    "electos": p.ganador.electos,
+                } if p.ganador else None),
+                "escanos": [{
+                    "organizacion": e.organizacion,
+                    "color": e.color,
+                    "votos": e.votos,
+                    "curules_ganados": e.curules_ganados,
+                    "electos": e.electos,
+                } for e in p.escanos],
+            }
+            for p in resultado_por_provincia(db, mesas_ok)
+        ]
+
     return {
         "total_venues": total_venues,
         "total_tables": total_tables,
@@ -102,6 +134,7 @@ def summary(scope: str = "district", ubigeo: str | None = None,
         "ranking": ranking,
         "scope": scope,
         "ubigeo": ubigeo,
+        "consejeros": consejeros,
     }
 
 
