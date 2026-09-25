@@ -10,9 +10,9 @@ from app.core.auth import (alcance_ubigeos, es_rol_global, requerir_rol,
                            usuario_actual, validar_alcance_venue,
                            venues_en_alcance)
 from app.core.database import get_db
-from app.core.models import (ActaMetadata, DistrictCandidate,
-                             ProvincialCandidate, Record, RegionalCandidate,
-                             ROLES_SISTEMA, Table, Usuario, Venue)
+from app.core.models import (ActaMetadata, ConsejeroCandidate,
+                             DistrictCandidate, ProvincialCandidate, Record,
+                             RegionalCandidate, ROLES_SISTEMA, Table, Usuario, Venue)
 from app.core.schemas import (ActaParseResult, ActaUpdate, ActaUpdatePayload,
                               ActaValidacionIn)
 from app.core.ubigeo import candidatos_del_ambito, ubigeo_de_nivel
@@ -28,6 +28,7 @@ router = APIRouter(prefix="/api/actas", tags=["actas"])
 CANDIDATE_MODELS = {
     "district": DistrictCandidate,
     "provincial": ProvincialCandidate,
+    "consejero": ConsejeroCandidate,
     "regional": RegionalCandidate,
 }
 
@@ -90,6 +91,7 @@ def _serialize_acta(db: Session, table: Table) -> dict:
         "electores_habiles": table.electores_habiles,
         "votos_distrital": _ranking(db, table.id, "district"),
         "votos_provincial": _ranking(db, table.id, "provincial"),
+        "votos_consejero": _ranking(db, table.id, "consejero"),
         "votos_regional": _ranking(db, table.id, "regional"),
         "votos_blancos": meta.votos_blancos if meta else 0,
         "votos_nulos": meta.votos_nulos if meta else 0,
@@ -344,7 +346,8 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
     """
     ensure_seed_data(db)
 
-    tipo_registro = {"DISTRITAL": "district", "PROVINCIAL": "provincial", "REGIONAL": "regional"}
+    tipo_registro = {"DISTRITAL": "district", "PROVINCIAL": "provincial",
+                     "CONSEJERO": "consejero", "REGIONAL": "regional"}
     tipo = payload.tipo_eleccion.upper()
     if tipo not in tipo_registro:
         raise HTTPException(status_code=422, detail=f"Tipo de elección inválido: {payload.tipo_eleccion}")
@@ -421,6 +424,7 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
     modelos = {
         "district": (DistrictCandidate, "district"),
         "provincial": (ProvincialCandidate, "provincial"),
+        "consejero": (ConsejeroCandidate, "consejero"),
         "regional": (RegionalCandidate, "regional"),
     }
     modelo, clave = modelos[tipo_registro[tipo]]
@@ -434,13 +438,32 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
     partido_a_candidato = {c.party: c for c in oferta if c.party}
     orden_a_candidato = {str(c.sort_order): c for c in oferta}
 
+    # El acta REGIONAL imprime DOS columnas independientes (GOBERNADOR_VICE y
+    # CONSEJEROS). La de consejeros regionales se elige POR PROVINCIA, así que
+    # sus votos se persisten en el nivel propio ``consejero`` (mismo ámbito
+    # provincial), no junto a los del gobernador.
+    ofertas = {clave: (partido_a_candidato, orden_a_candidato)}
+    if tipo == "REGIONAL":
+        cons = list(candidatos_del_ambito(
+            db, ConsejeroCandidate, ubigeo_de_nivel(venue.ubigeo, "consejero")).all())
+        ofertas["consejero"] = (
+            {c.party: c for c in cons if c.party},
+            {str(c.sort_order): c for c in cons},
+        )
+
     columna_principal = resultado.columna_principal
     no_mapeados: list[str] = []
     for columna in payload.columnas:
-        if columna.columna.upper() != columna_principal:
+        col = columna.columna.upper()
+        if col == "CONSEJEROS" and "consejero" in ofertas:
+            destino = "consejero"
+        elif col != columna_principal:
             continue  # el conteo oficial del acta sale de la columna principal
+        else:
+            destino = clave
+        partido_a_cand, orden_a_cand = ofertas[destino]
         for clave_voto, votos in columna.votos.items():
-            candidato = partido_a_candidato.get(clave_voto) or orden_a_candidato.get(str(clave_voto))
+            candidato = partido_a_cand.get(clave_voto) or orden_a_cand.get(str(clave_voto))
             if candidato is None:
                 no_mapeados.append(str(clave_voto))
                 continue
@@ -448,7 +471,7 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
                 db.query(Record)
                 .filter(
                     Record.table_id == table.id,
-                    Record.candidate_type == clave,
+                    Record.candidate_type == destino,
                     Record.candidate_id == candidato.id,
                 )
                 .first()
@@ -457,7 +480,7 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
                 db.add(
                     Record(
                         table_id=table.id,
-                        candidate_type=clave,
+                        candidate_type=destino,
                         candidate_id=candidato.id,
                         votes=int(votos),
                         verified=True,
@@ -564,6 +587,7 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
 
     _apply_votes(db, table.id, "district", payload.votos_distrital)
     _apply_votes(db, table.id, "provincial", payload.votos_provincial)
+    _apply_votes(db, table.id, "consejero", payload.votos_consejero)
     _apply_votes(db, table.id, "regional", payload.votos_regional)
 
     _upsert_metadata(
@@ -650,6 +674,7 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
 
     _apply_votes(db, table.id, "district", payload.votos_distrital)
     _apply_votes(db, table.id, "provincial", payload.votos_provincial)
+    _apply_votes(db, table.id, "consejero", payload.votos_consejero)
     _apply_votes(db, table.id, "regional", payload.votos_regional)
 
     _upsert_metadata(

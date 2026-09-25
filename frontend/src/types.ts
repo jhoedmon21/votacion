@@ -87,6 +87,7 @@ export interface ActaRecord {
   longitude: number | null;
   votos_distrital: RankingEntry[];
   votos_provincial: RankingEntry[];
+  votos_consejero?: RankingEntry[];
   votos_regional: RankingEntry[];
   votos_blancos: number;
   votos_nulos: number;

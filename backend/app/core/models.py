@@ -167,6 +167,27 @@ class ProvincialCandidate(Base):
     sort_order = Column(Integer, default=0)
 
 
+class ConsejeroCandidate(Base):
+    """Candidato a CONSEJERO REGIONAL.
+
+    En la cédula real de la ONPE el Consejo Regional se elige **por provincia**
+    (cada provincia renueva sus escaños con su propia columna en el acta), así
+    que su ``ubigeo`` es provincial (``040X00``) y compite una candidatura por
+    organización en cada provincia — el mismo patrón territorial de
+    ``ProvincialCandidate``, con la oferta saliendo del expediente regional del
+    JNE filtrando ``cargo == CONSEJERO_REGIONAL`` por provincia de postulación.
+    """
+    __tablename__ = "consejero_candidates"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    party = Column(String)
+    ubigeo = Column(String(6), index=True, default="")  # 040100, 040200, ...
+    color = Column(String, default="#f59e0b")
+    symbol = Column(String)
+    photo_url = Column(String)
+    sort_order = Column(Integer, default=0)
+
+
 class Record(Base):
     __tablename__ = "records"
     id = Column(Integer, primary_key=True, index=True)

@@ -13,6 +13,7 @@ class ActaParseResult(BaseModel):
     numero_mesa: str = Field(min_length=6, max_length=6)
     votos_distrital: list[CandidateVotes] = []
     votos_provincial: list[CandidateVotes] = []
+    votos_consejero: list[CandidateVotes] = []
     votos_regional: list[CandidateVotes] = []
     votos_blancos: int = 0
     votos_nulos: int = 0
@@ -24,6 +25,7 @@ class ActaOCRResult(BaseModel):
     numero_mesa: str = Field(min_length=6, max_length=6)
     votos_distrital: list[CandidateVotes] = []
     votos_provincial: list[CandidateVotes] = []
+    votos_consejero: list[CandidateVotes] = []
     votos_regional: list[CandidateVotes] = []
     votos_blancos: int = 0
     votos_nulos: int = 0
@@ -36,6 +38,7 @@ class ActaUpdate(BaseModel):
     numero_mesa: str
     votos_distrital: list[CandidateVotes] = []
     votos_provincial: list[CandidateVotes] = []
+    votos_consejero: list[CandidateVotes] = []
     votos_regional: list[CandidateVotes] = []
     votos_blancos: int = 0
     votos_nulos: int = 0
@@ -76,6 +79,7 @@ class ActaUpdatePayload(BaseModel):
     numero_mesa: Optional[str] = None
     votos_distrital: Optional[list[CandidateVotes]] = None
     votos_provincial: Optional[list[CandidateVotes]] = None
+    votos_consejero: Optional[list[CandidateVotes]] = None
     votos_regional: Optional[list[CandidateVotes]] = None
     votos_blancos: Optional[int] = None
     votos_nulos: Optional[int] = None
@@ -331,6 +335,7 @@ class DigitadorActaCrearIn(BaseModel):
     venue_id: Optional[int] = None
     votos_distrital: list[CandidateVotes] = []
     votos_provincial: list[CandidateVotes] = []
+    votos_consejero: list[CandidateVotes] = []
     votos_regional: list[CandidateVotes] = []
     votos_blancos: int = Field(default=0, ge=0)
     votos_nulos: int = Field(default=0, ge=0)
@@ -350,6 +355,7 @@ class DigitadorActaRectificarIn(BaseModel):
 
     votos_distrital: Optional[list[CandidateVotes]] = None
     votos_provincial: Optional[list[CandidateVotes]] = None
+    votos_consejero: Optional[list[CandidateVotes]] = None
     votos_regional: Optional[list[CandidateVotes]] = None
     votos_blancos: Optional[int] = Field(default=None, ge=0)
     votos_nulos: Optional[int] = Field(default=None, ge=0)

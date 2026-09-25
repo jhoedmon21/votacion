@@ -17,7 +17,7 @@ import MiPanel from "./components/MiPanel";
 import PersonerosPanel from "./components/PersonerosPanel";
 import UsuariosPanel from "./components/UsuariosPanel";
 
-type Scope = "REGIONAL" | "PROVINCIAL" | "DISTRITAL";
+type Scope = "REGIONAL" | "CONSEJERO" | "PROVINCIAL" | "DISTRITAL";
 
 interface DistritoOpt {
   ubigeo: string;
@@ -27,9 +27,12 @@ interface DistritoOpt {
   mesas: number;
 }
 
-/* Orden oficial de la jornada: 1º Regional, 2º Provincial, 3º Distrital. */
+/* Orden oficial de la jornada: 1º Regional (Gobernador), 1º-bis Consejeros
+   Regionales (columna de la cédula regional, se elige POR PROVINCIA),
+   2º Provincial, 3º Distrital. */
 const TABS: Array<{ value: Scope; desc: string }> = [
   { value: "REGIONAL", desc: "GOBIERNO REGIONAL DE AREQUIPA" },
+  { value: "CONSEJERO", desc: "CONSEJO REGIONAL — POR PROVINCIA" },
   { value: "PROVINCIAL", desc: "MUNICIPAL PROVINCIAL (AREQUIPA)" },
   { value: "DISTRITAL", desc: "MUNICIPAL DISTRITAL" },
 ];

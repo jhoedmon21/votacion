@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import (alcance_ubigeos, es_rol_global, requerir_rol,
                             usuario_actual, validar_alcance_venue)
 from app.core.database import get_db
-from app.core.models import (AsignacionPersonero, CheckinPersonero,
+from app.core.models import (AsignacionPersonero, CheckinPersonero, ConsejeroCandidate,
                               DistrictCandidate, ProvincialCandidate, Record,
                               RegionalCandidate, Table, Usuario, Venue)
 from app.core.schemas import (V1AsignarIn, V1AsignarLoteIn, V1CheckinIn,
@@ -50,11 +50,12 @@ ROLES_CAMPO = ("PERSONERO", "DELEGADO_MESA")
 
 MODELOS_NIVEL = {
     "REGIONAL": RegionalCandidate,
+    "CONSEJERO": ConsejeroCandidate,
     "PROVINCIAL": ProvincialCandidate,
     "DISTRITAL": DistrictCandidate,
 }
-CLAVE_NIVEL = {"REGIONAL": "regional", "PROVINCIAL": "provincial",
-               "DISTRITAL": "district"}
+CLAVE_NIVEL = {"REGIONAL": "regional", "CONSEJERO": "consejero",
+               "PROVINCIAL": "provincial", "DISTRITAL": "district"}
 
 
 # ---------------------------------------------------------------------------

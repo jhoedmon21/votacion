@@ -38,6 +38,7 @@ import json
 import logging
 import re
 import shutil
+import unicodedata
 from collections import Counter
 from pathlib import Path
 from typing import NamedTuple
@@ -46,8 +47,8 @@ from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from app.core.database import Base, SessionLocal, engine
-from app.core.models import (DistrictCandidate, ProvincialCandidate, Record,
-                             RegionalCandidate)
+from app.core.models import (ConsejeroCandidate, DistrictCandidate,
+                             ProvincialCandidate, Record, RegionalCandidate)
 from app.core.orden_cedula import esta_ordenada, ordenar_organizaciones
 
 logger = logging.getLogger(__name__)
@@ -83,6 +84,12 @@ NIVELES = (
     Ambito("distrital", "ALCALDE_DISTRITAL", "district", DistrictCandidate),
 )
 
+# El Consejero Regional NO tiene carpeta propia: su oferta vive en el expediente
+# regional (``cargo == CONSEJERO_REGIONAL``) pero se postula POR PROVINCIA, así
+# que cada candidatura se publica con el ubigeo provincial de su ``provincia``.
+CONSEJERO = Ambito("regional", "CONSEJERO_REGIONAL", "consejero", ConsejeroCandidate)
+NIVELES_CARGA = NIVELES + (CONSEJERO,)
+
 # Color estable por organización: el mismo partido se ve igual en los 68
 # ámbitos donde compite (antes el color dependía del orden de inserción).
 PALETA = ["#002B66", "#0056B3", "#D97706", "#10B981", "#8B5CF6", "#EC4899",
@@ -90,7 +97,32 @@ PALETA = ["#002B66", "#0056B3", "#D97706", "#10B981", "#8B5CF6", "#EC4899",
 
 # Ubigeo con el que se migran las filas anteriores a la dimensión territorial.
 # El prototipo sólo llegó a cargar Paucarpata y sus ámbitos superiores.
-LEGADO = {"district": "040112", "provincial": "040100", "regional": "040000"}
+LEGADO = {"district": "040112", "provincial": "040100", "consejero": "040100",
+          "regional": "040000"}
+
+
+def _sin_tildes(texto: str) -> str:
+    """``'LA UNIÓN' -> 'LA UNION'`` para cruzar nombres de provincia del JNE."""
+    normalizado = unicodedata.normalize("NFKD", texto or "")
+    return "".join(c for c in normalizado if not unicodedata.combining(c)).strip().upper()
+
+
+def mapa_provincias() -> dict[str, str]:
+    """``nombre de provincia (sin tildes) -> ubigeo provincial`` desde el crawl.
+
+    >>> mapa_provincias()['LA UNION']
+    '040800'
+    """
+    salida: dict[str, str] = {}
+    carpeta = DATA_DIR / "provincial"
+    if not carpeta.exists():
+        return salida
+    for archivo in sorted(carpeta.glob("*.json")):
+        data = json.loads(archivo.read_text(encoding="utf-8"))
+        nombre = _sin_tildes(str(data.get("provincia") or ""))
+        if nombre:
+            salida[nombre] = str(data.get("ubigeo") or archivo.stem)
+    return salida
 
 
 def slugify(texto: str) -> str:
@@ -237,7 +269,103 @@ def leer_ambitos(solo: set[str] | None = None) -> tuple[list[dict], Counter]:
                 })
                 posicion += 1
 
+    filas_consejero, inc_consejero = leer_consejeros(solo)
+    filas.extend(filas_consejero)
+    incidencias.update(inc_consejero)
+
     incidencias["ámbitos"] = len(ambitos_vistos)
+    return filas, incidencias
+
+
+def leer_consejeros(solo: set[str] | None = None) -> tuple[list[dict], Counter]:
+    """Filas de CONSEJERO REGIONAL: una por (provincia, organización).
+
+    La lista de consejeros vive en el expediente regional del JNE
+    (``regional/040000.json``, ``cargo == CONSEJERO_REGIONAL``) pero se elige
+    **por provincia**. El acta física imprime una columna de CONSEJEROS por
+    provincia: una casilla por organización (lista cerrada) — el voto digitado
+    es por la casilla del partido, no por la persona. Se publica la candidatura
+    cabecera (menor ``posicion``) de cada organización en cada provincia.
+    """
+    filas: list[dict] = []
+    incidencias: Counter = Counter()
+    archivo = DATA_DIR / CONSEJERO.carpeta / "040000.json"
+    if not archivo.exists():
+        logger.warning("No existe %s; se omite el nivel consejero", archivo)
+        return filas, incidencias
+
+    provincias = mapa_provincias()
+    if not provincias:
+        logger.warning("Sin carpeta provincial; no puedo mapear provincias de consejeros")
+        return filas, incidencias
+
+    data = json.loads(archivo.read_text(encoding="utf-8"))
+    organizaciones = data.get("organizaciones") or []
+    if organizaciones and not esta_ordenada(organizaciones):
+        logger.warning("Oferta regional no viene en orden de cédula; reordenando en memoria")
+        ordenar_organizaciones(organizaciones)
+
+    # provincia -> [(partido, org_idx, elegido)] en orden de cédula
+    por_provincia: dict[str, list[tuple[str, int, dict]]] = {}
+    for indice_org, org in enumerate(organizaciones, start=1):
+        partido = (org.get("organizacionPolitica") or "").strip()
+        if not partido:
+            incidencias["consejero: organización sin nombre"] += 1
+            continue
+        for c in (org.get("candidatos") or []):
+            if (c.get("cargo") or "").upper() != CONSEJERO.cargo:
+                continue
+            if (c.get("estado") or "").upper() != ESTADO_EN_CARRERA:
+                incidencias[f"consejero: {(c.get('estado') or 'SIN ESTADO')}"] += 1
+                continue
+            if not nombre_de(c):
+                continue
+            clave = _sin_tildes(str(c.get("provincia") or ""))
+            if not clave:
+                incidencias["consejero: candidatura sin provincia"] += 1
+                continue
+            lista = por_provincia.setdefault(clave, [])
+            existente = next((e for e in lista if e[0] == partido), None)
+            if existente is None:
+                lista.append((partido, indice_org, c))
+            elif (c.get("posicion") or 999) < (existente[2].get("posicion") or 999):
+                lista[lista.index(existente)] = (partido, indice_org, c)
+
+    for nombre_prov, candidatas in sorted(por_provincia.items()):
+        ubigeo_prov = provincias.get(nombre_prov)
+        if ubigeo_prov is None:
+            incidencias[f"consejero: provincia desconocida {nombre_prov}"] += 1
+            logger.warning("Consejero de provincia %r no mapeable a ubigeo", nombre_prov)
+            continue
+        # Casilla compacta 1..N por provincia: la columna CONSEJEROS de la
+        # cédula provincial numera sin huecos, en orden de cédula.
+        for posicion, (partido, _indice, elegido) in enumerate(candidatas, start=1):
+            if solo and ubigeo_prov not in solo:
+                continue
+            org = organizaciones[_indice - 1]
+            logo_archivo = _buscar_logo(partido, org.get("logo_local"))
+            logo_remoto = (org.get("logo_url") or "").strip() or None
+            foto_local = (elegido.get("foto_local") or "").strip()
+            foto_archivo = (
+                foto_local if (MEDIA_DIR / "candidatos" / foto_local).exists() else None
+            )
+            filas.append({
+                "nivel": CONSEJERO.nivel,
+                "modelo": CONSEJERO.modelo,
+                "ubigeo": ubigeo_prov,
+                "party": partido,
+                "sort_order": posicion,
+                "name": nombre_de(elegido),
+                "color": color_de(partido),
+                "symbol": (f"{STORAGE_URL}/partidos/{logo_archivo}"
+                           if logo_archivo else logo_remoto),
+                "photo_url": (f"{STORAGE_URL}/candidatos/{foto_archivo}"
+                              if foto_archivo else None),
+                "_logo": logo_archivo,
+                "_foto": foto_archivo,
+            })
+            incidencias[f"consejero:{ubigeo_prov}"] += 1
+
     return filas, incidencias
 
 
@@ -279,7 +407,7 @@ def asegurar_esquema(db: Session, dry_run: bool) -> None:
     inspector = inspect(engine)
     existentes = set(inspector.get_table_names())
 
-    for nivel in NIVELES:
+    for nivel in NIVELES_CARGA:
         tabla = nivel.modelo.__tablename__
         if tabla not in existentes:
             if dry_run:
@@ -344,7 +472,7 @@ def cargar(db: Session, filas: list[dict]) -> Counter:
         obsoletas = [c for clave, c in existentes.items() if clave not in objetivo]
         if obsoletas:
             ids = [c.id for c in obsoletas]
-            tipo = next(n.nivel for n in NIVELES if n.modelo is modelo)
+            tipo = next(n.nivel for n in NIVELES_CARGA if n.modelo is modelo)
             borrados = (
                 db.query(Record)
                 .filter(Record.candidate_type == tipo, Record.candidate_id.in_(ids))
@@ -365,7 +493,7 @@ def cargar(db: Session, filas: list[dict]) -> Counter:
 def verificar(db: Session) -> Counter:
     """Comprueba la integridad de lo cargado y de los votos ya existentes."""
     informe: Counter = Counter()
-    for nivel in NIVELES:
+    for nivel in NIVELES_CARGA:
         modelo = nivel.modelo
         filas = db.query(modelo).all()
         informe[f"{nivel.nivel}: filas"] = len(filas)
@@ -390,7 +518,7 @@ def verificar(db: Session) -> Counter:
             logger.error("sort_order colisionado en %s: %s", modelo.__tablename__, colisiones[:5])
 
     # Ningún voto puede quedar apuntando a un candidato que no existe.
-    modelos = {n.nivel: n.modelo for n in NIVELES}
+    modelos = {n.nivel: n.modelo for n in NIVELES_CARGA}
     huerfanos = 0
     for record in db.query(Record).all():
         modelo = modelos.get(record.candidate_type)
@@ -422,7 +550,7 @@ def main() -> None:
     logger.info(
         "Leídos %s ámbitos: %s filas (%s)",
         incidencias["ámbitos"], len(filas),
-        ", ".join(f"{n}: {por_nivel[n]}" for n in ("regional", "provincial", "district")),
+        ", ".join(f"{n}: {por_nivel[n]}" for n in ("regional", "consejero", "provincial", "district")),
     )
     for motivo, cantidad in sorted(incidencias.items()):
         if motivo != "ámbitos" and cantidad:

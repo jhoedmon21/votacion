@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import alcance_ubigeos, es_rol_global, requerir_rol
 from app.core.database import get_db
-from app.core.models import (ActaMetadata, AsignacionPersonero,
+from app.core.models import (ActaMetadata, AsignacionPersonero, ConsejeroCandidate,
                              DistrictCandidate, ProvincialCandidate,
                              Record, RegionalCandidate, ROLES_SISTEMA, Table, Venue)
 from app.core.ubigeo import candidatos_del_ambito, ubigeo_de_nivel
@@ -25,12 +25,14 @@ router = APIRouter(prefix="/api/actas", tags=["actas"])
 MODELOS = {
     "district": DistrictCandidate,
     "provincial": ProvincialCandidate,
+    "consejero": ConsejeroCandidate,
     "regional": RegionalCandidate,
 }
 
 ETIQUETAS = {
     "district": "Alcalde y Regidores del distrito",
     "provincial": "Alcalde y Regidores de la provincia",
+    "consejero": "Consejeros Regionales de la provincia",
     "regional": "Gobernador Regional y Consejeros",
 }
 
@@ -38,6 +40,7 @@ ETIQUETAS = {
 NIVEL_A_TIPO = {
     "district": "DISTRITAL",
     "provincial": "PROVINCIAL",
+    "consejero": "CONSEJERO",
     "regional": "REGIONAL",
 }
 
@@ -161,7 +164,7 @@ def plantilla_de_acta(
 
     elecciones = []
     # Orden oficial de la jornada: 1º Regional, 2º Provincial, 3º Distrital.
-    for nivel in ("regional", "provincial", "district"):
+    for nivel in ("regional", "consejero", "provincial", "district"):
         ambito = ubigeo_de_nivel(venue.ubigeo, nivel)
         organizaciones = _oferta_del_ambito(db, nivel, ambito)
         if not organizaciones:
@@ -179,9 +182,12 @@ def plantilla_de_acta(
             # dashboard computa por organización). El acta física real tiene
             # dos; el modelo PostgreSQL (acta_columnas) ya las soporta.
             "columnas": [{
-                "columna": "GOBERNADOR_VICE" if nivel == "regional" else "ALCALDE",
+                "columna": "GOBERNADOR_VICE" if nivel == "regional" else (
+                    "CONSEJEROS" if nivel == "consejero" else "ALCALDE"),
                 "etiqueta": (
-                    "GOBERNADOR Y VICEGOBERNADOR REGIONAL" if nivel == "regional" else "ALCALDE"
+                    "GOBERNADOR Y VICEGOBERNADOR REGIONAL" if nivel == "regional"
+                    else "CONSEJEROS REGIONALES" if nivel == "consejero"
+                    else "ALCALDE"
                 ),
                 "es_principal": True,
                 "total_votantes_papel": None,

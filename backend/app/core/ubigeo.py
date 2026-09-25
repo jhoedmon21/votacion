@@ -14,18 +14,23 @@ from __future__ import annotations
 
 # Niveles del prototipo. El nombre es el que viaja en las peticiones
 # (``scope`` de analytics y ``candidate_type`` de la tabla records).
-NIVELES = ("district", "provincial", "regional")
+# ``consejero`` = Consejero Regional: se elige POR PROVINCIA (cédula propia del
+# acta), por eso su ámbito es el ubigeo provincial y no el departamental.
+NIVELES = ("district", "provincial", "consejero", "regional")
 
 # El formulario habla de tipos de elección; la base, de niveles.
 TIPO_A_NIVEL = {
     "DISTRITAL": "district",
     "DISTRICT": "district",
     "PROVINCIAL": "provincial",
+    "CONSEJERO": "consejero",
+    "CONSEJERO_REGIONAL": "consejero",
     "REGIONAL": "regional",
 }
 
-# Ubigeos de nivel superior derivados de un distrito.
-SUFIJOS = {"district": None, "provincial": "00", "regional": "0000"}
+# Ubigeos de nivel superior derivados de un distrito. ``consejero`` comparte
+# el ámbito provincial: el consejero regional se elige por provincia.
+SUFIJOS = {"district": None, "provincial": "00", "consejero": "00", "regional": "0000"}
 
 
 def nivel_desde_tipo(tipo: str) -> str | None:

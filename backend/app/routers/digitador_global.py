@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import requerir_rol
 from app.core.database import get_db
-from app.core.models import (ActaAuditoriaGlobal, ActaMetadata,
+from app.core.models import (ActaAuditoriaGlobal, ActaMetadata, ConsejeroCandidate,
                               DistrictCandidate, ProvincialCandidate, Record,
                               RegionalCandidate, Table, Usuario, Venue)
 from app.core.schemas import (ActaAuditoriaOut, DigitadorActaCrearIn,
@@ -41,6 +41,7 @@ ROL_NACIONAL = ("DIGITADOR_GLOBAL", "SUPER_ADMIN")
 CANDIDATE_MODELS = {
     "district": DistrictCandidate,
     "provincial": ProvincialCandidate,
+    "consejero": ConsejeroCandidate,
     "regional": RegionalCandidate,
 }
 
@@ -230,6 +231,7 @@ async def crear_acta_global(
         table.image_url = payload.image_url
     _aplicar_votos_nivel(db, table.id, "district", payload.votos_distrital)
     _aplicar_votos_nivel(db, table.id, "provincial", payload.votos_provincial)
+    _aplicar_votos_nivel(db, table.id, "consejero", payload.votos_consejero)
     _aplicar_votos_nivel(db, table.id, "regional", payload.votos_regional)
     meta = db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).first()
     if meta is None:
@@ -291,6 +293,7 @@ async def rectificar_acta_global(
     tocadas = 0
     tocadas += _aplicar_votos_nivel(db, table.id, "district", payload.votos_distrital)
     tocadas += _aplicar_votos_nivel(db, table.id, "provincial", payload.votos_provincial)
+    tocadas += _aplicar_votos_nivel(db, table.id, "consejero", payload.votos_consejero)
     tocadas += _aplicar_votos_nivel(db, table.id, "regional", payload.votos_regional)
 
     meta = db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).first()

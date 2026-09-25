@@ -17,6 +17,7 @@ Analiza la imagen y extrae EXACTAMENTE los siguientes datos en JSON válido:
   "numero_mesa": "6 dígitos del número de mesa (string de 6 caracteres, rellena con ceros a la izquierda si hace falta)",
   "votos_distrital": [ {"candidate_index": 0, "votes": int}, ... ],  // votos por candidato a la Alcaldía de Paucarpata, en orden de aparición
   "votos_provincial": [ {"candidate_index": 0, "votes": int}, ... ], // votos por candidato a la Alcaldía Provincial de Arequipa, en orden de aparición
+  "votos_consejero": [ {"candidate_index": 0, "votes": int}, ... ],  // votos por lista de Consejeros Regionales de la provincia del local
   "votos_regional": [ {"candidate_index": 0, "votes": int}, ... ],   // votos por candidato a Gobernador Regional de Arequipa
   "votos_blancos": int,
   "votos_nulos": int,
@@ -137,6 +138,7 @@ def _parse_tesseract(image_path: str) -> dict:
     return {
         "numero_mesa": numero_mesa,
         "votos_distrital": distrital,
+        "votos_consejero": [],
         "votos_regional": [],
         "votos_blancos": 0,
         "votos_nulos": 0,
@@ -203,6 +205,7 @@ def _normalize(raw: dict) -> ActaParseResult:
         numero_mesa=numero_mesa,
         votos_distrital=to_votes(raw.get("votos_distrital", [])),
         votos_provincial=to_votes(raw.get("votos_provincial", [])),
+        votos_consejero=to_votes(raw.get("votos_consejero", [])),
         votos_regional=to_votes(raw.get("votos_regional", [])),
         votos_blancos=int(raw.get("votos_blancos", 0) or 0),
         votos_nulos=int(raw.get("votos_nulos", 0) or 0),

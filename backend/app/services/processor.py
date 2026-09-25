@@ -4,9 +4,9 @@ import logging
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.models import (ActaMetadata, AsignacionPersonero, DistrictCandidate,
-                             ProvincialCandidate, Record, RegionalCandidate, ROLES_SISTEMA,
-                             Table, Usuario, Venue)
+from app.core.models import (ActaMetadata, AsignacionPersonero, ConsejeroCandidate,
+                             DistrictCandidate, ProvincialCandidate, Record,
+                             RegionalCandidate, ROLES_SISTEMA, Table, Usuario, Venue)
 from app.core.schemas import ActaParseResult
 from app.core.ubigeo import candidatos_del_ambito, ubigeo_de_nivel
 
@@ -141,6 +141,10 @@ def save_acta(db: Session, result: ActaParseResult, image_url: str) -> Table:
         c.sort_order: c.id
         for c in candidatos_del_ambito(db, RegionalCandidate, ubigeo_de_nivel(ubigeo, "regional")).all()
     }
+    consejero_map = {
+        c.sort_order: c.id
+        for c in candidatos_del_ambito(db, ConsejeroCandidate, ubigeo_de_nivel(ubigeo, "consejero")).all()
+    }
 
     def _save(candidate_type: str, votes_list: list, id_map: dict) -> None:
         for item in votes_list:
@@ -169,6 +173,7 @@ def save_acta(db: Session, result: ActaParseResult, image_url: str) -> Table:
 
     _save("district", result.votos_distrital, district_map)
     _save("provincial", result.votos_provincial, provincial_map)
+    _save("consejero", result.votos_consejero, consejero_map)
     _save("regional", result.votos_regional, regional_map)
 
     meta = db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).first()

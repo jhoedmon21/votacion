@@ -27,9 +27,9 @@ from app.core.auth import (alcance_ubigeos, es_rol_global, requerir_rol,
                             usuario_actual, validar_alcance_venue,
                             venues_en_alcance)
 from app.core.database import get_db
-from app.core.models import (ActaMetadata, DistrictCandidate,
-                              ProvincialCandidate, Record, RegionalCandidate,
-                              Table, Usuario, Venue)
+from app.core.models import (ActaMetadata, ConsejeroCandidate,
+                              DistrictCandidate, ProvincialCandidate, Record,
+                              RegionalCandidate, Table, Usuario, Venue)
 from app.core.schemas import (V1ActaStatusFila, V1ActaStatusTotales,
                                V1GanadorDistrito, V1LocalOpt, V1OcrPreviewOut,
                                V1RegistrarIn, V1RegistrarOut, V1ResumenOut,
@@ -46,6 +46,7 @@ router = APIRouter(prefix="/api/v1", tags=["v1"])
 MODELOS = {
     "district": DistrictCandidate,
     "provincial": ProvincialCandidate,
+    "consejero": ConsejeroCandidate,
     "regional": RegionalCandidate,
 }
 

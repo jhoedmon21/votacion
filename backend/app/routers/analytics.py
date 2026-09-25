@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 from app.core.auth import (alcance_ubigeos, es_rol_global, usuario_actual,
                             venues_en_alcance)
 from app.core.database import get_db
-from app.core.models import (ActaMetadata, AsignacionPersonero, DistrictCandidate,
-                             ProvincialCandidate, Record, RegionalCandidate,
-                             Table, Usuario, Venue)
+from app.core.models import (ActaMetadata, AsignacionPersonero, ConsejeroCandidate,
+                             DistrictCandidate, ProvincialCandidate, Record,
+                             RegionalCandidate, Table, Usuario, Venue)
 from app.core.orden_cedula import BLOQUE_DESCONOCIDO, bloque_y_posicion
 from app.core.ubigeo import NIVELES, ubigeo_de_nivel, ubigeos_de_nivel
 from app.services.processor import ensure_seed_data
@@ -19,6 +19,7 @@ router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 CANDIDATE_MODELS = {
     "district": DistrictCandidate,
     "provincial": ProvincialCandidate,
+    "consejero": ConsejeroCandidate,
     "regional": RegionalCandidate,
 }
 
@@ -86,8 +87,8 @@ def summary(scope: str = "district", ubigeo: str | None = None,
     if scope == "provincial":
         # Sort by candidate name ascending for provincial view
         ranking = sorted(base_ranking, key=lambda x: x["name"])
-    elif scope == "district" or scope == "regional":
-        # For district and regional, keep the vote-based sorting (descending) from _ranking
+    elif scope == "district" or scope == "regional" or scope == "consejero":
+        # For district, consejero and regional, keep the vote-based sorting (descending) from _ranking
         ranking = base_ranking
     else:
         ranking = base_ranking

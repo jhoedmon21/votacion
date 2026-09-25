@@ -16,9 +16,9 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import es_rol_global, usuario_actual
 from app.core.database import get_db
-from app.core.models import (ActaMetadata, DistrictCandidate,
-                              ProvincialCandidate, Record, RegionalCandidate,
-                              Table, Usuario, Venue)
+from app.core.models import (ActaMetadata, ConsejeroCandidate,
+                              DistrictCandidate, ProvincialCandidate, Record,
+                              RegionalCandidate, Table, Usuario, Venue)
 from app.core.schemas import MuseoIaPromptIn, MuseoIaPromptOut
 from app.core.ubigeo import nivel_desde_tipo, ubigeo_de_nivel
 from app.core.ubigeo_catalogo import UBIGEO_DISTRITO
@@ -32,6 +32,7 @@ router = APIRouter(prefix="/api/museo-ia", tags=["museo-ia"])
 MODELOS = {
     "district": DistrictCandidate,
     "provincial": ProvincialCandidate,
+    "consejero": ConsejeroCandidate,
     "regional": RegionalCandidate,
 }
 
