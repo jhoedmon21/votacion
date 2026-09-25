@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api, login } from "./api";
 
 /**
@@ -12,48 +12,9 @@ export default function LoginGate({ children }: { children: React.ReactNode }) {
   const [clave, setClave] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
-  const [autoIntentado, setAutoIntentado] = useState(false);
-
-  /* Acceso directo desde el panel FA (?demo=1&usuario=…&clave=…): autentica
-     al vuelo con las credenciales que llegan en la URL. Por defecto entra con
-     la cuenta demo SUPER_ADMIN. Sólo corre una vez y sólo si no hay sesión. */
-  const params = new URLSearchParams(window.location.search);
-  const quiereDemo = params.get("demo") === "1" || params.has("usuario");
-  useEffect(() => {
-    if (sesion || !quiereDemo || autoIntentado) return;
-    setAutoIntentado(true);
-    (async () => {
-      setError(null);
-      setCargando(true);
-      try {
-        const s = await login(
-          params.get("usuario") || "admin@computoarequipa.gob.pe",
-          params.get("clave") || "Admin.Arequipa2026",
-        );
-        setSesion(s);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "No se pudo iniciar sesión");
-      } finally {
-        setCargando(false);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sesion, quiereDemo, autoIntentado]);
 
   if (sesion) {
     return <>{children}</>;
-  }
-
-  if (quiereDemo && cargando && !error) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#232a35]">
-        <span className="rounded-lg bg-[#E02020] px-3 py-1.5 text-lg font-black tracking-tight text-white shadow-lg">
-          SISTEMA
-        </span>
-        <p className="text-sm font-bold text-gray-300">Conectando al cómputo electoral…</p>
-        <span className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#E02020] border-t-transparent" />
-      </div>
-    );
   }
 
   const enviar = async (e: React.FormEvent) => {
