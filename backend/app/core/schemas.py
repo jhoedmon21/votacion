@@ -300,6 +300,9 @@ class V1GanadorDistrito(BaseModel):
     # En consejeros: candidatos que entrarían por orden de lista (los primeros
     # de la lista de la organización, uno por escaño ganado).
     electos: list[str] = Field(default_factory=list)
+    # Foto y logo del candidato cabecera (estilo Top 2 en el panel).
+    foto: str | None = None
+    logo: str | None = None
 
 
 class V1ConsejeroProvincia(BaseModel):

@@ -113,6 +113,8 @@ def summary(scope: str = "district", ubigeo: str | None = None,
                     "color": p.ganador.color,
                     "votos": p.ganador.votos,
                     "electos": p.ganador.electos,
+                    "foto": p.ganador.foto,
+                    "logo": p.ganador.logo,
                 } if p.ganador else None),
                 "escanos": [{
                     "organizacion": e.organizacion,
@@ -120,6 +122,8 @@ def summary(scope: str = "district", ubigeo: str | None = None,
                     "votos": e.votos,
                     "curules_ganados": e.curules_ganados,
                     "electos": e.electos,
+                    "foto": e.foto,
+                    "logo": e.logo,
                 } for e in p.escanos],
             }
             for p in resultado_por_provincia(db, mesas_ok)

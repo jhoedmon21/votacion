@@ -41,6 +41,9 @@ class ListaEscano:
     votos: int
     curules_ganados: int = 0
     electos: list[str] = field(default_factory=list)
+    # Foto y logo del candidato cabecera (mismo tratamiento visual que el Top 2).
+    foto: str | None = None
+    logo: str | None = None
 
 
 @dataclass
@@ -101,10 +104,18 @@ def resultado_por_provincia(db: Session, mesas_ids: list[int]) -> list[Provincia
                 d[org] = (v, color or "#6b7280")
 
     cabezas: dict[tuple[str, str], list[str]] = {}
+    # Foto/logo del candidato cabecera de cada (provincia, organización):
+    # el de menor sort_order encabeza la lista.
+    medios: dict[tuple[str, str], tuple[str | None, str | None, int]] = {}
     for c in db.query(ConsejeroCandidate).filter(
             ConsejeroCandidate.ubigeo.in_(CURULES_POR_PROVINCIA)).all():
-        if c.party:
-            cabezas.setdefault((c.ubigeo, c.party), []).append(c.name or "")
+        if not c.party:
+            continue
+        cabezas.setdefault((c.ubigeo, c.party), []).append(c.name or "")
+        clave = (c.ubigeo, c.party)
+        actual = medios.get(clave)
+        if actual is None or (c.sort_order or 999) < actual[2]:
+            medios[clave] = (c.photo_url, c.symbol, c.sort_order or 999)
     for nombres in cabezas.values():
         nombres.sort()
 
@@ -120,9 +131,11 @@ def resultado_por_provincia(db: Session, mesas_ids: list[int]) -> list[Provincia
             for org in sorted(reparto, key=lambda o: (-reparto[o], -votos_org[o])):
                 ganados = reparto[org]
                 electos = [n for n in cabezas.get((ubigeo_p, org), []) if n][:ganados]
+                foto, logo, _orden = medios.get((ubigeo_p, org), (None, None, 0))
                 listas.append(ListaEscano(
                     organizacion=org, color=colores.get(org, "#6b7280"),
-                    votos=votos_org[org], curules_ganados=ganados, electos=electos))
+                    votos=votos_org[org], curules_ganados=ganados, electos=electos,
+                    foto=foto, logo=logo))
 
         ganador = max(listas, key=lambda l: l.votos) if listas else None
         salida.append(ProvinciaResultado(

@@ -345,8 +345,8 @@ export default function ONPEPaucarpataDashboard() {
      circunscripción con sus propios curules y escaños (d'Hondt). */
   const consejerosPorProvincia: Array<{
     provincia: string; ubigeo: string; curules: number;
-    ganador: { organizacion: string; color: string; votos: number; electos: string[] } | null;
-    escanos: Array<{ organizacion: string; color: string; votos: number; electos: string[] }>;
+    ganador: { organizacion: string; color: string; votos: number; electos: string[]; foto?: string | null; logo?: string | null } | null;
+    escanos: Array<{ organizacion: string; color: string; votos: number; electos: string[]; curules_ganados?: number; foto?: string | null; logo?: string | null }>;
   }> = summary?.consejeros ?? [];
   /* Brecha del Top 2: votos y puntos porcentuales entre el 1º y el 2º. */
   const brechaVotos = topTwo.length === 2 ? topTwo[0].votes - topTwo[1].votes : 0;
@@ -661,33 +661,82 @@ export default function ONPEPaucarpataDashboard() {
                     </div>
                     {p.ganador ? (
                       <>
-                        <div className="mt-3 flex items-center gap-2">
-                          <span className="inline-block h-3.5 w-3.5 shrink-0 rounded-full ring-2 ring-white"
-                            style={{ backgroundColor: p.ganador.color }} />
-                          <span className="truncate text-[13px] font-bold text-slate-800" title={p.ganador.organizacion}>
-                            {p.ganador.organizacion}
+                        {/* Ganador estilo Top 2: avatar con anillo del partido +
+                            gradiente + foto del candidato cabecera */}
+                        <div
+                          className="-mx-4 -mt-3 mb-3 flex items-center gap-3 rounded-t-xl px-4 py-3"
+                          style={{
+                            background: `linear-gradient(135deg, ${p.ganador.color}1A 0%, transparent 70%)`,
+                          }}
+                        >
+                          <span
+                            className="shrink-0 rounded-full p-[3px] shadow-md"
+                            style={{ background: `linear-gradient(135deg, ${p.ganador.color}, ${p.ganador.color}99)` }}
+                          >
+                            {p.ganador.foto ? (
+                              <img
+                                src={p.ganador.foto}
+                                alt={p.ganador.electos[0] || p.ganador.organizacion}
+                                className="h-14 w-14 rounded-full border-2 border-white object-cover"
+                              />
+                            ) : (
+                              <span
+                                className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-white text-lg font-black text-white"
+                                style={{ backgroundColor: p.ganador.color }}
+                              >
+                                {(p.ganador.organizacion ?? "?").charAt(0)}
+                              </span>
+                            )}
                           </span>
-                          <span className="ml-auto shrink-0 font-mono text-sm font-black tabular-nums text-[#E02020]">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[13px] font-black leading-tight text-slate-800" title={p.ganador.organizacion}>
+                              {p.ganador.organizacion}
+                            </p>
+                            {p.ganador.electos[0] && (
+                              <p className="truncate text-[11px] font-semibold text-slate-500" title={p.ganador.electos[0]}>
+                                {p.ganador.electos[0]}
+                              </p>
+                            )}
+                            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              Lista más votada
+                            </p>
+                          </div>
+                          <span className="shrink-0 font-mono text-lg font-black tabular-nums text-[#E02020]">
                             {formatVotes(p.ganador.votos)}
                           </span>
                         </div>
-                        {/* Escaños d'Hondt con cabeza de lista */}
-                        <div className="mt-3 space-y-1.5">
+                        {/* Escaños d'Hondt con cabeza de lista y logo */}
+                        <div className="space-y-1.5">
                           {p.escanos.map((e) => (
                             <div key={e.organizacion}
-                              className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1.5">
-                              <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm"
-                                style={{ backgroundColor: e.color }} />
-                              <span className="min-w-0 flex-1 truncate text-[11px] font-bold text-slate-700" title={e.organizacion}>
-                                {e.organizacion.split(" ")[0]}
-                                {e.electos.length > 0 && (
-                                  <span className="block truncate text-[10px] font-medium text-slate-400" title={e.electos.join(", ")}>
-                                    {e.electos.join(", ")}
-                                  </span>
-                                )}
+                              className="flex items-center gap-2.5 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2">
+                              {/* Logo mini del partido o avatar de respaldo */}
+                              {e.logo ? (
+                                <img src={e.logo} alt={e.organizacion} title={e.organizacion}
+                                  className="h-8 w-8 shrink-0 rounded-lg border border-slate-200 bg-white object-contain p-0.5"
+                                />
+                              ) : (
+                                <span
+                                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-black text-white"
+                                  style={{ backgroundColor: e.color }}
+                                  title={e.organizacion}
+                                >
+                                  {(e.organizacion ?? "?").charAt(0)}
+                                </span>
+                              )}
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-[11px] font-bold text-slate-700" title={e.organizacion}>
+                                  {e.organizacion}
+                                </span>
+                                <span className="block truncate text-[10px] font-medium text-slate-400" title={e.electos.join(", ")}>
+                                  {e.electos.join(", ") || "—"}
+                                </span>
                               </span>
-                              <span className="shrink-0 rounded-full bg-white px-1.5 font-mono text-[10px] font-black text-slate-600 shadow-xs">
-                                ×{Math.max(1, Math.round((e.votos / (p.ganador?.votos || e.votos || 1)) * (p.escanos.filter(x => x.organizacion === e.organizacion).length ? 1 : 1))) || 1}
+                              <span
+                                className="shrink-0 rounded-full bg-white px-2 py-0.5 font-mono text-[11px] font-black text-slate-700 shadow-xs"
+                                title={`${e.curules_ganados ?? 1} curul(es) por d'Hondt`}
+                              >
+                                ×{e.curules_ganados ?? 1}
                               </span>
                             </div>
                           ))}
