@@ -1,0 +1,16 @@
+🔪 4,194 actas. 109 distritos. 48 locales. UNA SOLA NOCHE.
+
+SISTEMA DE CÓMPUTO ELECTORAL — Fuerza Arequipeña · Arequipa 2026
+
+▪ Conteo paralelo: el personero sube el acta, el sistema la cuadra sola
+  (323 + 7 + 4 + 9 + 4 = 347 ✓) y la misma se suma al cómputo regional.
+▪ Mapa de ganadores: los 109 distritos de Arequipa se pintan distrito por
+  distrito, en vivo, con el color del partido que gana ahí.
+▪ Cobertura en campo: check-in GPS del personero al llegar al local y
+  semáforo verde/amarillo/rojo por colegio.
+
+Todo en una sola noche. Cómputo en vivo.
+
+🔗 github.com/jhoedmon21/votacion
+
+#EleccionesArequipa2026 #FuerzaArequipena #ConteoParalelo

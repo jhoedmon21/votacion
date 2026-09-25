@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SISTEMA DE CÓMPUTO ELECTORAL — Intro</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --fa: #E02020; --fa-hi: #FF4B4B; --fa-deep: #A01010;
+    --white: #FFFFFF; --ink: #1B1113; --ok: #2ECC71; --warn: #F5A623; --crit: #E74C3C;
+  }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0B0507; }
+  #stage {
+    position: absolute; width: 1600px; height: 900px;
+    left: 50%; top: 50%; transform: translate(-50%, -50%);
+    transform-origin: center center;
+  }
+  .scene { position: absolute; inset: 0; display: none; }
+  .scene.on { display: block; }
+  .scene-inner {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .board-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(1100px 600px at 50% 0%, #2A1218 0%, #160A0D 55%, #0B0507 100%);
+  }
+  .board-bg::before {
+    content: ""; position: absolute; inset: 0; opacity: .5;
+    background-image: linear-gradient(rgba(224,32,32,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(224,32,32,.05) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .fa-label {
+    font: 700 22px/1.2 -apple-system, "Segoe UI", sans-serif;
+    letter-spacing: .35em; color: #E58585; text-transform: uppercase;
+  }
+  .fa-h1 { font: 900 92px/1.05 -apple-system, "Segoe UI", sans-serif; color: var(--white); letter-spacing: -0.01em; text-align: center; }
+  @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes rise { from { transform: translateY(26px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(224,32,32,.55); } 100% { box-shadow: 0 0 0 26px rgba(224,32,32,0); } }
+  @keyframes growBar { to { transform: scaleX(1); } }
+  @keyframes rec { 0%,100% { opacity: 1; } 50% { opacity: .2; } }
+  .pop { animation: pop .55s cubic-bezier(.2,.9,.25,1.2) both; }
+  .rise { animation: rise .5s cubic-bezier(.2,.9,.3,1) both; }
+  .d1 { animation-delay: .12s; } .d2 { animation-delay: .26s; } .d3 { animation-delay: .4s; }
+  .d4 { animation-delay: .55s; } .d5 { animation-delay: .7s; } .d6 { animation-delay: .85s; }
+  /* escena 1 · hook */
+  .hook-nums { display: flex; gap: 64px; align-items: flex-start; }
+  .hook-num { text-align: center; }
+  .hook-num b { display: block; font: 900 108px/1 -apple-system, "Segoe UI", sans-serif; color: var(--white); font-variant-numeric: tabular-nums; }
+  .hook-num span { display: block; margin-top: 10px; font: 700 24px/1 -apple-system, "Segoe UI", sans-serif; letter-spacing: .3em; color: #E58585; }
+  .hook-line { margin-top: 46px; font: 900 40px/1 -apple-system, "Segoe UI", sans-serif; color: var(--fa-hi); letter-spacing: .12em; }
+  /* escena 2 · reveal */
+  .fa-badge {
+    width: 118px; height: 118px; border-radius: 28px; margin-bottom: 30px;
+    background: linear-gradient(135deg, var(--fa-hi), var(--fa-deep));
+    display: flex; align-items: center; justify-content: center;
+    font: 900 52px/1 Georgia, serif; color: #fff;
+    box-shadow: 0 22px 60px rgba(224,32,32,.45);
+    animation: ring 1.6s ease-out .3s 1, pop .55s both;
+  }
+  .reveal-sub { margin-top: 18px; font: 600 24px/1.5 -apple-system, "Segoe UI", sans-serif; color: #D9C9CC; text-align: center; }
+  .reveal-pill { margin-top: 34px; display: flex; gap: 12px; justify-content: center; }
+  .pill {
+    border: 1px solid rgba(224,32,32,.5); color: #FCA5A5; border-radius: 999px;
+    padding: 10px 22px; font: 700 18px/1 -apple-system, "Segoe UI", sans-serif;
+    background: rgba(224,32,32,.08); letter-spacing: .08em;
+  }
+  .reveal-bar { margin-top: 40px; width: 560px; height: 10px; border-radius: 5px; overflow: hidden; background: rgba(255,255,255,.08); }
+  .reveal-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--fa-hi), var(--fa-deep)); transform-origin: left; transform: scaleX(0); animation: growBar 2.4s ease .6s forwards; }
+  /* escena 3 · acta */
+  .acta-card {
+    width: 720px; background: #fff; border-radius: 18px; padding: 32px 40px 28px;
+    box-shadow: 0 30px 90px rgba(0,0,0,.55); border-top: 6px solid var(--fa);
+  }
+  .acta-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .acta-head b { font: 900 25px/1 -apple-system, "Segoe UI", sans-serif; color: var(--ink); }
+  .acta-head span { font: 800 15px/1 -apple-system, "Segoe UI", sans-serif; letter-spacing: .22em; color: var(--fa); }
+  .acta-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #E5E7EB; font: 600 19px/1.3 -apple-system, "Segoe UI", sans-serif; color: #374151; }
+  .acta-row b { font-variant-numeric: tabular-nums; color: var(--ink); }
+  .acta-total { margin-top: 12px; display: flex; justify-content: space-between; background: #F9FAFB; border-radius: 10px; padding: 11px 16px; font: 800 21px/1 -apple-system, "Segoe UI", sans-serif; color: var(--ink); }
+  .acta-check { margin-top: 16px; display: inline-flex; align-items: center; gap: 12px; background: rgba(46,204,113,.14); border: 1px solid rgba(46,204,113,.55); color: #16794B; border-radius: 10px; padding: 12px 18px; font: 800 20px/1 -apple-system, "Segoe UI", sans-serif; }
+  .acta-check .ok-ico { width: 26px; height: 26px; border-radius: 50%; background: var(--ok); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900; }
+  /* escena 4 · mapa */
+  .map-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 9px; width: 920px; }
+  .cell { height: 44px; border-radius: 8px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.09); }
+  .cell.owned { border-color: transparent; }
+  .map-caption { margin-top: 28px; display: flex; align-items: center; gap: 12px; }
+  .map-caption .swatch { width: 16px; height: 16px; border-radius: 4px; }
+  .map-caption span { font: 700 19px/1 -apple-system, "Segoe UI", sans-serif; color: #E8D5D8; letter-spacing: .1em; }
+  /* escena 5 · cobertura */
+  .cov-wrap { display: flex; gap: 90px; align-items: center; }
+  .cov-pin {
+    width: 84px; height: 84px; border-radius: 50%; background: var(--ok);
+    display: flex; align-items: center; justify-content: center; font-size: 40px;
+    animation: ring 1.5s ease-out .4s 2, pop .5s both; margin-bottom: 22px;
+  }
+  .cov-left b { display: block; font: 900 42px/1.15 -apple-system, "Segoe UI", sans-serif; color: var(--white); }
+  .cov-left span { display: block; margin-top: 8px; font: 700 20px/1.4 -apple-system, "Segoe UI", sans-serif; color: #86EF84; }
+  .cov-semaforo { display: flex; flex-direction: column; gap: 16px; }
+  .lamp { display: flex; align-items: center; gap: 14px; font: 800 20px/1 -apple-system, "Segoe UI", sans-serif; color: #E8D5D8; opacity: .3; transition: opacity .3s; }
+  .lamp.on { opacity: 1; }
+  .lamp i { width: 26px; height: 26px; border-radius: 50%; background: #3A2A2E; display: block; }
+  .lamp.on i.verde { background: var(--ok); box-shadow: 0 0 18px rgba(46,204,113,.8); }
+  .lamp.on i.amarillo { background: var(--warn); box-shadow: 0 0 18px rgba(245,166,35,.8); }
+  .lamp.on i.rojo { background: var(--crit); box-shadow: 0 0 18px rgba(231,76,60,.8); }
+  .cov-badge { margin-top: 12px; padding: 8px 16px; border-radius: 999px; background: rgba(46,204,113,.15); border: 1px solid rgba(46,204,113,.5); color: #86EF84; font: 800 17px/1 -apple-system, "Segoe UI", sans-serif; }
+  /* escena 6 · outro */
+  .outro .fa-badge { width: 96px; height: 96px; font-size: 42px; margin-bottom: 26px; }
+  .outro .repo { margin-top: 34px; font: 700 20px/1 -apple-system, "Segoe UI", sans-serif; color: #B9A6AA; letter-spacing: .08em; }
+  .outro .repo b { color: var(--fa-hi); }
+  /* HUD */
+  #hud {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    display: flex; gap: 10px; align-items: center; justify-content: center;
+    padding: 10px; background: rgba(10,6,8,.85);
+    font: 600 13px/1 -apple-system, "Segoe UI", sans-serif; color: #E8D5D8;
+  }
+  #hud button { cursor: pointer; border: 1px solid rgba(224,32,32,.55); background: rgba(224,32,32,.14); color: #FCA5A5; padding: 7px 14px; border-radius: 8px; font: 700 13px/1 -apple-system, "Segoe UI", sans-serif; }
+  #hud .rec-chip { display: none; align-items: center; gap: 7px; margin-left: 14px; }
+  #hud .rec-chip.on { display: flex; }
+  #hud .rec-chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--crit); animation: rec 1s infinite; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <!-- ESCENA 1 · HOOK -->
+  <section class="scene" id="s1">
+    <div class="board-bg"></div>
+    <div class="scene-inner">
+      <div class="hook-nums">
+        <div class="hook-num"><b class="pop">4,194</b><span class="pop d2">ACTAS</span></div>
+        <div class="hook-num"><b class="pop d1">109</b><span class="pop d3">DISTRITOS</span></div>
+        <div class="hook-num"><b class="pop d2">48</b><span class="pop d4">LOCALES</span></div>
+      </div>
+      <div class="hook-line pop d4">UNA SOLA NOCHE.</div>
+    </div>
+  </section>
+
+  <!-- ESCENA 2 · REVEAL -->
+  <section class="scene" id="s2">
+    <div class="board-bg"></div>
+    <div class="scene-inner">
+      <div class="fa-badge">FA</div>
+      <div class="fa-h1 pop d1">SISTEMA DE CÓMPUTO<br>ELECTORAL</div>
+      <div class="reveal-sub rise d2">Arequipa · Regionales, Provinciales y Distritales 2026</div>
+      <div class="reveal-pill">
+        <span class="pill rise d3">CONTEO PARALELO</span>
+        <span class="pill rise d4">COBERTURA EN CAMPO</span>
+        <span class="pill rise d5">MAPA DE GANADORES</span>
+      </div>
+      <div class="reveal-bar"><i></i></div>
+    </div>
+  </section>
+
+  <!-- ESCENA 3 · ACTAS -->
+  <section class="scene" id="s3">
+    <div class="board-bg"></div>
+    <div class="scene-inner">
+      <div class="fa-label pop">MÓDULO DE ACTAS</div>
+      <div class="acta-card rise d1" style="margin-top:18px;">
+        <div class="acta-head"><b>Acta Electoral · Mesa 023001</b><span>PAUCARPATA</span></div>
+        <div class="acta-row"><span>Fuerza Arequipeña</span><b id="v1">0</b></div>
+        <div class="acta-row"><span>Arequipa Tradición y Futuro</span><b id="v2">0</b></div>
+        <div class="acta-row"><span>El Frente de Todos</span><b id="v3">0</b></div>
+        <div class="acta-row"><span>Votos en blanco</span><b id="v4">0</b></div>
+        <div class="acta-row"><span>Votos nulos e impugnados</span><b id="v5">0</b></div>
+        <div class="acta-total"><span>TOTAL SUFRAGIO</span><b id="vt">0</b></div>
+      </div>
+      <div class="acta-check pop d4" style="margin-top:20px;"><span class="ok-ico">✓</span>323 + 7 + 4 + 9 + 4 = 347 · Acta cuadrada</div>
+    </div>
+  </section>
+
+  <!-- ESCENA 4 · MAPA -->
+  <section class="scene" id="s4">
+    <div class="board-bg"></div>
+    <div class="scene-inner">
+      <div class="fa-label pop">MAPA DE GANADORES</div>
+      <div class="map-grid" id="mapGrid" style="margin-top:26px;"></div>
+      <div class="map-caption rise d2">
+        <span class="swatch" style="background:#E02020;"></span>
+        <span>FUERZA AREQUIPEÑA</span>
+        <span class="swatch" style="background:#2ECC71; margin-left:18px;"></span>
+        <span>OTRAS AGRUPACIONES</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ESCENA 5 · COBERTURA -->
+  <section class="scene" id="s5">
+    <div class="board-bg"></div>
+    <div class="scene-inner">
+      <div class="fa-label pop">COBERTURA EN CAMPO</div>
+      <div class="cov-wrap" style="margin-top:34px;">
+        <div class="cov-left">
+          <div class="cov-pin">📍</div>
+          <b>Local 2210 · check-in</b>
+          <span id="gpsDist">a 214 m del local…</span>
+          <span class="cov-badge" id="gpsBadge" style="visibility:hidden;">DENTRO DEL RADIO · 12 m ✓</span>
+        </div>
+        <div class="cov-semaforo">
+          <div class="lamp" id="l1"><i class="verde"></i>VERDE · 100% cubierto</div>
+          <div class="lamp" id="l2"><i class="amarillo"></i>AMARILLO · cobertura parcial</div>
+          <div class="lamp" id="l3"><i class="rojo"></i>ROJO · local crítico</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ESCENA 6 · OUTRO -->
+  <section class="scene" id="s6">
+    <div class="board-bg"></div>
+    <div class="scene-inner outro">
+      <div class="fa-badge">FA</div>
+      <div class="fa-h1 pop d1">CÓMPUTO EN VIVO.</div>
+      <div class="reveal-sub rise d2">Fuerza Arequipeña · Arequipa 2026</div>
+      <div class="repo rise d3">github.com/<b>jhoedmon21</b>/votacion</div>
+    </div>
+  </section>
+</div>
+
+<div id="hud">
+  <button id="b-play">▶ Reproducir</button>
+  <button id="b-stop">⏹ Detener</button>
+  <span class="rec-chip" id="recChip"><i></i>REC</span>
+</div>
+
+<script>
+  var SCENES = [
+    { id: "s1", t: 2500 },
+    { id: "s2", t: 3000 },
+    { id: "s3", t: 3500 },
+    { id: "s4", t: 4000 },
+    { id: "s5", t: 3500 },
+    { id: "s6", t: 3000 }
+  ];
+  var timer = null, raf = null;
+
+  function show(i) {
+    var els = document.querySelectorAll('.scene');
+    for (var k = 0; k < els.length; k++) els[k].classList.remove('on');
+    if (i >= 0 && i < SCENES.length) document.getElementById(SCENES[i].id).classList.add('on');
+  }
+
+  function runStep(i) {
+    if (i >= SCENES.length) { stopAll(); return; }
+    show(i);
+    clearTimeout(timer);
+    timer = setTimeout(function () { runStep(i + 1); }, SCENES[i].t);
+    if (i === 2) startCounts();
+    if (i === 3) startMap();
+    if (i === 4) startCov();
+  }
+
+  function stopAll() {
+    clearTimeout(timer); timer = null;
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+  }
+
+  /* escena 3 · contadores del acta */
+  function startCounts() {
+    var ids = ["v1", "v2", "v3", "v4", "v5", "vt"];
+    var goals = [323, 7, 4, 9, 4, 347];
+    var els = ids.map(function (id) { return document.getElementById(id); });
+    var t0 = performance.now(), DUR = 1400;
+    if (raf) cancelAnimationFrame(raf);
+    (function tick(now) {
+      var p = Math.min(1, (now - t0) / DUR);
+      var e = 1 - Math.pow(1 - p, 3);
+      for (var k = 0; k < els.length; k++) {
+        els[k].textContent = Math.round(goals[k] * e).toLocaleString('es-PE');
+      }
+      if (p < 1) raf = requestAnimationFrame(tick);
+    })(t0);
+  }
+
+  /* escena 4 · mapa de ganadores */
+  function startMap() {
+    var grid = document.getElementById('mapGrid');
+    if (!grid.children.length) {
+      for (var k = 0; k < 109; k++) {
+        var c = document.createElement('div');
+        c.className = 'cell';
+        grid.appendChild(c);
+      }
+    }
+    var cells = grid.children;
+    for (var k = 0; k < 109; k++) {
+      cells[k].className = 'cell';
+      cells[k].style.background = '';
+      cells[k].style.borderColor = '';
+      var fa = (k * 7) % 109 < 93;             /* ~85% de distritos para FA */
+      var color = fa ? '#E02020' : (k % 3 === 0 ? '#2ECC71' : k % 3 === 1 ? '#27AE60' : '#F5A623');
+      (function (cell, col) {
+        setTimeout(function () {
+          cell.classList.add('owned');
+          cell.style.background = col;
+        }, 420 + Math.random() * 2600);
+      })(cells[k], color);
+    }
+  }
+
+  /* escena 5 · GPS + semáforo */
+  function startCov() {
+    var dist = document.getElementById('gpsDist');
+    var badge = document.getElementById('gpsBadge');
+    badge.style.visibility = 'hidden';
+    var t0 = performance.now(), DUR = 1600;
+    if (raf) cancelAnimationFrame(raf);
+    (function tick(now) {
+      var p = Math.min(1, (now - t0) / DUR);
+      var m = Math.round(214 - (214 - 12) * (1 - Math.pow(1 - p, 2)));
+      dist.textContent = 'a ' + m + ' m del local…';
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else {
+        badge.style.visibility = 'visible';
+        badge.classList.add('pop');
+      }
+    })(t0);
+    setTimeout(function () { document.getElementById('l1').classList.add('on'); }, 1500);
+    setTimeout(function () { document.getElementById('l2').classList.add('on'); }, 2100);
+    setTimeout(function () { document.getElementById('l3').classList.add('on'); }, 2700);
+  }
+
+  document.getElementById('b-play').addEventListener('click', function () {
+    ['l1', 'l2', 'l3'].forEach(function (id) { document.getElementById(id).classList.remove('on'); });
+    stopAll();
+    runStep(0);
+  });
+  document.getElementById('b-stop').addEventListener('click', function () {
+    stopAll();
+    show(-1);
+  });
+
+  /* ajuste del escenario 1600x900 a cualquier viewport */
+  function fitStage() {
+    var s = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+    document.getElementById('stage').style.transform =
+      'translate(-50%, -50%) scale(' + s + ')';
+  }
+  window.addEventListener('resize', fitStage);
+  fitStage();
+
+  /* autoarranque */
+  runStep(0);
+</script>
+</body>
+</html>
