@@ -20,11 +20,35 @@ Identidad visual **Fuerza Arequipeña** (rojo `#E02020` · blanco · negro, seg�
 ## Arquitectura
 
 ```
-backend/    FastAPI + SQLAlchemy (SQLite dev / PostgreSQL prod) — app/, sql/, tools/
+backend/    FastAPI + SQLAlchemy (PostgreSQL 16, SQLite como fallback) — app/, sql/, tools/
 frontend/   React + Vite + Tailwind (dashboard) + Leaflet — src/, public/
 onpe-scraper/   Crawler del padrón de locales y mesas (CSV/XLSX → JSON/SQL)
 jne-scraper/    Crawler de candidatos y organizaciones (JNE)
 js/         PWA estática ligera
+```
+
+## Base de datos PostgreSQL
+
+El backend corre sobre **PostgreSQL 16** (`computo_arequipa`, puerto 5432).
+La conexión se configura en `backend/.env` (ver `backend/.env.example`):
+
+```
+DATABASE_URL=postgresql+psycopg2://postgres:CLAVE@localhost:5432/computo_arequipa
+```
+
+Migración de datos desde SQLite (idempotente, preserva IDs y reposiciona secuencias):
+
+```bash
+cd backend
+python -m app.migrate_to_postgres --dry-run   # informa cuántas filas copiaría
+python -m app.migrate_to_postgres --truncate  # copia las 15 tablas desde SQLite
+```
+
+Tras migrar, reejecutar las semillas contra PG es seguro (todas idempotentes):
+
+```bash
+python -m app.load_jne_data      # oferta electoral JNE (4 niveles: regional, consejero, provincial, distrital)
+python -m app.seed_padron_real   # padrón ONPE (109 distritos, 491 locales, 4.194 mesas)
 ```
 
 ## Cómo correr
