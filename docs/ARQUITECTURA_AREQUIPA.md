@@ -208,6 +208,14 @@ columna**: basta que una descuadre para que el acta no sea contabilizable. La
 cabecera de `actas` resume la columna principal (la del cargo de mayor
 jerarquía), que es la que fija el resultado oficial.
 
+**La columna B del acta regional es provincial.** Los votos de CONSEJEROS se
+persisten en el nivel propio `consejero` (`consejero_candidates`, ubigeo
+provincial `040100`…`040800`), separados del gobernador (`regional`, ubigeo
+`040000`) y de cada otra provincia. El dashboard (vista Cómputo, nivel
+CONSEJERO) renderiza una tarjeta por provincia con ganador, curules y escaños
+d'Hondt (`resumen.consejeros[]`). Oferta cargada desde el expediente regional
+del JNE filtrando `cargo = CONSEJERO_REGIONAL` por provincia de postulación.
+
 ---
 
 ## 4. Flujo de ingreso / edición de un acta

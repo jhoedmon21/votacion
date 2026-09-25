@@ -31,11 +31,13 @@ from app.core.models import (ActaMetadata, ConsejeroCandidate,
                               DistrictCandidate, ProvincialCandidate, Record,
                               RegionalCandidate, Table, Usuario, Venue)
 from app.core.schemas import (V1ActaStatusFila, V1ActaStatusTotales,
-                               V1GanadorDistrito, V1LocalOpt, V1OcrPreviewOut,
+                               V1ConsejeroProvincia, V1GanadorDistrito,
+                               V1LocalOpt, V1OcrPreviewOut,
                                V1RegistrarIn, V1RegistrarOut, V1ResumenOut,
                                V1ResumenStatusOut)
 from app.core.ubigeo import candidatos_del_ambito, nivel_desde_tipo
 from app.core.ubigeo import ubigeo_de_nivel
+from app.core.ubigeo_catalogo import PROVINCIA_NOMBRE, UBIGEO_PROVINCIA
 from app.services.acta_validator import (COLUMNA_PRINCIPAL, ColumnaActa,
                                           validar_acta)
 
@@ -474,6 +476,74 @@ def resumen(tipo_eleccion: str = Query("DISTRITAL"),
             ganadores[ubigeo] = V1GanadorDistrito(
                 organizacion=org, color=color, votos=v)
 
+    # Consejo Regional POR PROVINCIA (sólo nivel ``consejero``): cada provincia
+    # es una circunscripción con su propia columna del acta. Se reporta la
+    # lista más votada de cada provincia y la repartición de curules por
+    # cifra repartidora (d'Hondt) proyectada sobre las actas procesadas —
+    # NO es un resultado oficial. Curules por provincia (Res. JNE):
+    # Arequipa 6; Castilla, Caylloma y La Unión 2; el resto 1 (16 en total).
+    consejeros: list = []
+    if clave == "consejero" and pids:
+        CURULES = {"040100": 6, "040400": 2, "040500": 2, "040800": 2,
+                   "040200": 1, "040300": 1, "040600": 1, "040700": 1}
+        filas_p = (
+            db.query(ConsejeroCandidate.ubigeo, ConsejeroCandidate.party,
+                     ConsejeroCandidate.color, func.sum(Record.votes))
+            .join(Record, (Record.candidate_id == ConsejeroCandidate.id)
+                  & (Record.candidate_type == "consejero"))
+            .filter(Record.table_id.in_(pids))
+            .group_by(ConsejeroCandidate.ubigeo, ConsejeroCandidate.party,
+                      ConsejeroCandidate.color).all()
+        )
+        votos_prov: dict[str, dict[str, tuple[int, str]]] = {}
+        for ubigeo_p, org, color, votos in filas_p:
+            if not org:
+                continue
+            d = votos_prov.setdefault(ubigeo_p, {})
+            v = int(votos or 0)
+            if org not in d or v > d[org][0]:
+                d[org] = (v, color or "#6b7280")
+
+        def _dhondt(votos: dict[str, int], curules: int) -> list[str]:
+            """Cifra repartidora: devuelve las organizaciones con escaño."""
+            cocientes: list[tuple[float, str]] = []
+            for org, v in votos.items():
+                for i in range(1, curules + 1):
+                    cocientes.append((v / i, org))
+            cocientes.sort(key=lambda t: (-t[0], t[1]))
+            return [org for _, org in cocientes[:curules]]
+
+        for ubigeo_p in sorted(CURULES):
+            curules = CURULES[ubigeo_p]
+            organizacion_votos = {org: v for org, (v, _) in
+                                  votos_prov.get(ubigeo_p, {}).items()}
+            colores = {org: c for org, (_, c) in
+                       votos_prov.get(ubigeo_p, {}).items()}
+            escanos: list = []
+            if organizacion_votos:
+                for org in _dhondt(organizacion_votos, curules):
+                    escanos.append(V1GanadorDistrito(
+                        organizacion=org, color=colores.get(org, "#6b7280"),
+                        votos=organizacion_votos[org]))
+            ganador = None
+            if organizacion_votos:
+                org_g = max(sorted(organizacion_votos),
+                            key=lambda o: organizacion_votos[o])
+                ganador = V1GanadorDistrito(
+                    organizacion=org_g, color=colores.get(org_g, "#6b7280"),
+                    votos=organizacion_votos[org_g])
+            # Nombre de la provincia: el catálogo mapea distrito->nombre, así
+            # que se toma el nombre del primer distrito de ese prefijo (0401*).
+            nombre_p = next(
+                (PROVINCIA_NOMBRE.get(nom, nom)
+                 for u, nom in UBIGEO_PROVINCIA.items()
+                 if u.startswith(ubigeo_p[:4])),
+                ubigeo_p,
+            )
+            consejeros.append(V1ConsejeroProvincia(
+                provincia=nombre_p, ubigeo=ubigeo_p,
+                ganador=ganador, escanos=escanos, curules=curules))
+
     obs_lista = sorted( 
         ({"numero_mesa": t.numero_mesa,
           "local": venue_por_id.get(t.venue_id).name
@@ -505,6 +575,7 @@ def resumen(tipo_eleccion: str = Query("DISTRITAL"),
         distritos=distritos,
         observadas=obs_lista,
         ganadores=ganadores,
+        consejeros=consejeros,
     )
 
 

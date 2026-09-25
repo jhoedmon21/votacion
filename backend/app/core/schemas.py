@@ -299,6 +299,21 @@ class V1GanadorDistrito(BaseModel):
     votos: int = 0
 
 
+class V1ConsejeroProvincia(BaseModel):
+    """Resultado de CONSEJERO REGIONAL en una provincia.
+
+    Cada provincia renueva escaños del Consejo Regional con su propia columna
+    del acta: ``ganador`` es la lista más votada y ``escanos`` reparte los
+    curules de la provincia por **d'Hondt** entre las listas en carrera
+    (proyección sobre las actas procesadas, no resultado oficial).
+    """
+    provincia: str
+    ubigeo: str
+    ganador: V1GanadorDistrito | None = None
+    escanos: list[V1GanadorDistrito] = Field(default_factory=list)
+    curules: int = 0
+
+
 class V1ResumenOut(BaseModel):
     total_mesas: int
     total_actas: int
@@ -319,6 +334,8 @@ class V1ResumenOut(BaseModel):
     observadas: list[V1ActaObservada] = Field(default_factory=list)
     # Ganador por distrito (ubigeo -> org/color/votos) para el mapa de resultados.
     ganadores: dict[str, V1GanadorDistrito] = Field(default_factory=dict)
+    # Consejo Regional: resultado POR PROVINCIA (sólo nivel CONSEJERO).
+    consejeros: list[V1ConsejeroProvincia] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

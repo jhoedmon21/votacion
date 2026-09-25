@@ -54,6 +54,22 @@ Se evalúa **por columna**, porque el acta física municipal tiene dos columnas
 independientes: **A** (alcalde / gobernador y vice) y **B** (regidores /
 consejeros). Cada una tiene sus propios blancos, nulos, impugnados y total.
 
+> **Consejero Regional (nivel `consejero`).** El Consejo Regional se elige
+> **por provincia** — cada provincia es una circunscripción con su propia
+> columna de CONSEJEROS en el acta y sus propios curules (Res. JNE: Arequipa 6;
+> Castilla, Caylloma y La Unión 2; Camaná, Caravelí, Condesuyos e Islay 1;
+> **16 en total**). El voto es por **lista cerrada**, sin voto preferencial:
+> los escaños se reparten por **cifra repartidora (d'Hondt)** cuando la
+> provincia elige 2 o más, y entran los candidatos según el **orden de la
+> lista**. En el sistema es un nivel propio (`candidate_type = 'consejero'`,
+> tabla `consejero_candidates` con ubigeo provincial): los votos de la columna
+> CONSEJEROS **no** se mezclan con los del gobernador (`regional`), ni los de
+> una provincia con otra. El cómputo muestra el ganador y los escaños
+> proyectados de cada provincia en
+> `GET /api/v1/resultados/resumen?tipo_eleccion=CONSEJERO` (campo
+> `consejeros[]`); la proyección d'Hondt es indicativa, el resultado oficial
+> lo declara el JNE.
+
 La diferencia se reporta con signo: `diferencia = total_declarado − suma_calculada`.
 Un `+23` significa que el acta dice 23 votantes más de los que suman sus casillas;
 un `−5`, que hay 5 votos sin casilla (típico de una casilla omitida al digitar).

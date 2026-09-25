@@ -34,6 +34,18 @@ interface ActaObservada {
   distrito: string;
 }
 
+interface EscanoConsejero {
+  organizacion: string;
+  color: string;
+  votos: number;
+}
+interface ConsejeroProvincia {
+  provincia: string;
+  ubigeo: string;
+  ganador: EscanoConsejero | null;
+  escanos: EscanoConsejero[];
+  curules: number;
+}
 interface Ganador {
   organizacion: string;
   color: string;
@@ -58,6 +70,7 @@ interface Resumen {
   distritos: DistritoAvance[];
   observadas: ActaObservada[];
   ganadores?: Record<string, Ganador>;
+  consejeros?: ConsejeroProvincia[];
 }
 
 /* Orden oficial de la jornada; CONSEJERO = Consejo Regional (por provincia). */
@@ -264,6 +277,64 @@ export default function Dashboard() {
                 {Math.max(0, resumen.total_mesas - resumen.total_actas)} pendientes</span>
             </div>
           </section>
+
+          {/* Consejo Regional POR PROVINCIA: cada provincia es una
+              circunscripción con sus propios curules (cifra repartidora). */}
+          {nivel === "CONSEJERO" && (resumen.consejeros?.length ?? 0) > 0 && (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <h4 className="mb-1 text-xs font-black uppercase tracking-wider text-slate-500">
+                Consejo Regional · Resultado por provincia
+              </h4>
+              <p className="mb-4 text-[11px] text-slate-400">
+                Cada provincia elige sus consejeros con su propia columna del acta;
+                los escaños se reparten por cifra repartidora (d'Hondt) proyectada
+                sobre las actas procesadas.
+              </p>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {resumen.consejeros!.map((p) => (
+                  <div key={p.ubigeo}
+                    className={`rounded-xl border p-3 ${p.ganador ? "border-slate-200" : "border-slate-100 bg-slate-50"}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black uppercase tracking-wide text-slate-700">
+                        {p.provincia}
+                      </span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-500">
+                        {p.curules} {p.curules === 1 ? "curul" : "curules"}
+                      </span>
+                    </div>
+                    {p.ganador ? (
+                      <>
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="inline-block h-3 w-3 rounded-full"
+                            style={{ backgroundColor: p.ganador.color }} />
+                          <span className="truncate text-xs font-bold text-slate-800" title={p.ganador.organizacion}>
+                            {p.ganador.organizacion}
+                          </span>
+                          <span className="ml-auto font-mono text-[11px] font-bold text-[#E02020]">
+                            {p.ganador.votos.toLocaleString("es-PE")}
+                          </span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {p.escanos.map((e, i) => (
+                            <span key={`${e.organizacion}-${i}`} title={`${e.organizacion} · ${e.votos} votos`}
+                              className="inline-block h-4 w-4 rounded-sm border border-white shadow-sm"
+                              style={{ backgroundColor: e.color }} />
+                          ))}
+                        </div>
+                        <p className="mt-1.5 text-[10px] text-slate-400">
+                          Escaños: {p.escanos.map((e) => e.organizacion.split(" ")[0]).join(", ") || "—"}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-slate-400">
+                        Sin actas procesadas aún en esta provincia.
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Desglose de votos */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
