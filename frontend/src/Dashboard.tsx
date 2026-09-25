@@ -60,7 +60,14 @@ interface Resumen {
   ganadores?: Record<string, Ganador>;
 }
 
-const NIVELES = ["DISTRITAL", "PROVINCIAL", "REGIONAL"] as const;
+/* Orden oficial de la jornada; CONSEJERO = Consejo Regional (por provincia). */
+const NIVELES = ["REGIONAL", "CONSEJERO", "PROVINCIAL", "DISTRITAL"] as const;
+const ETIQUETA_NIVEL: Record<(typeof NIVELES)[number], string> = {
+  REGIONAL: "GOBERNADOR",
+  CONSEJERO: "CONSEJERO",
+  PROVINCIAL: "PROVINCIAL",
+  DISTRITAL: "DISTRITAL",
+};
 
 function authHeaders(): Record<string, string> {
   const s = sesionGuardada();
@@ -173,7 +180,7 @@ export default function Dashboard() {
                 nivel === n ? "bg-[#E02020] text-white" : "border bg-white text-slate-500"
               }`}
             >
-              {n}
+              {ETIQUETA_NIVEL[n]}
             </button>
           ))}
         </div>

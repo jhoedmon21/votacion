@@ -248,16 +248,20 @@ export default function ActaIngresoForm({ onGuardada, onCancelar }: Props) {
     setEnviando(true);
     setError(null);
     try {
-      // La PWA y el backend consolidan por columna principal; el payload
-      // espeja ActaValidacionIn de app/core/schemas.py.
-      const payload = {
-        numero_mesa: plantilla.numero_mesa,
-        tipo_eleccion: "DISTRITAL",
-        electores_habiles: plantilla.electores_habiles ?? 0,
-        foto_presente: false,
-        firmas_completas: true,
-        columnas: Object.entries(digitado.elecciones).flatMap(([, columnas]) =>
-          Object.entries(columnas).map(([columna, d]) => ({
+      // Un POST POR ELECCIÓN: cada columna viaja con su tipo_eleccion y el
+      // backend la persiste en su nivel propio (gobernador → regional,
+      // consejeros → consejero por provincia, alcalde → provincial/distrital).
+      // Antes todo iba como DISTRITAL en un solo payload y las columnas
+      // GOBERNADOR_VICE/CONSEJEROS se perdían en la consolidación.
+      const niveles = Object.entries(digitado.elecciones);
+      for (const [tipo, columnas] of niveles) {
+        const payload = {
+          numero_mesa: plantilla.numero_mesa,
+          tipo_eleccion: tipo,
+          electores_habiles: plantilla.electores_habiles ?? 0,
+          foto_presente: false,
+          firmas_completas: true,
+          columnas: Object.entries(columnas).map(([columna, d]) => ({
             columna,
             votos: Object.fromEntries(
               Object.entries(d.votos).map(([k, v]) => [k, v ?? 0])
@@ -266,30 +270,30 @@ export default function ActaIngresoForm({ onGuardada, onCancelar }: Props) {
             votos_nulos: d.votos_nulos ?? 0,
             votos_impugnados: d.votos_impugnados ?? 0,
             total_votantes: d.total_votantes_papel ?? 0,
-          }))
-        ),
-      };
-      const res = await fetch("/api/actas/movil", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(sesionGuardada() ? { Authorization: `Bearer ${sesionGuardada()!.token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      });
-      if (res.status === 409) {
-        // Rechazo de negocio (regla R1 o R4): NO se encola, un reintento
-        // reproduciría el mismo rechazo. El mensaje del servidor manda.
-        const body = await res.json();
-        const detalle = body?.detail;
-        const mensaje =
-          typeof detalle === "string"
-            ? detalle
-            : (detalle?.mensaje ?? "Acta no contabilizada");
-        setError(`Acta no contabilizada: ${mensaje}`);
-        return;
+          })),
+        };
+        const res = await fetch("/api/actas/movil", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(sesionGuardada() ? { Authorization: `Bearer ${sesionGuardada()!.token}` } : {}),
+          },
+          body: JSON.stringify(payload),
+        });
+        if (res.status === 409) {
+          // Rechazo de negocio (regla R1 o R4): NO se encola, un reintento
+          // reproduciría el mismo rechazo. El mensaje del servidor manda.
+          const body = await res.json();
+          const detalle = body?.detail;
+          const mensaje =
+            typeof detalle === "string"
+              ? detalle
+              : (detalle?.mensaje ?? "Acta no contabilizada");
+          setError(`Acta no contabilizada (${tipo}): ${mensaje}`);
+          return;
+        }
+        if (!res.ok) throw new Error(`Error ${res.status} al registrar el acta (${tipo})`);
       }
-      if (!res.ok) throw new Error(`Error ${res.status} al registrar el acta`);
       setResultado("Acta registrada y contabilizada correctamente.");
       onGuardada();
     } catch (e) {

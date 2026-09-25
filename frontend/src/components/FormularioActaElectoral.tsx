@@ -5,7 +5,8 @@ import { sesionGuardada } from "../api";
 /* ==================================================================== *
  *  FormularioActaElectoral — Captura de votos, Provincia de Arequipa
  *
- *  Orden oficial: 1º REGIONAL → 2º PROVINCIAL → 3º DISTRITAL.
+ *  Orden oficial: 1º REGIONAL → 1º-bis CONSEJERO (Consejo Regional, por
+ *  provincia) → 2º PROVINCIAL → 3º DISTRITAL.
  *  Dualidad obligatoria por casilla: candidato + agrupación + símbolo.
  *  Selector de distrito (29) + mesas del padrón, inputs táctiles grandes,
  *  % relativo en vivo, total emitido automático, banner rojo ACTA OBSERVADA
@@ -13,7 +14,7 @@ import { sesionGuardada } from "../api";
  *  Registra con POST /api/v1/actas/registrar.
  * ==================================================================== */
 
-const ORDEN_OFICIAL = ["REGIONAL", "PROVINCIAL", "DISTRITAL"];
+const ORDEN_OFICIAL = ["REGIONAL", "CONSEJERO", "PROVINCIAL", "DISTRITAL"];
 
 interface Distrito {
   ubigeo: string;
@@ -554,7 +555,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
       {plantilla && eleccion && columna && dig && (
         <>
           {/* Tabs en orden oficial */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {ORDEN_OFICIAL.filter((t) => plantilla.elecciones.some((e) => e.tipo_eleccion === t)).map((t, i) => (
               <button key={t} onClick={() => setTab(t)}
                 className={`rounded-xl px-2 py-3 text-center transition ${

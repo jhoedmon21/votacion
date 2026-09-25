@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ActaRecord, RankingEntry, CandidateVotes } from "../types";
+import type { ActaRecord } from "../types";
 import { api } from "../api";
 import SideBySideDigitization from "./actas/SideBySideDigitization";
 
@@ -33,6 +33,10 @@ function ActaEditForm({ acta, onClose, onSave }: {
       candidate_id: c.candidate_id,
       votes: c.votes,
     })),
+    votos_consejero: (acta.votos_consejero ?? []).map((c) => ({
+      candidate_id: c.candidate_id,
+      votes: c.votes,
+    })),
     votos_regional: acta.votos_regional.map((c) => ({
       candidate_id: c.candidate_id,
       votes: c.votes,
@@ -51,8 +55,9 @@ function ActaEditForm({ acta, onClose, onSave }: {
 
   useEffect(() => {
     const districtSum = formData.votos_distrital.reduce((sum, c) => sum + c.votes, 0);
+    const consejeroSum = formData.votos_consejero.reduce((sum, c) => sum + c.votes, 0);
     const regionalSum = formData.votos_regional.reduce((sum, c) => sum + c.votes, 0);
-    const totalValidVotes = districtSum + regionalSum;
+    const totalValidVotes = districtSum + consejeroSum + regionalSum;
     const totalVotes = totalValidVotes + formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados;
 
     const newErrors: { total_electores?: string; votes_sum?: string } = {};
@@ -72,12 +77,15 @@ function ActaEditForm({ acta, onClose, onSave }: {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCandidateVoteChange = (type: 'distrital' | 'regional', index: number, votes: number) => {
+  const handleCandidateVoteChange = (type: 'distrital' | 'consejero' | 'regional', index: number, votes: number) => {
     setFormData(prev => {
       const newData = { ...prev };
       if (type === 'distrital') {
         newData.votos_distrital = [...prev.votos_distrital];
         newData.votos_distrital[index] = { ...prev.votos_distrital[index], votes };
+      } else if (type === 'consejero') {
+        newData.votos_consejero = [...prev.votos_consejero];
+        newData.votos_consejero[index] = { ...prev.votos_consejero[index], votes };
       } else {
         newData.votos_regional = [...prev.votos_regional];
         newData.votos_regional[index] = { ...prev.votos_regional[index], votes };
@@ -95,6 +103,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
     try {
       const payload = {
         votos_distrital: formData.votos_distrital,
+        votos_consejero: formData.votos_consejero,
         votos_regional: formData.votos_regional,
         votos_blancos: formData.votos_blancos,
         votos_nulos: formData.votos_nulos,
@@ -119,6 +128,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
         longitude: updatedActa.longitude ?? 0,
         votos_distrital: updatedActa.votos_distrital,
         votos_provincial: updatedActa.votos_provincial,
+        votos_consejero: updatedActa.votos_consejero,
         votos_regional: updatedActa.votos_regional,
         votos_blancos: updatedActa.votos_blancos,
         votos_nulos: updatedActa.votos_nulos,
@@ -136,8 +146,9 @@ function ActaEditForm({ acta, onClose, onSave }: {
   };
 
   const districtSum = formData.votos_distrital.reduce((sum, c) => sum + c.votes, 0);
+  const consejeroSum = formData.votos_consejero.reduce((sum, c) => sum + c.votes, 0);
   const regionalSum = formData.votos_regional.reduce((sum, c) => sum + c.votes, 0);
-  const totalValidVotes = districtSum + regionalSum;
+  const totalValidVotes = districtSum + consejeroSum + regionalSum;
   const totalVotes = totalValidVotes + formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados;
   const participationRate = formData.total_electores > 0 ? (totalVotes / formData.total_electores) * 100 : 0;
 
@@ -196,6 +207,35 @@ function ActaEditForm({ acta, onClose, onSave }: {
                   </div>
                 ))}
               </div>
+
+              {formData.votos_consejero.length > 0 && (
+              <div className="border-t border-slate-200 pt-4">
+                <h4 className="font-medium text-slate-700 mb-2">Consejeros Regionales (por provincia)</h4>
+                {formData.votos_consejero.map((candidate, index) => (
+                  <div key={candidate.candidate_id} className="border-t border-slate-200 pt-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-slate-800 truncate">
+                          {acta.votos_consejero?.find(v => v.candidate_id === candidate.candidate_id)?.name || `Candidato ${candidate.candidate_id}`}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">
+                          {acta.votos_consejero?.find(v => v.candidate_id === candidate.candidate_id)?.party || ''}
+                        </p>
+                      </div>
+                      <div className="w-20">
+                        <input
+                          type="number"
+                          value={candidate.votes}
+                          onChange={(e) => handleCandidateVoteChange('consejero', index, Number(e.target.value) || 0)}
+                          className="w-full px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              )}
 
               <div className="border-t border-slate-200 pt-4">
                 <h4 className="font-medium text-slate-700 mb-2">Votos Regionales</h4>

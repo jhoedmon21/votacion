@@ -32,14 +32,18 @@ from typing import Iterable, Literal
 
 Severidad = Literal["BLOQUEANTE", "ADVERTENCIA", "INFO"]
 
-# Columnas del acta física según la elección
+# Columnas del acta física según la elección. CONSEJERO = Consejo Regional
+# elegido POR PROVINCIA: en el sistema es un nivel propio (candidate_type
+# ``consejero``), no la columna secundaria del acta regional.
 COLUMNA_PRINCIPAL = {
     "REGIONAL": "GOBERNADOR_VICE",
+    "CONSEJERO": "CONSEJEROS",
     "PROVINCIAL": "ALCALDE",
     "DISTRITAL": "ALCALDE",
 }
 COLUMNAS_POR_ELECCION = {
     "REGIONAL": ("GOBERNADOR_VICE", "CONSEJEROS"),
+    "CONSEJERO": ("CONSEJEROS",),
     "PROVINCIAL": ("ALCALDE", "REGIDORES"),
     "DISTRITAL": ("ALCALDE", "REGIDORES"),
 }

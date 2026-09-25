@@ -29,10 +29,11 @@ interface Props {
 
 type Checklist = Awaited<ReturnType<typeof api.checklist>>;
 
-const NIVELES: Array<{ clave: "distrital" | "provincial" | "regional"; titulo: string }> = [
-  { clave: "distrital", titulo: "Distrital (alcalde)" },
-  { clave: "provincial", titulo: "Provincial (alcalde provincial)" },
+const NIVELES: Array<{ clave: "distrital" | "provincial" | "consejero" | "regional"; titulo: string }> = [
   { clave: "regional", titulo: "Regional (gobernador y vice)" },
+  { clave: "consejero", titulo: "Consejeros Regionales (por provincia)" },
+  { clave: "provincial", titulo: "Provincial (alcalde provincial)" },
+  { clave: "distrital", titulo: "Distrital (alcalde)" },
 ];
 
 const suma = (filas: RankingEntry[] | undefined) =>
@@ -92,6 +93,7 @@ export default function ActaDetailModal({
   const votos = {
     distrital: acta?.votos_distrital ?? [],
     provincial: acta?.votos_provincial ?? [],
+    consejero: acta?.votos_consejero ?? [],
     regional: acta?.votos_regional ?? [],
   };
   const votosValidos = suma(votos.distrital);

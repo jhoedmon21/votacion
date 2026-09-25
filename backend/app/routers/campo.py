@@ -511,7 +511,7 @@ def checklist(numero_mesa: str = Query(..., min_length=6, max_length=6,
                      ("Exento (supervisor)" if not es_campo
                       else "Sin check-in válido: regístralo en el local"))},
     ]
-    for tipo in ("REGIONAL", "PROVINCIAL", "DISTRITAL"):
+    for tipo in ("REGIONAL", "CONSEJERO", "PROVINCIAL", "DISTRITAL"):
         n = oferta.get(tipo, 0)
         items.append({
             "clave": f"oferta_{tipo.lower()}", "etiqueta": f"Oferta {tipo}",
@@ -522,7 +522,7 @@ def checklist(numero_mesa: str = Query(..., min_length=6, max_length=6,
         "clave": "duplicados", "etiqueta": "Actas ya registradas",
         "ok": True,
         "detalle": (f"Niveles con acta: {', '.join(existentes)} (se re-digita)"
-                    if existentes else "Mesa sin actas: los 3 niveles libres")})
+                    if existentes else "Mesa sin actas: los 4 niveles libres")})
 
     puede = (bool(table.electores_habiles) and bool(presencia)
              and bool(asignado) and any(oferta.values()))
