@@ -47,6 +47,19 @@ class ActaUpdate(BaseModel):
     votos_blancos: int = 0
     votos_nulos: int = 0
     votos_impugnados: int = 0
+    # Pie POR COLUMNA (norma ONPE).
+    blancos_distrital: int = 0
+    nulos_distrital: int = 0
+    impugnados_distrital: int = 0
+    blancos_provincial: int = 0
+    nulos_provincial: int = 0
+    impugnados_provincial: int = 0
+    blancos_consejero: int = 0
+    nulos_consejero: int = 0
+    impugnados_consejero: int = 0
+    blancos_regional: int = 0
+    nulos_regional: int = 0
+    impugnados_regional: int = 0
     ocr_confidence: float = Field(ge=0.0, le=1.0)
     image_url: Optional[str] = None
     total_electores: Optional[int] = None
@@ -91,6 +104,20 @@ class ActaUpdatePayload(BaseModel):
     votos_blancos: Optional[int] = None
     votos_nulos: Optional[int] = None
     votos_impugnados: Optional[int] = None
+    # Pie POR COLUMNA (norma ONPE): cada nivel lleva sus propios blancos,
+    # nulos e impugnados. Si no vienen, se toman los del consolidado.
+    blancos_distrital: Optional[int] = None
+    nulos_distrital: Optional[int] = None
+    impugnados_distrital: Optional[int] = None
+    blancos_provincial: Optional[int] = None
+    nulos_provincial: Optional[int] = None
+    impugnados_provincial: Optional[int] = None
+    blancos_consejero: Optional[int] = None
+    nulos_consejero: Optional[int] = None
+    impugnados_consejero: Optional[int] = None
+    blancos_regional: Optional[int] = None
+    nulos_regional: Optional[int] = None
+    impugnados_regional: Optional[int] = None
     ocr_confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     image_url: Optional[str] = None
     # Métricas del procesamiento WebP de la imagen (las devuelve

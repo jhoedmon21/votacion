@@ -72,6 +72,20 @@ def paso_esquema(dry_run: bool) -> None:
             # Métricas del procesamiento WebP de la imagen del acta.
             "image_peso_original_kb": "DOUBLE PRECISION DEFAULT 0",
             "image_peso_final_kb": "DOUBLE PRECISION DEFAULT 0",
+            # Pie POR COLUMNA (norma ONPE): blancos/nulos/impugnados de cada
+            # nivel; cada columna cuadra independiente con los votantes.
+            "blancos_distrital": "INTEGER DEFAULT 0",
+            "nulos_distrital": "INTEGER DEFAULT 0",
+            "impugnados_distrital": "INTEGER DEFAULT 0",
+            "blancos_provincial": "INTEGER DEFAULT 0",
+            "nulos_provincial": "INTEGER DEFAULT 0",
+            "impugnados_provincial": "INTEGER DEFAULT 0",
+            "blancos_consejero": "INTEGER DEFAULT 0",
+            "nulos_consejero": "INTEGER DEFAULT 0",
+            "impugnados_consejero": "INTEGER DEFAULT 0",
+            "blancos_regional": "INTEGER DEFAULT 0",
+            "nulos_regional": "INTEGER DEFAULT 0",
+            "impugnados_regional": "INTEGER DEFAULT 0",
         },
         "consejero_candidates": {
             # Por si el despliegue viene de una base anterior al nivel.

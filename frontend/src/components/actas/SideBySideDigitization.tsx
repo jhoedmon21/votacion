@@ -49,6 +49,20 @@ function SideBySideDigitizationInner({
     votos_blancos: acta.votos_blancos,
     votos_nulos: acta.votos_nulos,
     votos_impugnados: acta.votos_impugnados,
+    /* Pie POR COLUMNA (norma ONPE): cada nivel lleva sus propios
+       blancos/nulos/impugnados y cuadra independientemente. */
+    blancos_distrital: (acta as any).blancos_distrital ?? 0,
+    nulos_distrital: (acta as any).nulos_distrital ?? 0,
+    impugnados_distrital: (acta as any).impugnados_distrital ?? 0,
+    blancos_provincial: (acta as any).blancos_provincial ?? 0,
+    nulos_provincial: (acta as any).nulos_provincial ?? 0,
+    impugnados_provincial: (acta as any).impugnados_provincial ?? 0,
+    blancos_consejero: (acta as any).blancos_consejero ?? 0,
+    nulos_consejero: (acta as any).nulos_consejero ?? 0,
+    impugnados_consejero: (acta as any).impugnados_consejero ?? 0,
+    blancos_regional: (acta as any).blancos_regional ?? 0,
+    nulos_regional: (acta as any).nulos_regional ?? 0,
+    impugnados_regional: (acta as any).impugnados_regional ?? 0,
   });
 
   const [errors, setErrors] = useState<{
@@ -80,13 +94,23 @@ function SideBySideDigitizationInner({
     const regionalSum = formData.votos_regional.reduce((sum, c) => sum + c.votes, 0);
     const provincialSum = formData.votos_provincial.reduce((sum, c) => sum + c.votes, 0);
     const consejeroSum = formData.votos_consejero.reduce((sum, c) => sum + c.votes, 0);
-    /* Regla ONPE: cada columna cuadra independientemente contra los
-       votantes — el mismo elector vota en TODAS las columnas del papel, así
-       que la referencia es la COLUMNA MAYOR (la que representa la cabecera
-       "total de votantes"), nunca la suma de todos los niveles. */
-    const otrosVotos = formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados;
-    const columnaMayor = Math.max(districtSum, regionalSum, provincialSum, consejeroSum);
-    const totalVotes = columnaMayor + otrosVotos;
+    /* Regla ONPE POR COLUMNA: cada nivel tiene su PROPIO pie (blancos,
+       nulos, impugnados) y cuadra independientemente con los votantes de
+       la cabecera. Una columna activa es válida si
+       votos_validos + b/n/i == votantes. */
+    const columnas: Array<[string, number, number]> = [
+      ["Distrital", districtSum,
+        formData.blancos_distrital + formData.nulos_distrital + formData.impugnados_distrital],
+      ["Provincial", provincialSum,
+        formData.blancos_provincial + formData.nulos_provincial + formData.impugnados_provincial],
+      ["Consejeros", consejeroSum,
+        formData.blancos_consejero + formData.nulos_consejero + formData.impugnados_consejero],
+      ["Regional", regionalSum,
+        formData.blancos_regional + formData.nulos_regional + formData.impugnados_regional],
+    ];
+    const activas = columnas.filter(([, v, o]) => v + o > 0);
+    const hayDatos = activas.length > 0 || formData.total_votantes > 0;
+    const sumaTotal = activas.reduce((s, [, v, o]) => s + v + o, 0);
 
     const newErrors: { total_electores?: string; votes_sum?: string } = {};
 
@@ -100,22 +124,20 @@ function SideBySideDigitizationInner({
       formData.total_votantes > formData.total_electores
     ) {
       newErrors.votes_sum = `Los votantes (${formData.total_votantes}) no pueden superar los electores hábiles (${formData.total_electores})`;
-    } else if (columnaMayor === 0 && otrosVotos === 0) {
+    } else if (!hayDatos) {
       // R0 (acta vacía) BLOQUEA: todo en ceros no es un acta digitada.
       newErrors.votes_sum = "ACTA VACÍA: no se registró ningún voto (todo en ceros). Verifique contra el acta física y digite los totales reales antes de guardar.";
     } else if (formData.total_votantes > 0) {
-      // IMPOSIBLE por columna: ningún nivel puede tener más votos válidos
-      // que votantes que sufragaron (los mismos electores votan cada columna).
-      const niveles: Array<[string, number]> = [
-        ["Distrital", districtSum], ["Provincial", provincialSum],
-        ["Regional", regionalSum], ["Consejeros", consejeroSum],
-      ];
-      const imposibles = niveles.filter(([, s]) => s > formData.total_votantes);
+      // IMPOSIBLE por columna: ningún nivel puede superar a los votantes.
+      const imposibles = activas.filter(([, v, o]) => v + o > formData.total_votantes);
       if (imposibles.length) {
-        newErrors.votes_sum = `IMPOSIBLE: ${imposibles.map(([n, s]) => `${n} (${s.toLocaleString()})`).join(", ")} supera(n) los votantes que sufragaron (${formData.total_votantes.toLocaleString()}). Corrige esos números o el total de votantes.`;
-      } else if (totalVotes !== formData.total_votantes) {
-        // R1 (descuadre) BLOQUEA: los datos deben cuadrar antes de guardar.
-        newErrors.votes_sum = `NO COINCIDEN LOS DATOS: la columna con más votos (${columnaMayor.toLocaleString()}) más blancos/nulos/impugnados (${otrosVotos.toLocaleString()}) no cuadra con el total de votantes (${formData.total_votantes.toLocaleString()}). Diferencia: ${(totalVotes - formData.total_votantes > 0 ? "+" : "")}${(totalVotes - formData.total_votantes).toLocaleString()}. Corrige los números.`;
+        newErrors.votes_sum = `IMPOSIBLE: ${imposibles.map(([n, v, o]) => `${n} (${(v + o).toLocaleString()})`).join(", ")} supera(n) los votantes que sufragaron (${formData.total_votantes.toLocaleString()}). Corrige esos números o el total de votantes.`;
+      } else {
+        // R1: cada columna activa debe cuadrar con los votantes.
+        const mal = activas.filter(([, v, o]) => v + o !== formData.total_votantes);
+        if (mal.length) {
+          newErrors.votes_sum = `NO COINCIDEN LOS DATOS: ${mal.map(([n, v, o]) => `${n} suma ${(v + o).toLocaleString()}`).join(", ")} y los votantes son ${formData.total_votantes.toLocaleString()}. Cada columna (con sus blancos/nulos/impugnados) debe cuadrar con el total de votantes.`;
+        }
       }
     }
 
@@ -259,10 +281,21 @@ function SideBySideDigitizationInner({
      electores votan en la columna regional Y en la de consejeros, así que
      sumar ambos niveles (400 vs 200) es un falso descuadre. La
      participación se calcula con la columna mayor (la cabecera del papel). */
-  const otrosVotos = formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados;
-  const sumaPorColumna = Math.max(districtSum, provincialSum, regionalSum, consejeroSum) + otrosVotos;
-  const totalVotes = sumaPorColumna;
-  const participationRate = formData.total_electores > 0 ? (sumaPorColumna / formData.total_electores) * 100 : 0;
+  /* Resumen POR COLUMNA con su propio pie (norma ONPE). */
+  const columnasResumen: Array<{ nombre: string; votos: number; otros: number }> = [
+    { nombre: "Distrital (Alcalde)", votos: districtSum,
+      otros: formData.blancos_distrital + formData.nulos_distrital + formData.impugnados_distrital },
+    { nombre: "Provincial (Alcalde)", votos: provincialSum,
+      otros: formData.blancos_provincial + formData.nulos_provincial + formData.impugnados_provincial },
+    { nombre: "Consejeros Regionales", votos: consejeroSum,
+      otros: formData.blancos_consejero + formData.nulos_consejero + formData.impugnados_consejero },
+    { nombre: "Regional (Gobernador)", votos: regionalSum,
+      otros: formData.blancos_regional + formData.nulos_regional + formData.impugnados_regional },
+  ].filter((c) => c.votos + c.otros > 0);
+  const totalVotes = columnasResumen.length
+    ? Math.max(...columnasResumen.map((c) => c.votos + c.otros))
+    : 0;
+  const participationRate = formData.total_electores > 0 ? (totalVotes / formData.total_electores) * 100 : 0;
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
     if (!isFullscreen && imageRef.current) {
@@ -378,10 +411,12 @@ function SideBySideDigitizationInner({
     );
   };
 
-  const renderOtherVotes = () => [
-    ["votos_blancos", "Votos en Blanco"],
-    ["votos_nulos", "Votos Nulos"],
-    ["votos_impugnados", "Impugnación de Identidad"],
+  /* Pie POR COLUMNA (norma ONPE): cada nivel tiene sus propios blancos,
+     nulos e impugnados. Se renderiza DENTRO de la tarjeta de cada nivel. */
+  const renderPieNivel = (nivel: "distrital" | "provincial" | "consejero" | "regional") => [
+    [`blancos_${nivel}`, "Votos en Blanco"],
+    [`nulos_${nivel}`, "Votos Nulos"],
+    [`impugnados_${nivel}`, "Impugnación de Identidad"],
   ].map(([field, label]) => (
     <div key={field} className="flex items-center gap-3">
       <label className="text-sm font-medium text-slate-700 w-48 shrink-0">{label}</label>
@@ -389,16 +424,16 @@ function SideBySideDigitizationInner({
         <Input
           type="number"
           min={0}
-          value={formData[field as keyof typeof formData] ?? 0}
+          value={(formData as Record<string, number | undefined>)[field as string] ?? 0}
           onChange={(e) => handleInputChange(field as keyof typeof formData, Number(e.target.value) || 0)}
-          onFocus={() => setActiveField(field)}
+          onFocus={() => setActiveField(field as string)}
           onBlur={() => setActiveField(null)}
           className="w-32 text-right font-mono text-base"
           inputMode="numeric"
         />
       ) : (
         <div className="w-32 text-right font-mono text-base text-slate-700">
-          {(formData[field as keyof typeof formData] ?? 0).toLocaleString()}
+          {((formData as Record<string, number | undefined>)[field as string] ?? 0).toLocaleString()}
         </div>
       )}
     </div>
@@ -683,6 +718,10 @@ function SideBySideDigitizationInner({
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {acta.votos_distrital.map((c, i) => renderVoteRow(c, 'distrital', i))}
                   </div>
+                  {/* Pie de la columna (norma ONPE): blancos/nulos/impugnados del nivel */}
+                  <div className="mt-3 pt-3 border-t border-slate-200">
+                    {renderPieNivel('distrital')}
+                  </div>
                 </Card>
               )}
 
@@ -696,6 +735,10 @@ function SideBySideDigitizationInner({
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {acta.votos_provincial.map((c, i) => renderVoteRow(c, 'provincial', i))}
                   </div>
+                  {/* Pie de la columna (norma ONPE) */}
+                  <div className="mt-3 pt-3 border-t border-slate-200">
+                    {renderPieNivel('provincial')}
+                  </div>
                 </Card>
               )}
 
@@ -708,6 +751,10 @@ function SideBySideDigitizationInner({
                   </h4>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {acta.votos_regional.map((c, i) => renderVoteRow(c, 'regional', i))}
+                  </div>
+                  {/* Pie de la columna (norma ONPE) */}
+                  <div className="mt-3 pt-3 border-t border-slate-200">
+                    {renderPieNivel('regional')}
                   </div>
                 </Card>
               )}
@@ -724,19 +771,15 @@ function SideBySideDigitizationInner({
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {(acta.votos_consejero ?? []).map((c, i) => renderVoteRowConsejero(c, i))}
                   </div>
+                  {/* Pie de la columna (norma ONPE) */}
+                  <div className="mt-3 pt-3 border-t border-slate-200">
+                    {renderPieNivel('consejero')}
+                  </div>
                 </Card>
               )}
 
-              {/* OTROS VOTOS */}
-              <Card className="p-4 bg-slate-50 border-slate-200">
-                <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-slate-600 text-white text-xs flex items-center justify-center">5</span>
-                  Otros Votos
-                </h4>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  {renderOtherVotes()}
-                </div>
-              </Card>
+              {/* NOTA: el pie (blancos/nulos/impugnados) de CADA columna se
+                  digita dentro de la tarjeta de su nivel, según la norma ONPE. */}
 
               {/* RESUMEN DE VALIDACIÓN */}
               <Card className="p-4" variant={errors.votes_sum ? "error" : "outline"}>
@@ -745,26 +788,19 @@ function SideBySideDigitizationInner({
                     regional, consejeros) cuadra independientemente contra los
                     votantes que sufragaron — no se suman entre niveles. */}
                 <div className="space-y-2 text-sm">
-                  {[
-                    ["Distrital (Alcalde)", districtSum],
-                    ["Provincial (Alcalde)", provincialSum],
-                    ["Regional (Gobernador)", regionalSum],
-                    ["Consejeros Regionales", consejeroSum],
-                  ].filter(([, s]) => (s as number) > 0 || districtSum + provincialSum + regionalSum + consejeroSum === 0).map(([etiqueta, s]) => (
-                    <div key={etiqueta as string} className="flex justify-between">
-                      <span className="text-slate-600">Votos válidos {etiqueta}:</span>
-                      <span className={`font-mono font-bold ${s !== Math.max(districtSum, provincialSum, regionalSum, consejeroSum) ? "text-slate-400" : ""}`}
-                        title={s !== Math.max(districtSum, provincialSum, regionalSum, consejeroSum) ? "Columna con menos votos: verifíquela contra el papel (puede haber votos anulados en esa columna)" : undefined}>
-                        {(s as number).toLocaleString()}
+                  {columnasResumen.map((c) => (
+                    <div key={c.nombre} className="flex justify-between">
+                      <span className="text-slate-600">
+                        {c.nombre}: {c.votos.toLocaleString()} + {c.otros.toLocaleString()} (B/N/I)
+                      </span>
+                      <span className={`font-mono font-bold ${c.votos + c.otros !== totalVotes ? "text-amber-600" : "text-emerald-700"}`}
+                        title={c.votos + c.otros !== totalVotes ? "Esta columna no cuadra con las demás: verifíquela contra el papel" : "Columna cuadrada"}>
+                        {(c.votos + c.otros).toLocaleString()}
                       </span>
                     </div>
                   ))}
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Blancos + Nulos + Impugnados:</span>
-                    <span className="font-mono font-bold">{otrosVotos.toLocaleString()}</span>
-                  </div>
                   <div className="flex justify-between border-t border-slate-200 pt-2 font-medium">
-                    <span className="text-slate-800">Emitidos en la columna mayor:</span>
+                    <span className="text-slate-800">Emitidos por columna (cada una = votantes):</span>
                     <span className="font-mono font-bold text-lg">{totalVotes.toLocaleString()}</span>
                   </div>
                   {errors.votes_sum && (

@@ -302,6 +302,16 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
     meta.votos_nulos = payload.votos_nulos
     meta.votos_impugnados = payload.votos_impugnados
     meta.total_electores = habiles
+    # Pie POR COLUMNA (norma ONPE): el registro trae el pie del nivel
+    # digitado y se persiste en las columnas de ese nivel.
+    _pie_nivel = {
+        "REGIONAL": "regional", "CONSEJERO": "consejero",
+        "PROVINCIAL": "provincial", "DISTRITAL": "distrital",
+    }.get(tipo)
+    if _pie_nivel:
+        setattr(meta, f"blancos_{_pie_nivel}", payload.votos_blancos)
+        setattr(meta, f"nulos_{_pie_nivel}", payload.votos_nulos)
+        setattr(meta, f"impugnados_{_pie_nivel}", payload.votos_impugnados)
     # Votantes que sufragaron (cabecera): el PUT de rectificación lo necesita
     # para verificar el cuadre con los valores efectivos.
     meta.total_votantes = payload.total_emitidos

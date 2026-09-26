@@ -110,6 +110,19 @@ def _serialize_acta(db: Session, table: Table) -> dict:
         "votos_impugnados": meta.votos_impugnados if meta else 0,
         "total_electores": meta.total_electores if meta else 0,
         "total_votantes": meta.total_votantes if meta else None,
+        # Pie POR COLUMNA (norma ONPE) para el modal de edición.
+        "blancos_distrital": meta.blancos_distrital if meta else 0,
+        "nulos_distrital": meta.nulos_distrital if meta else 0,
+        "impugnados_distrital": meta.impugnados_distrital if meta else 0,
+        "blancos_provincial": meta.blancos_provincial if meta else 0,
+        "nulos_provincial": meta.nulos_provincial if meta else 0,
+        "impugnados_provincial": meta.impugnados_provincial if meta else 0,
+        "blancos_consejero": meta.blancos_consejero if meta else 0,
+        "nulos_consejero": meta.nulos_consejero if meta else 0,
+        "impugnados_consejero": meta.impugnados_consejero if meta else 0,
+        "blancos_regional": meta.blancos_regional if meta else 0,
+        "nulos_regional": meta.nulos_regional if meta else 0,
+        "impugnados_regional": meta.impugnados_regional if meta else 0,
     }
 
 
@@ -680,6 +693,19 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     _apply_votes(db, table.id, "consejero", payload.votos_consejero)
     _apply_votes(db, table.id, "regional", payload.votos_regional)
 
+    # Pie por columna (norma ONPE) + consolidado histórico de respaldo.
+    _pie_niveles = {
+        f"blancos_{n}": getattr(payload, f"blancos_{n}", 0) or 0
+        for n in ("distrital", "provincial", "consejero", "regional")
+    }
+    _pie_niveles.update({
+        f"nulos_{n}": getattr(payload, f"nulos_{n}", 0) or 0
+        for n in ("distrital", "provincial", "consejero", "regional")
+    })
+    _pie_niveles.update({
+        f"impugnados_{n}": getattr(payload, f"impugnados_{n}", 0) or 0
+        for n in ("distrital", "provincial", "consejero", "regional")
+    })
     _upsert_metadata(
         db,
         table.id,
@@ -688,6 +714,7 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         votos_impugnados=payload.votos_impugnados,
         total_electores=payload.total_electores,
         total_votantes=payload.total_votantes,
+        **_pie_niveles,
     )
 
     # La suma de votos debe cuadrar contra los VOTANTES que sufragaron
@@ -716,24 +743,62 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         if payload.total_votantes is not None
         else (_meta_efectiva.total_votantes or 0 if _meta_efectiva else 0)
     )
-    # Regla ONPE: cada columna del acta cuadra INDEPENDIENTEMENTE contra los
-    # votantes (el mismo elector vota en todas las columnas del papel), así
-    # que la referencia es la COLUMNA MAYOR, nunca la suma de los niveles —
-    # sumar regional + consejeros (200+200) contra 200 votantes era un
-    # falso descuadre.
-    _blancos = (payload.votos_blancos if payload.votos_blancos is not None
-                else (_meta_efectiva.votos_blancos or 0 if _meta_efectiva else 0))
-    _nulos = (payload.votos_nulos if payload.votos_nulos is not None
-              else (_meta_efectiva.votos_nulos or 0 if _meta_efectiva else 0))
-    _impugnados = (payload.votos_impugnados if payload.votos_impugnados is not None
-                   else (_meta_efectiva.votos_impugnados or 0 if _meta_efectiva else 0))
-    _otros = _blancos + _nulos + _impugnados
-    suma_total = max(
-        _suma_nivel(payload.votos_distrital, "district"),
-        _suma_nivel(payload.votos_provincial, "provincial"),
-        _suma_nivel(payload.votos_consejero, "consejero"),
-        _suma_nivel(payload.votos_regional, "regional"),
-    ) + _otros
+    # Regla ONPE por COLUMNA: cada nivel tiene su propio pie (blancos,
+    # nulos, impugnados) y cuadra independientemente con los votantes de la
+    # cabecera. El payload trae el pie por nivel; si no viene un nivel, se
+    # usa el consolidado histórico para compatibilidad.
+    def _otros_de(nivel: str, lista_payload) -> int:
+        """Blancos+nulos+impugnados del nivel (payload, metadata o consolidado)."""
+        b = getattr(payload, f"blancos_{nivel}", None)
+        nul = getattr(payload, f"nulos_{nivel}", None)
+        i = getattr(payload, f"impugnados_{nivel}", None)
+        if b is None and nul is None and i is None:
+            # Nivel no enviado: usar su pie persistido (o el consolidado).
+            if _meta_efectiva is not None:
+                b = getattr(_meta_efectiva, f"blancos_{nivel}", 0) or 0
+                nul = getattr(_meta_efectiva, f"nulos_{nivel}", 0) or 0
+                i = getattr(_meta_efectiva, f"impugnados_{nivel}", 0) or 0
+                if b + nul + i == 0:
+                    b = _meta_efectiva.votos_blancos or 0
+                    nul = _meta_efectiva.votos_nulos or 0
+                    i = _meta_efectiva.votos_impugnados or 0
+                return b + nul + i
+            return 0
+        return (b or 0) + (nul or 0) + (i or 0)
+
+    def _nivel_activo(tipo: str, lista_payload) -> bool:
+        """El nivel participa del cuadre si fue enviado o ya tiene registros."""
+        if lista_payload is not None:
+            return True
+        return (
+            db.query(Record.id)
+            .filter(Record.table_id == table.id, Record.candidate_type == tipo)
+            .first()
+            is not None
+        )
+
+    _columnas = {
+        "district": (_suma_nivel(payload.votos_distrital, "district"),
+                     _otros_de("distrital", payload.votos_distrital),
+                     payload.votos_distrital),
+        "provincial": (_suma_nivel(payload.votos_provincial, "provincial"),
+                       _otros_de("provincial", payload.votos_provincial),
+                       payload.votos_provincial),
+        "consejero": (_suma_nivel(payload.votos_consejero, "consejero"),
+                      _otros_de("consejero", payload.votos_consejero),
+                      payload.votos_consejero),
+        "regional": (_suma_nivel(payload.votos_regional, "regional"),
+                     _otros_de("regional", payload.votos_regional),
+                     payload.votos_regional),
+    }
+    # Sólo cuadran las columnas ACTIVAS (enviadas en el PUT o con registros
+    # persistidos): una rectificación parcial no exige niveles ausentes.
+    _activas = {
+        k: votos + otros
+        for k, (votos, otros, lista) in _columnas.items()
+        if _nivel_activo(k, lista)
+    }
+    suma_total = max(_activas.values()) if _activas else 0
     # R2 SIEMPRE contra el padrón REAL de la mesa (tables.electores_habiles,
     # fuente ONPE): la metadata puede estar vacía/vieja o el formulario traer
     # otro valor; un acta con votantes > padrón es imposible y se bloquea.
@@ -769,10 +834,10 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         # Detalle por columna: ningún nivel puede superar a los votantes que
         # sufragaron (el mismo elector vota todas las columnas del papel).
         _niveles = {
-            "Distrital": _suma_nivel(payload.votos_distrital, "district"),
-            "Provincial": _suma_nivel(payload.votos_provincial, "provincial"),
-            "Consejeros": _suma_nivel(payload.votos_consejero, "consejero"),
-            "Regional": _suma_nivel(payload.votos_regional, "regional"),
+            "Distrital": _activas.get("district", 0),
+            "Provincial": _activas.get("provincial", 0),
+            "Consejeros": _activas.get("consejero", 0),
+            "Regional": _activas.get("regional", 0),
         }
         _imposibles = [f"{n} ({s})" for n, s in _niveles.items() if s > votantes]
         mensaje = (

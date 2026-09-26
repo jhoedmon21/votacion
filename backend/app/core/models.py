@@ -204,14 +204,33 @@ class ActaMetadata(Base):
     __tablename__ = "acta_metadata"
     id = Column(Integer, primary_key=True, index=True)
     table_id = Column(Integer, ForeignKey("tables.id"), nullable=False)
+    # Totales históricos (compatibilidad): consolidado del acta. La regla ONPE
+    # real es POR COLUMNA (cada nivel tiene su pie con blancos/nulos/
+    # impugnados); las columnas *_distrital/_provincial/_consejero/_regional
+    # son la fuente de la validación por columna.
     votos_blancos = Column(Integer, default=0)
     votos_nulos = Column(Integer, default=0)
     votos_impugnados = Column(Integer, default=0)
     total_electores = Column(Integer)
     # Votantes que sufragaron según la cabecera del acta física: es la cifra
-    # contra la que debe cuadrar la suma de votos (NO contra los electores
-    # hábiles, que casi siempre son más porque nadie está obligado a votar).
+    # contra la que debe cuadrar CADA columna (NO los electores hábiles, que
+    # casi siempre son más porque nadie está obligado a votar).
     total_votantes = Column(Integer)
+    # Pie POR COLUMNA (norma ONPE): cada nivel del acta lleva sus propios
+    # blancos, nulos e impugnados, y cuadra independientemente con los
+    # votantes de la cabecera.
+    blancos_distrital = Column(Integer, default=0)
+    nulos_distrital = Column(Integer, default=0)
+    impugnados_distrital = Column(Integer, default=0)
+    blancos_provincial = Column(Integer, default=0)
+    nulos_provincial = Column(Integer, default=0)
+    impugnados_provincial = Column(Integer, default=0)
+    blancos_consejero = Column(Integer, default=0)
+    nulos_consejero = Column(Integer, default=0)
+    impugnados_consejero = Column(Integer, default=0)
+    blancos_regional = Column(Integer, default=0)
+    nulos_regional = Column(Integer, default=0)
+    impugnados_regional = Column(Integer, default=0)
     # Métricas del procesamiento de la imagen del acta (WebP en servidor):
     # permiten medir el espacio ahorrado frente a la foto original del celular.
     image_peso_original_kb = Column(Float, default=0.0)
