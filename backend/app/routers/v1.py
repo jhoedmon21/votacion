@@ -83,10 +83,24 @@ async def subir_foto_acta(file: UploadFile = File(...),
     tmp_path = tmp_dir / f"foto_acta_{uuid4().hex}{suffix}"
     try:
         tmp_path.write_bytes(await file.read())
-        url = storage_service.upload(str(tmp_path), filename=f"actas/{uuid4().hex}{suffix}")
+        # La foto se NORMALIZA antes de almacenarse: orientación EXIF,
+        # máx. 1600 px y WebP de alta calidad — el acta sigue legible para el
+        # cotejo/OCR pero pesa una fracción del original del celular.
+        try:
+            from app.services.imagen_acta import procesar_acta
+            tmp_path, metricas = procesar_acta(tmp_path)
+        except Exception as exc:  # noqa: BLE001 — imagen corrupta o formato no soportado
+            raise HTTPException(
+                status_code=422,
+                detail="La imagen del acta no se pudo procesar. Vuelva a tomarla con buena luz y sin recortes.",
+            ) from exc
+        url = storage_service.upload(
+            str(tmp_path),
+            filename=f"actas/{uuid4().hex}{tmp_path.suffix or '.webp'}",
+        )
     finally:
         tmp_path.unlink(missing_ok=True)
-    return {"url": url}
+    return {"url": url, "procesamiento": metricas}
 
 
 @router.post("/actas/registrar", response_model=V1RegistrarOut)
@@ -123,6 +137,13 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
         raise HTTPException(
             status_code=422,
             detail=f"Mesa {payload.numero_mesa} sin padrón de electores hábiles",
+        )
+    # R5 estricta: el acta FÍSICA es la evidencia del registro — sin su
+    # fotografía el dato no es verificable y NO se registra.
+    if not payload.image_url:
+        raise HTTPException(
+            status_code=422,
+            detail="FALTA CARGAR ACTA: adjunte la fotografía del acta física antes de registrar. Es obligatoria como evidencia.",
         )
 
     _, por_nombre, por_orden = _oferta(db, venue.ubigeo or "", clave)

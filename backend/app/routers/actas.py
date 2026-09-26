@@ -245,6 +245,16 @@ async def process_acta(file: UploadFile = File(...), db: Session = Depends(get_d
     ensure_seed_data(db)
     tmp_path = await _save_upload(file)
     try:
+        # La imagen se normaliza antes de guardar: EXIF → RGB → máx. 1600 px
+        # → WebP de alta calidad (peso mínimo, legibilidad intacta).
+        try:
+            from app.services.imagen_acta import procesar_acta
+            tmp_path = procesar_acta(tmp_path)[0]
+        except Exception as exc:  # noqa: BLE001 — imagen corrupta
+            raise HTTPException(
+                status_code=422,
+                detail="La imagen del acta no se pudo procesar. Vuelva a tomarla con buena luz y sin recortes.",
+            ) from exc
         result, table = _parse_and_store(db, tmp_path)
         _verificar_venue_en_alcance(db, usuario, table.venue_id)
         payload = _serialize_acta(db, table)
@@ -378,6 +388,17 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
     from app.routers.campo import exigir_asignacion, exigir_presencia
     exigir_asignacion(db, usuario, table.id, payload.numero_mesa or "")
     exigir_presencia(db, usuario, venue.id)
+
+    # R5 estricta: la foto del acta es obligatoria — sin evidencia no hay
+    # registro (la PWA la sube antes vía /v1/actas/foto).
+    if not payload.foto_presente and not payload.image_url:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "FALTA CARGAR ACTA: la fotografía del acta física es obligatoria. "
+                "Tómela en el local y adjúntela antes de enviar."
+            ),
+        )
 
     acta_ya_registrada = _mesa_con_acta(db, payload.numero_mesa, clave_tipo)
 

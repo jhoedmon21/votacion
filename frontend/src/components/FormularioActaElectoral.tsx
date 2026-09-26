@@ -315,6 +315,10 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
 
   const registrar = async () => {
     if (!plantilla || !eleccion || !dig || incompleto || excedePadron) return;
+    if (!fotoUrl) {
+      setError("FALTA CARGAR ACTA: la fotografía del acta física es obligatoria como evidencia.");
+      return;
+    }
     setEnviando(true);
     setError(null);
     setAvisos([]);
@@ -482,7 +486,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
           {/* Evidencia fotográfica del acta: se sube aquí y se asocia al registrar */}
           <button onClick={() => fotoRef.current?.click()} disabled={subiendoFoto}
             className="rounded-lg border-2 border-[#E02020] px-4 py-2 text-sm font-bold text-[#E02020] disabled:opacity-50">
-            {subiendoFoto ? "⏳ Subiendo…" : fotoUrl ? "📷 Cambiar foto" : "📷 Cargar foto del acta"}
+            {subiendoFoto ? "⏳ Subiendo…" : fotoUrl ? "📷 Cambiar foto" : "📷 Cargar foto del acta (obligatoria)"}
           </button>
           <input ref={fotoRef} type="file" accept="image/*" capture="environment" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void subirFoto(f); }} />
@@ -640,9 +644,10 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
                 Cancelar
               </button>
               <button onClick={() => void registrar()}
-                disabled={enviando || incompleto || excedePadron || (checklist ? !checklist.puede_registrar : false)}
+                disabled={enviando || incompleto || excedePadron || !fotoUrl || (checklist ? !checklist.puede_registrar : false)}
                 title={
                   excedePadron ? "ACTA OBSERVADA: total supera el padrón"
+                  : !fotoUrl ? "FALTA CARGAR ACTA: la foto del acta físico es obligatoria"
                   : incompleto ? "Completa todos los campos (organizaciones + pie de acta)"
                   : checklist && !checklist.puede_registrar ? "Check de validación pendiente (presencia/padrón/oferta)" : undefined
                 }

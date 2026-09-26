@@ -268,8 +268,9 @@ def validar_acta(
         hallazgos.append(
             Hallazgo(
                 "R5_FOTO_AUSENTE",
-                "ADVERTENCIA",
-                "No se adjuntó la fotografía del acta. El PERSONERO debe subirla desde el local.",
+                "BLOQUEANTE",
+                "FALTA CARGAR ACTA: la fotografía del acta física es obligatoria "
+                "como evidencia del registro. Tómela en el local y adjúntela antes de enviar.",
             )
         )
     if not firmas_completas:

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ColumnaActa, PlantillaActa } from "./ActaIngresoForm";
 import { api, ROLES_CAMPO, sesionGuardada, type MesaAsignada } from "../api";
 import { Alerta, Boton, Cargando, Tarjeta } from "./ui";
@@ -41,6 +41,13 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
   const [digitado, setDigitado] = useState<Record<string, Digitado>>({});
   const [registradas, setRegistradas] = useState<string[]>([]);
   const [puede, setPuede] = useState(true);
+
+  /* Evidencia obligatoria: la foto del acta física se sube a /v1/actas/foto
+     (el servidor la normaliza: EXIF, máx. 1600 px, WebP liviano) y se asocia
+     al registrar. Sin ella el backend rechaza el registro (R5). */
+  const fotoRef = useRef<HTMLInputElement>(null);
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
 
   const [cargando, setCargando] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -142,6 +149,21 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
     setDigitado((p) => ({ ...p, [tab]: { ...p[tab], [campo]: v } }));
   };
 
+  const subirFoto = async (file: File) => {
+    setSubiendoFoto(true);
+    setError(null);
+    try {
+      const url = await api.subirFotoActa(file);
+      setFotoUrl(url);
+      setAviso("📷 Foto del acta cargada. Es la evidencia del registro.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSubiendoFoto(false);
+      if (fotoRef.current) fotoRef.current.value = "";
+    }
+  };
+
   const hacerCheckin = () => {
     if (!plantilla || !navigator.geolocation) {
       setError("Sin geolocalización en este dispositivo.");
@@ -180,6 +202,11 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
 
   const registrar = async () => {
     if (!plantilla || !eleccion || !dig || incompleto || excede) return;
+    if (!fotoUrl) {
+      setError("FALTA CARGAR ACTA: la fotografía del acta física es obligatoria.");
+      setPaso(2);
+      return;
+    }
     setEnviando(true);
     setError(null);
     try {
@@ -195,6 +222,7 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
           votos_impugnados: dig.impugnados ?? 0,
           total_emitidos: total,
           impugnada: false,
+          image_url: fotoUrl,
         }),
       });
       const body = await res.json();
@@ -409,15 +437,47 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
             )}
           </Tarjeta>
 
+          {/* Evidencia obligatoria (R5): foto del acta física */}
+          <Tarjeta>
+            <p className="mb-2 text-xs font-black uppercase tracking-wider text-slate-500">
+              📷 Foto del acta (obligatoria)
+            </p>
+            {fotoUrl ? (
+              <div className="flex items-center gap-3">
+                <img src={fotoUrl} alt="Acta cargada" className="h-20 w-16 rounded-lg border border-slate-200 object-cover" />
+                <div className="flex-1">
+                  <p className="text-xs font-semibold text-emerald-700">✓ Acta adjuntada</p>
+                  <button onClick={() => void fotoRef.current?.click()} disabled={subiendoFoto}
+                    className="mt-1 text-xs font-bold text-[#E02020] hover:underline disabled:opacity-50">
+                    {subiendoFoto ? "⏳ Subiendo…" : "Cambiar foto"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => void fotoRef.current?.click()} disabled={subiendoFoto}
+                className="w-full rounded-xl border-2 border-dashed border-slate-300 py-6 text-center text-sm font-bold text-slate-500 hover:border-[#E02020] hover:text-[#E02020] disabled:opacity-50">
+                {subiendoFoto ? "⏳ Subiendo…" : "📷 Tomar / cargar foto del acta física"}
+              </button>
+            )}
+            <input ref={fotoRef} type="file" accept="image/*" capture="environment" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) void subirFoto(f); }} />
+            {!fotoUrl && (
+              <p className="mt-2 text-xs text-amber-700">
+                Sin la foto del acta el sistema no permitirá enviar el registro.
+              </p>
+            )}
+          </Tarjeta>
+
           <div className="sticky bottom-0 flex gap-2 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur">
             <Boton variante="suave" onClick={() => setPaso(2)} clase="flex-1">← Nivel</Boton>
             <Boton
               onClick={() => void registrar()}
-              deshabilitado={enviando || incompleto || excede || !puede}
+              deshabilitado={enviando || incompleto || excede || !puede || !fotoUrl}
               clase="flex-[2]"
               titulo={
                 excede ? "Total supera el padrón"
-                : !puede ? "Falta check de presencia" : undefined
+                : !puede ? "Falta check de presencia"
+                : !fotoUrl ? "Falta cargar acta (foto obligatoria)" : undefined
               }
             >
               {enviando ? "Enviando…" : `Enviar ${tab} →`}
