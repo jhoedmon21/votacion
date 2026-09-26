@@ -103,9 +103,20 @@ function SideBySideDigitizationInner({
     } else if (columnaMayor === 0 && otrosVotos === 0) {
       // R0 (acta vacía) BLOQUEA: todo en ceros no es un acta digitada.
       newErrors.votes_sum = "ACTA VACÍA: no se registró ningún voto (todo en ceros). Verifique contra el acta física y digite los totales reales antes de guardar.";
-    } else if (formData.total_votantes > 0 && totalVotes !== formData.total_votantes) {
-      // R1 (descuadre) BLOQUEA: los datos deben cuadrar antes de guardar.
-      newErrors.votes_sum = `NO COINCIDEN LOS DATOS: la columna con más votos (${columnaMayor.toLocaleString()}) más blancos/nulos/impugnados (${otrosVotos.toLocaleString()}) no cuadra con el total de votantes (${formData.total_votantes.toLocaleString()}). Diferencia: ${(totalVotes - formData.total_votantes > 0 ? "+" : "")}${(totalVotes - formData.total_votantes).toLocaleString()}. Corrige los números.`;
+    } else if (formData.total_votantes > 0) {
+      // IMPOSIBLE por columna: ningún nivel puede tener más votos válidos
+      // que votantes que sufragaron (los mismos electores votan cada columna).
+      const niveles: Array<[string, number]> = [
+        ["Distrital", districtSum], ["Provincial", provincialSum],
+        ["Regional", regionalSum], ["Consejeros", consejeroSum],
+      ];
+      const imposibles = niveles.filter(([, s]) => s > formData.total_votantes);
+      if (imposibles.length) {
+        newErrors.votes_sum = `IMPOSIBLE: ${imposibles.map(([n, s]) => `${n} (${s.toLocaleString()})`).join(", ")} supera(n) los votantes que sufragaron (${formData.total_votantes.toLocaleString()}). Corrige esos números o el total de votantes.`;
+      } else if (totalVotes !== formData.total_votantes) {
+        // R1 (descuadre) BLOQUEA: los datos deben cuadrar antes de guardar.
+        newErrors.votes_sum = `NO COINCIDEN LOS DATOS: la columna con más votos (${columnaMayor.toLocaleString()}) más blancos/nulos/impugnados (${otrosVotos.toLocaleString()}) no cuadra con el total de votantes (${formData.total_votantes.toLocaleString()}). Diferencia: ${(totalVotes - formData.total_votantes > 0 ? "+" : "")}${(totalVotes - formData.total_votantes).toLocaleString()}. Corrige los números.`;
+      }
     }
 
     setErrors(newErrors);

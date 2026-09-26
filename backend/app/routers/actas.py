@@ -766,6 +766,23 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     # rectifica: se rechaza con 409 y el modal muestra el mensaje
     # interactivo para corregir los números.
     if excede_padron or descuadrada:
+        # Detalle por columna: ningún nivel puede superar a los votantes que
+        # sufragaron (el mismo elector vota todas las columnas del papel).
+        _niveles = {
+            "Distrital": _suma_nivel(payload.votos_distrital, "district"),
+            "Provincial": _suma_nivel(payload.votos_provincial, "provincial"),
+            "Consejeros": _suma_nivel(payload.votos_consejero, "consejero"),
+            "Regional": _suma_nivel(payload.votos_regional, "regional"),
+        }
+        _imposibles = [f"{n} ({s})" for n, s in _niveles.items() if s > votantes]
+        mensaje = (
+            f"IMPOSIBLE: {', '.join(_imposibles)} supera(n) los votantes que "
+            f"sufragaron ({votantes}). Corrige esos números o el total de votantes."
+            if _imposibles
+            else "NO COINCIDEN LOS DATOS: la columna con más votos más blancos/"
+                 f"nulos/impugnados ({suma_total}) no cuadra con el total de "
+                 f"votantes ({votantes}). Corrige los números antes de guardar."
+        )
         _registrar_rechazo(db, numero_mesa=table.numero_mesa,
                            tipo_eleccion="RECTIFICACION",
                            regla="R2_TOPE_ELECTORES" if excede_padron else "R1_SUMA_VOTOS",
@@ -774,10 +791,7 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         raise HTTPException(
             status_code=409,
             detail={
-                "mensaje": (
-                    "NO COINCIDEN LOS DATOS: la suma de votos no cuadra con el "
-                    "total de votantes que sufragaron. Corrige los números antes de guardar."
-                ),
+                "mensaje": mensaje,
                 "diferencia": votantes - suma_total,
                 "suma": suma_total,
                 "votantes": votantes,
