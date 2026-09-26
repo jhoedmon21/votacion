@@ -86,9 +86,10 @@ USER_AGENT = "votoinformado-arequipa/1.0 (+crawler de investigacion; httpx)"
 # Etiqueta con la que el JNE rotula cada bloque en /organizaciones.
 # El bloque regional llega como "REGIONAL" (y en algunos ámbitos como
 # "GOBIERNO REGIONAL DE AREQUIPA"), por eso se compara por coincidencia.
-NIVELES = ("regional", "provincial", "distrital")
+NIVELES = ("regional", "consejero", "provincial", "distrital")
 TIPOS_ELECCION = {
     "regional": "REGIONAL",
+    "consejero": "REGIONAL",  # mismo bloque del portal; se filtra por provincia
     "provincial": "MUNICIPAL PROVINCIAL",
     "distrital": "MUNICIPAL DISTRITAL",
 }
@@ -246,6 +247,23 @@ def construir_plan(datos: dict, nivel: str = "all") -> list[Ambito]:
         plan.append(
             Ambito("regional", f"{dep}0000", dep, "00", "00", "AREQUIPA", None)
         )
+
+    # CONSEJERO REGIONAL: se elige POR PROVINCIA, así que la oferta del portal
+    # se pide con el CÓDIGO de cada provincia (pro=01..08), no con pro="00".
+    # Cada ámbito guarda su expediente en consejero/040X00.json.
+    if nivel in ("all", "consejero"):
+        for provincia in datos["provincias"]:
+            plan.append(
+                Ambito(
+                    "consejero",
+                    provincia["ubigeo"],
+                    dep,
+                    provincia["jne_pro"],
+                    "00",
+                    provincia["nombre"].upper(),
+                    None,
+                )
+            )
 
     for provincia in datos["provincias"]:
         if nivel in ("all", "provincial"):

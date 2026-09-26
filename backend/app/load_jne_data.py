@@ -280,23 +280,87 @@ def leer_ambitos(solo: set[str] | None = None) -> tuple[list[dict], Counter]:
 def leer_consejeros(solo: set[str] | None = None) -> tuple[list[dict], Counter]:
     """Filas de CONSEJERO REGIONAL: una por (provincia, organización).
 
-    La lista de consejeros vive en el expediente regional del JNE
-    (``regional/040000.json``, ``cargo == CONSEJERO_REGIONAL``) pero se elige
-    **por provincia**. El acta física imprime una columna de CONSEJEROS por
-    provincia: una casilla por organización (lista cerrada) — el voto digitado
-    es por la casilla del partido, no por la persona. Se publica la candidatura
-    cabecera (menor ``posicion``) de cada organización en cada provincia.
+    Desde que el crawler incluye el nivel ``consejero``, cada provincia tiene
+    SU expediente (``consejero/040X00.json``) con los consejeros que compiten
+    en esa circunscripción — la fuente correcta, porque el consejero regional
+    se elige **por provincia**. El acta física imprime una columna CONSEJEROS
+    por provincia: una casilla por organización (lista cerrada) — el voto
+    digitado es por la casilla del partido, no por la persona. Se publica la
+    candidatura cabecera (menor ``posicion``) de cada organización.
+
+    Formato antiguo (fallback): un solo ``regional/040000.json`` donde las
+    candidaturas traen ``cargo == CONSEJERO_REGIONAL`` y campo ``provincia``.
     """
     filas: list[dict] = []
     incidencias: Counter = Counter()
-    archivo = DATA_DIR / CONSEJERO.carpeta / "040000.json"
-    if not archivo.exists():
-        logger.warning("No existe %s; se omite el nivel consejero", archivo)
-        return filas, incidencias
 
     provincias = mapa_provincias()
     if not provincias:
         logger.warning("Sin carpeta provincial; no puedo mapear provincias de consejeros")
+        return filas, incidencias
+
+    # ---- Expedientes por provincia (formato nuevo del crawler) ----------
+    carpeta = DATA_DIR / "consejero"
+    archivos = sorted(carpeta.glob("*.json")) if carpeta.exists() else []
+    if archivos:
+        for archivo in archivos:
+            data = json.loads(archivo.read_text(encoding="utf-8"))
+            nombre_prov = _sin_tildes(str(data.get("provincia") or ""))
+            ubigeo_prov = provincias.get(nombre_prov) or str(
+                data.get("ubigeo") or ""
+            )
+            if not ubigeo_prov:
+                incidencias[f"consejero: provincia desconocida {nombre_prov}"] += 1
+                continue
+            if solo and ubigeo_prov not in solo:
+                continue
+            organizaciones = data.get("organizaciones") or []
+            if organizaciones and not esta_ordenada(organizaciones):
+                ordenar_organizaciones(organizaciones)
+            # Casilla compacta 1..N por provincia, en orden de cédula.
+            for posicion, org in enumerate(organizaciones, start=1):
+                partido = (org.get("organizacionPolitica") or "").strip()
+                if not partido:
+                    incidencias["consejero: organización sin nombre"] += 1
+                    continue
+                candidatos = [
+                    c for c in (org.get("candidatos") or [])
+                    if (c.get("cargo") or "").upper() == CONSEJERO.cargo
+                    and (c.get("estado") or "").upper() == ESTADO_EN_CARRERA
+                    and nombre_de(c)
+                ]
+                if not candidatos:
+                    incidencias[f"consejero: {nombre_prov} sin cabecera {partido[:20]}"] += 1
+                    continue
+                elegido = min(candidatos, key=lambda c: (c.get("posicion") or 999))
+                logo_archivo = _buscar_logo(partido, org.get("logo_local"))
+                logo_remoto = (org.get("logo_url") or "").strip() or None
+                foto_local = (elegido.get("foto_local") or "").strip()
+                foto_archivo = (
+                    foto_local if (MEDIA_DIR / "candidatos" / foto_local).exists() else None
+                )
+                filas.append({
+                    "nivel": CONSEJERO.nivel,
+                    "modelo": CONSEJERO.modelo,
+                    "ubigeo": ubigeo_prov,
+                    "party": partido,
+                    "sort_order": posicion,
+                    "name": nombre_de(elegido),
+                    "color": color_de(partido),
+                    "symbol": (f"{STORAGE_URL}/partidos/{logo_archivo}"
+                               if logo_archivo else logo_remoto),
+                    "photo_url": (f"{STORAGE_URL}/candidatos/{foto_archivo}"
+                                  if foto_archivo else None),
+                    "_logo": logo_archivo,
+                    "_foto": foto_archivo,
+                })
+                incidencias[f"consejero:{ubigeo_prov}"] += 1
+        return filas, incidencias
+
+    # ---- Fallback: expediente regional único (formato antiguo) ----------
+    archivo = DATA_DIR / CONSEJERO.carpeta / "040000.json"
+    if not archivo.exists():
+        logger.warning("No existe %s ni carpeta consejero/; se omite el nivel", archivo)
         return filas, incidencias
 
     data = json.loads(archivo.read_text(encoding="utf-8"))

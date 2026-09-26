@@ -252,6 +252,28 @@ export const api = {
   },
   createActa: (payload: unknown) =>
     request<ActaRecord>(`/actas`, { method: "POST", body: JSON.stringify(payload) }),
+  /* Sube la foto del acta (endpoint de la PWA) y devuelve su URL pública;
+     sirve tanto para la captura como para adjuntarla al EDITAR un acta que
+     se guardó sin imagen. */
+  subirFotoActa: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const s = sesionGuardada();
+    return fetch(`${BASE}/v1/actas/foto`, {
+      method: "POST",
+      body: fd,
+      headers: s ? { Authorization: `Bearer ${s.token}` } : {},
+    }).then(async (r) => {
+      if (r.status === 401) {
+        localStorage.removeItem(CLAVE_SESION);
+        window.location.reload();
+        throw new Error("Sesión expirada");
+      }
+      if (!r.ok) throw new Error(await errorMessage(r, "No se pudo subir la imagen"));
+      const d = await r.json();
+      return d.url as string;
+    });
+  },
   usuarios: () => request<UsuarioAdmin[]>("/auth/usuarios"),
   crearUsuario: (payload: UsuarioCrear) =>
     request<UsuarioAdmin>("/auth/usuarios", { method: "POST", body: JSON.stringify(payload) }),

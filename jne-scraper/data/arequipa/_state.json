@@ -1,5 +1,13 @@
 {
   "completados": [
+    "consejero:040100",
+    "consejero:040200",
+    "consejero:040300",
+    "consejero:040400",
+    "consejero:040500",
+    "consejero:040600",
+    "consejero:040700",
+    "consejero:040800",
     "distrital:040102",
     "distrital:040103",
     "distrital:040104",
@@ -111,5 +119,5 @@
     "provincial:040800",
     "regional:040000"
   ],
-  "ultima_corrida": "2026-09-15T20:14:15.869857+00:00"
+  "ultima_corrida": "2026-09-26T16:20:46.238832+00:00"
 }

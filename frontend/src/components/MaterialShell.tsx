@@ -60,13 +60,13 @@ export default function MaterialShell({
           <span className={`rounded-lg px-2.5 py-1 text-lg font-black tracking-tight shadow ${
             fa ? "bg-[#E02020] text-white" : "bg-white text-[#E02020]"
           }`}>
-            SISTEMA
+            FA
           </span>
           <div>
             <p className="text-sm font-black uppercase leading-tight tracking-wider text-white">
-              Cómputo
+              Fuerza Arequipeña
             </p>
-            <p className="text-[11px] text-slate-400">Arequipa 2026</p>
+            <p className="text-[11px] text-slate-400">Cómputo Electoral · Arequipa 2026</p>
           </div>
         </div>
 

@@ -66,6 +66,11 @@ function SideBySideDigitizationInner({
   const [fitMode, setFitMode] = useState<"contain" | "width" | "height">("contain");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeField, setActiveField] = useState<string | null>(null);
+  /* Foto del acta: permite CAMBIAR la imagen (o cargarla si el acta se guardó
+     sin ella) desde la propia edición. Se sube a /v1/actas/foto y queda
+     persistida al Guardar Cambios. */
+  const [imageUrl, setImageUrl] = useState<string>(acta.image_url ?? "");
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
 
   const validateForm = useCallback(() => {
     const districtSum = formData.votos_distrital.reduce((sum, c) => sum + c.votes, 0);
@@ -128,6 +133,7 @@ function SideBySideDigitizationInner({
         votos_impugnados: formData.votos_impugnados,
         total_electores: formData.total_electores,
         total_votantes: formData.total_votantes,
+        image_url: imageUrl || undefined,
         verified: false,
       };
       await api.updateActa(acta.id, payload);
@@ -162,6 +168,7 @@ function SideBySideDigitizationInner({
         votos_impugnados: formData.votos_impugnados,
         total_electores: formData.total_electores,
         total_votantes: formData.total_votantes,
+        image_url: imageUrl || undefined,
         verified: mode === "validate",
       };
 
@@ -216,14 +223,31 @@ function SideBySideDigitizationInner({
   const consejeroSum = formData.votos_consejero.reduce((sum, c) => sum + c.votes, 0);
   const totalValidVotes = districtSum + provincialSum + regionalSum + consejeroSum;
   const totalVotes = totalValidVotes + formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados;
-  const participationRate = formData.total_electores > 0 ? (totalVotes / formData.total_electores) * 100 : 0;
-
-  const toggleFullscreen = () => {
+  const participationRate = formData.total_electores > 0 ? (totalVotes / formData.total_electores) * 100 : 0;  const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
     if (!isFullscreen && imageRef.current) {
       imageRef.current.requestFullscreen();
     } else {
       document.exitFullscreen();
+    }
+  };
+
+  /* Sube la nueva imagen del acta inmediatamente y guarda la URL local;
+     se persiste en la mesa al presionar Guardar Cambios. */
+  const handleFotoSeleccionada = async (file: File | undefined) => {
+    if (!file) return;
+    setSubiendoFoto(true);
+    setSaveMessage(null);
+    try {
+      const url = await api.subirFotoActa(file);
+      setImageUrl(url);
+      setZoomLevel(1);
+      setRotation(0);
+      setSaveMessage("Imagen cargada. Presiona Guardar Cambios para adjuntarla al acta.");
+    } catch (e) {
+      setSaveMessage(`Error al subir la imagen: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setSubiendoFoto(false);
     }
   };
 
@@ -397,7 +421,7 @@ function SideBySideDigitizationInner({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {mode !== "view" && !readonly && (
-              <Boton variante="exito" onClick={handleSave} disabled={isSaving || Object.keys(errors).length > 0} clase="px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm">
+              <Boton variante="exito" onClick={handleSave} disabled={isSaving || (errors.total_electores ? true : (errors.votes_sum ? errors.votes_sum.includes("superar") : false))} clase="px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm">
                 {isSaving ? "Guardando..." : "Guardar Cambios"}
               </Boton>
             )}
@@ -450,9 +474,9 @@ function SideBySideDigitizationInner({
                 >
                   {isFullscreen ? "⛶ Salir" : "⛶ Pantalla completa"}
                 </button>
-                {acta.image_url && (
+                {imageUrl && (
                   <a
-                    href={acta.image_url}
+                    href={imageUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-2 py-1 bg-white border border-slate-300 rounded text-xs hover:bg-slate-50"
@@ -460,11 +484,27 @@ function SideBySideDigitizationInner({
                     ↓ Descargar
                   </a>
                 )}
+                {mode !== "view" && !readonly && (
+                  <label
+                    title={imageUrl ? "Cambiar la imagen del acta" : "Cargar imagen del acta"}
+                    className={`cursor-pointer px-2 py-1 rounded text-xs font-bold border transition ${
+                      subiendoFoto
+                        ? "bg-slate-100 border-slate-200 text-slate-400"
+                        : "bg-[#E02020] border-[#E02020] text-white hover:bg-[#A01010]"
+                    }`}
+                  >
+                    {subiendoFoto ? "Subiendo…" : imageUrl ? "⟳ Cambiar imagen" : "⬆ Cargar imagen"}
+                    <input type="file" accept="image/*" className="hidden"
+                      disabled={subiendoFoto}
+                      onChange={(e) => { void handleFotoSeleccionada(e.target.files?.[0]); e.currentTarget.value = ""; }}
+                    />
+                  </label>
+                )}
               </div>
             </div>
 
             <div className="flex h-72 shrink-0 items-center justify-center relative overflow-auto p-4 sm:h-auto sm:flex-1 sm:shrink" ref={imageRef}>
-              {acta.image_url ? (
+              {imageUrl ? (
                 <div
                   className="relative flex items-center justify-center"
                   style={{
@@ -474,7 +514,7 @@ function SideBySideDigitizationInner({
                   }}
                 >
                   <img
-                    src={acta.image_url}
+                    src={imageUrl}
                     alt={`Acta mesa ${acta.numero_mesa}`}
                     className={`max-w-full max-h-full object-${fitMode} shadow-lg`}
                     style={fitMode === "width" ? { width: "100%" } : fitMode === "height" ? { height: "100%" } : {}}
@@ -484,7 +524,17 @@ function SideBySideDigitizationInner({
                 <div className="text-center text-slate-500 py-12">
                   <div className="text-6xl mb-2">📄</div>
                   <p className="text-lg">No hay imagen de acta disponible</p>
-                  <p className="text-sm mt-1">Suba una imagen para poder digitalizar contra el original</p>
+                  {mode !== "view" && !readonly ? (
+                    <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#E02020] px-4 py-2 text-sm font-bold text-white hover:bg-[#A01010]">
+                      {subiendoFoto ? "Subiendo…" : "⬆ Cargar imagen del acta"}
+                      <input type="file" accept="image/*" className="hidden"
+                        disabled={subiendoFoto}
+                        onChange={(e) => { void handleFotoSeleccionada(e.target.files?.[0]); e.currentTarget.value = ""; }}
+                      />
+                    </label>
+                  ) : (
+                    <p className="text-sm mt-1">El acta fue registrada sin imagen.</p>
+                  )}
                 </div>
               )}
             </div>

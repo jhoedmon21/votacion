@@ -38,14 +38,14 @@ export default function LoginGate({ children }: { children: React.ReactNode }) {
         <div className="bg-[#E02020] px-8 pb-6 pt-7">
           <div className="flex items-center gap-3">
             <span className="rounded-lg bg-white px-2.5 py-1 text-lg font-black tracking-tight text-[#E02020] shadow">
-              SISTEMA
+              FA
             </span>
             <div>
               <p className="text-sm font-black uppercase tracking-wider text-white">
-                Cómputo Arequipa 2026
+                Fuerza Arequipeña
               </p>
               <p className="text-[11px] text-red-200">
-                Regionales y Municipales · acceso autorizado
+                Cómputo Electoral · Arequipa 2026 · acceso autorizado
               </p>
             </div>
           </div>

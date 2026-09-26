@@ -98,9 +98,10 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
   };
 
   const handleSave = async () => {
-    // Check if there are validation errors
-    const hasErrors = Object.keys(errors).length > 0;
-    if (hasErrors) return;
+    // Sólo los errores BLOQUEANTES impiden guardar; el descuadre de votos
+    // (votes_sum) es informativo: el acta se guarda OBSERVADA.
+    if (errors.total_electores || errors.numero_mesa) return;
+    if (errors.votes_sum && errors.votes_sum.includes("superar")) return;
 
     setIsSaving(true);
     setSaveMessage(null);
@@ -139,6 +140,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
         latitude: savedActa.latitude ?? 0,
         longitude: savedActa.longitude ?? 0,
         votos_distrital: savedActa.votos_distrital,
+        votos_provincial: savedActa.votos_provincial ?? [],
         votos_consejero: savedActa.votos_consejero ?? [],
         votos_regional: savedActa.votos_regional,
         votos_blancos: savedActa.votos_blancos,
