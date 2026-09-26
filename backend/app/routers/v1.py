@@ -578,10 +578,17 @@ def resumen(tipo_eleccion: str = Query("DISTRITAL"),
     if pids:
         from app.core.ubigeo_catalogo import UBIGEO_DISTRITO as _UD
 
-        sumas = dict(
-            db.query(Record.table_id, func.sum(Record.votes))
+        # Regla ONPE por columna: la suma a comparar con los votantes es la
+        # COLUMNA MAYOR del acta + blancos/nulos/impugnados, NO la suma de
+        # todos los niveles (el mismo elector vota en cada columna del papel;
+        # sumarlas daba falsos "DATOS ERRÓNEOS" con diferencia +N×niveles).
+        sumas_nivel = (
+            db.query(Record.table_id, Record.candidate_type, func.sum(Record.votes))
             .filter(Record.table_id.in_(pids))
-            .group_by(Record.table_id).all())
+            .group_by(Record.table_id, Record.candidate_type).all())
+        sumas: dict[int, int] = {}
+        for (tid, _nivel, s) in sumas_nivel:
+            sumas[tid] = max(sumas.get(tid, 0), int(s or 0))
         metas = {m.table_id: m for m in (
             db.query(ActaMetadata)
             .filter(ActaMetadata.table_id.in_(pids)).all())}
