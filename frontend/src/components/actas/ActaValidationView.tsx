@@ -354,7 +354,7 @@ export default function ActaValidationView({ acta, onClose, onValidated }: ActaV
                   <Boton
                     variante="primario"
                     onClick={handleValidate}
-                    disabled={isSubmitting || !validatorName.trim() || !validatorDni.trim()}
+                    deshabilitado={isSubmitting || !validatorName.trim() || !validatorDni.trim()}
                   >
                     {isSubmitting ? "Validando..." : "Confirmar Validación Final"}
                   </Boton>

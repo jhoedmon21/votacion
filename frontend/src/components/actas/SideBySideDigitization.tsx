@@ -466,7 +466,7 @@ function SideBySideDigitizationInner({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {mode !== "view" && !readonly && (
-              <Boton variante="exito" onClick={handleSave} disabled={isSaving || !!errors.total_electores || !!errors.votes_sum} clase="px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm">
+              <Boton variante="exito" onClick={handleSave} deshabilitado={isSaving || !!errors.total_electores || !!errors.votes_sum} clase="px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm">
                 {isSaving ? "Guardando..." : "Guardar Cambios"}
               </Boton>
             )}
@@ -790,7 +790,7 @@ function SideBySideDigitizationInner({
                   <Boton
                     variante="primario"
                     onClick={handleSave}
-                    disabled={isSaving || Object.keys(errors).length > 0}
+                    deshabilitado={isSaving || Object.keys(errors).length > 0}
                     clase="w-full sm:w-auto"
                   >
                     {isSaving ? "Guardando..." : mode === "validate" ? "Confirmar Validación" : "Guardar Cambios"}
