@@ -66,13 +66,30 @@ cp .env .env.local 2>/dev/null || true
 ./venv/Scripts/python -m uvicorn app.main:app --port 8000
 ```
 
-Frontend (puerto 5173):
+Frontend (puerto 3000):
 
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+
+## Arranque de un clic (modo red)
+
+Doble clic en **`iniciar_sistema.bat`** (raíz del proyecto): levanta backend y frontend,
+espera a que respondan, abre el navegador y muestra la URL para compartir con otras PCs
+de la misma red:
+
+```
+http://192.168.1.11:3000
+```
+
+- El frontend escucha en `0.0.0.0` (todas las interfaces) y hace de proxy de `/api` y `/storage`;
+  el backend no necesita puerto abierto en el firewall.
+- Requiere la regla de firewall para el puerto 3000 (se creó con permisos de administrador;
+  en otra PC: `netsh advfirewall firewall add rule name="Computo 3000" dir=in action=allow protocol=TCP localport=3000`).
+- Si el router cambia la IP de la PC, edita `IP_LOCAL` al inicio del script (o reserva la IP en el router).
+- Para detener el sistema, cierra las dos ventanas minimizadas (API 8000 y Web 3000).
 
 ## Datos y semillas
 
