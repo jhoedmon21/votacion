@@ -223,6 +223,23 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
         acta_ya_registrada=ya_registrada,
     )
 
+    # Regla de negocio del cliente: la suma digitada DEBE cuadrar con el
+    # total emitido antes de guardar. Un descuadre (o superar el padrón) no
+    # se registra: se rechaza con 409 y el formulario muestra el mensaje
+    # interactivo para corregir los números.
+    if not payload.impugnada and (not res.consistente or res.bloqueantes):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "mensaje": (
+                    "NO COINCIDEN LOS DATOS: la suma de votos no cuadra con el "
+                    "total de votos emitidos. Corrige los números antes de guardar."
+                ),
+                "diferencia": res.diferencia,
+                "hallazgos": [h.to_dict() for h in res.hallazgos],
+            },
+        )
+
     if payload.impugnada:
         estado = "IMPUGNADA"
     elif not res.consistente or res.bloqueantes:
@@ -260,6 +277,9 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
     meta.votos_nulos = payload.votos_nulos
     meta.votos_impugnados = payload.votos_impugnados
     meta.total_electores = habiles
+    # Votantes que sufragaron (cabecera): el PUT de rectificación lo necesita
+    # para verificar el cuadre con los valores efectivos.
+    meta.total_votantes = payload.total_emitidos
     if payload.image_url:
         table.image_url = payload.image_url
     # Métricas del procesamiento WebP (las entrega POST /v1/actas/foto).

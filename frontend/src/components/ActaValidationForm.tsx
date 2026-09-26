@@ -65,9 +65,9 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
     if (formData.total_electores > 0 && formData.total_votantes > formData.total_electores) {
       newErrors.votes_sum = `Los votantes (${formData.total_votantes}) no pueden superar los electores hábiles (${formData.total_electores})`;
     } else if (formData.total_votantes > 0 && totalVotes !== formData.total_votantes) {
-      // R1: descuadre contra los votantes → no bloquea, el acta queda
-      // OBSERVADA en el servidor para revisión del coordinador.
-      newErrors.votes_sum = `La suma de votos (${totalVotes.toLocaleString()}) no coincide con los votantes (${formData.total_votantes.toLocaleString()}). Puede guardar: el acta quedará OBSERVADA para revisión.`;
+      // R1: descuadre contra los votantes BLOQUEA — los datos deben cuadrar
+      // antes de guardar (regla del cliente).
+      newErrors.votes_sum = `NO COINCIDEN LOS DATOS: la suma de votos (${totalVotes.toLocaleString()}) no cuadra con el total de votantes (${formData.total_votantes.toLocaleString()}). Diferencia: ${(totalVotes - formData.total_votantes > 0 ? "+" : "")}${(totalVotes - formData.total_votantes).toLocaleString()}. Corrige los números.`;
     }
     
     setErrors(newErrors);
@@ -98,10 +98,9 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
   };
 
   const handleSave = async () => {
-    // Sólo los errores BLOQUEANTES impiden guardar; el descuadre de votos
-    // (votes_sum) es informativo: el acta se guarda OBSERVADA.
-    if (errors.total_electores || errors.numero_mesa) return;
-    if (errors.votes_sum && errors.votes_sum.includes("superar")) return;
+    // Regla del cliente: cualquier error de integridad (incluido el
+    // descuadre de votos) bloquea el guardado.
+    if (Object.values(errors).some((v) => !!v)) return;
 
     setIsSaving(true);
     setSaveMessage(null);
@@ -277,7 +276,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                     value={formData.total_votantes}
                     onChange={(e) => handleInputChange('total_votantes', Number(e.target.value) || 0)}
                     className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                      errors.votes_sum && errors.votes_sum.includes("superar") ? "border-red-500" : ""
+                      errors.votes_sum ? "border-red-500" : ""
                     }`}
                     min="0"
                   />
@@ -506,11 +505,11 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                   </div>
                 </div>
                 {errors.votes_sum && (
-                  <div className={`flex items-center space-x-3 ${errors.votes_sum.includes("superar") ? "" : ""}`}>
-                    <div className={`flex-1 text-sm ${errors.votes_sum.includes("superar") ? "text-red-600" : "text-amber-600"}`}>
+                  <div className={`flex items-center space-x-3`}>
+                    <div className="flex-1 text-sm text-red-600">
                       Estado:
                     </div>
-                    <div className={`flex-1 text-sm font-medium ${errors.votes_sum.includes("superar") ? "text-red-600" : "text-amber-600"}`}>
+                    <div className="flex-1 text-sm font-medium text-red-600">
                       {errors.votes_sum}
                     </div>
                   </div>
@@ -545,8 +544,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                 Cancelar
               </button>
             <button
-              onClick={handleSave}
-              disabled={isSaving || Object.entries(errors).some(([k, v]) => v && k !== "votes_sum")}
+              onClick={handleSave}                  disabled={isSaving || Object.values(errors).some((v) => !!v)}
               className={`px-4 py-2 bg-[#E02020] text-white rounded-md text-sm font-medium hover:bg-[#A01010] disabled:bg-slate-400 disabled:cursor-not-allowed`}
             >
               {isSaving ? "Guardando..." : "Confirmar y Guardar Acta"}

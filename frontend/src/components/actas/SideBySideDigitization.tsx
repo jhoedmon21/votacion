@@ -96,13 +96,13 @@ function SideBySideDigitizationInner({
     ) {
       newErrors.votes_sum = `Los votantes (${formData.total_votantes}) no pueden superar los electores hábiles (${formData.total_electores})`;
     } else if (formData.total_votantes > 0 && totalVotes !== formData.total_votantes) {
-      // R1 (descuadre): no bloquea — se guarda y queda OBSERVADA.
-      newErrors.votes_sum = `La suma de votos (${totalVotes.toLocaleString()}) no coincide con los votantes (${formData.total_votantes.toLocaleString()}). Puede guardar: el acta quedará OBSERVADA.`;
+      // R1 (descuadre) BLOQUEA: los datos deben cuadrar antes de guardar.
+      newErrors.votes_sum = `NO COINCIDEN LOS DATOS: la suma de votos (${totalVotes.toLocaleString()}) no cuadra con el total de votantes (${formData.total_votantes.toLocaleString()}). Diferencia: ${(totalVotes - formData.total_votantes > 0 ? "+" : "")}${(totalVotes - formData.total_votantes).toLocaleString()}. Corrige los números.`;
     }
 
     setErrors(newErrors);
-    // Sólo los errores bloqueantes (no el descuadre informativo) impiden guardar.
-    return !newErrors.total_electores && !(newErrors.votes_sum && newErrors.votes_sum.includes("superar"));
+    // Cualquier error de integridad (electores, cuadre) impide guardar.
+    return !newErrors.total_electores && !newErrors.votes_sum;
   }, [formData]);
 
   useEffect(() => {
@@ -440,7 +440,7 @@ function SideBySideDigitizationInner({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {mode !== "view" && !readonly && (
-              <Boton variante="exito" onClick={handleSave} disabled={isSaving || (errors.total_electores ? true : (errors.votes_sum ? errors.votes_sum.includes("superar") : false))} clase="px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm">
+              <Boton variante="exito" onClick={handleSave} disabled={isSaving || !!errors.total_electores || !!errors.votes_sum} clase="px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm">
                 {isSaving ? "Guardando..." : "Guardar Cambios"}
               </Boton>
             )}

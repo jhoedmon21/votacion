@@ -268,6 +268,9 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
 
   const totalReferencia = dig?.overrideTotal ?? calculo.total;
   const excedePadron = habiles > 0 && totalReferencia > habiles;
+  /* Integridad R1: la suma digitada debe cuadrar con el total de referencia
+     (total del papel si se digitó; si no, el automático siempre cuadra). */
+  const descuadre = dig ? totalReferencia - calculo.total : 0;
   const incompleto =
     !dig ||
     columna?.organizaciones.some((o) => dig.votos[o.numero] === null) ||
@@ -631,13 +634,26 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
             </div>
           </section>
 
-          {/* Banner ACTA OBSERVADA */}
+          {/* Banner de integridad: los datos DEBEN cuadrar para poder guardar */}
           {excedePadron && (
             <div className="rounded-2xl border-2 border-red-600 bg-red-600 p-4 text-white shadow">
               <p className="text-lg font-black uppercase tracking-wider">⛔ Acta observada</p>
               <p className="mt-1 text-sm font-semibold">
                 Total emitido ({totalReferencia}) supera electores hábiles ({habiles}).
                 Revisa la digitación: el envío está deshabilitado.
+              </p>
+            </div>
+          )}
+          {descuadre && (
+            <div className="rounded-2xl border-2 border-red-500 bg-red-50 p-4 shadow">
+              <p className="text-lg font-black uppercase tracking-wider text-red-700">
+                ⛔ No coinciden los datos
+              </p>
+              <p className="mt-1 text-sm font-semibold text-red-800">
+                La suma digitada ({calculo.total}) no cuadra con el total de votos
+                emitidos ({totalReferencia}): diferencia de {Math.abs(descuadre)} voto(s){" "}
+                ({descuadre > 0 ? "faltan" : "sobra(n)"}). Corrige los números o el
+                total del papel: el guardado está bloqueado.
               </p>
             </div>
           )}
@@ -656,7 +672,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
                 Cancelar
               </button>
               <button onClick={() => void registrar()}
-                disabled={enviando || incompleto || excedePadron || !fotoUrl || (checklist ? !checklist.puede_registrar : false)}
+                disabled={enviando || incompleto || excedePadron || !!descuadre || !fotoUrl || (checklist ? !checklist.puede_registrar : false)}
                 title={
                   excedePadron ? "ACTA OBSERVADA: total supera el padrón"
                   : !fotoUrl ? "FALTA CARGAR ACTA: la foto del acta físico es obligatoria"

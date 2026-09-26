@@ -426,15 +426,21 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
 
     # Puerta de la regla de negocio: los BLOQUEANTES (duplicidad, tope del
     # padrón, negativos, ilegible) rechazan el envío con 409. El descuadre
-    # R1 ya es ADVERTENCIA: el acta se guarda y queda OBSERVADA abajo.
-    if resultado.bloqueantes:
+    # R1 (suma ≠ votantes) TAMBIÉN RECHAZA: los datos deben cuadrar antes de
+    # guardar (regla del cliente); el formulario muestra el mensaje
+    # interactivo con la diferencia para corregir los números.
+    if resultado.bloqueantes or any(
+            h.regla == "R1_SUMA_VOTOS" for h in resultado.hallazgos):
         raise HTTPException(
             status_code=409,
             detail={
-                "mensaje": "Acta rechazada: contiene errores que impiden su registro.",
+                "mensaje": (
+                    "NO COINCIDEN LOS DATOS: la suma de votos no cuadra con el "
+                    "total de votos emitidos. Corrige los números antes de guardar."
+                ),
                 "estado_sugerido": resultado.estado_sugerido,
                 "diferencia": resultado.diferencia,
-                "hallazgos": [h.to_dict() for h in resultado.bloqueantes],
+                "hallazgos": [h.to_dict() for h in resultado.hallazgos],
             },
         )
 
@@ -658,34 +664,72 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     # (cabecera del acta), no contra los electores hábiles. Un descuadre no
     # impide registrar: el acta queda OBSERVADA para revisión del
     # coordinador. R2 (más votantes que electores) sí bloquea.
-    votantes = payload.total_votantes or 0
+    # Integridad sobre los valores EFECTIVOS (payload si viene; si no, los
+    # ya persistidos): en un PUT parcial los campos ausentes no son cero.
+    _meta_efectiva = (
+        db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).first()
+    )
+
+    def _suma_nivel(lista_payload, tipo: str) -> int:
+        """Suma del nivel: la del payload si viene; si no, la persistida."""
+        if lista_payload is not None:
+            return sum(v.votes for v in lista_payload)
+        return sum(
+            r.votes or 0
+            for r in db.query(Record)
+            .filter(Record.table_id == table.id, Record.candidate_type == tipo)
+            .all()
+        )
+
+    votantes = (
+        payload.total_votantes
+        if payload.total_votantes is not None
+        else (_meta_efectiva.total_votantes or 0 if _meta_efectiva else 0)
+    )
     suma_total = (
-        sum(v.votes for v in (payload.votos_distrital or []))
-        + sum(v.votes for v in (payload.votos_consejero or []))
-        + sum(v.votes for v in (payload.votos_regional or []))
-        + (payload.votos_blancos or 0)
-        + (payload.votos_nulos or 0)
-        + (payload.votos_impugnados or 0)
+        _suma_nivel(payload.votos_distrital, "district")
+        + _suma_nivel(payload.votos_provincial, "provincial")
+        + _suma_nivel(payload.votos_consejero, "consejero")
+        + _suma_nivel(payload.votos_regional, "regional")
+        + (payload.votos_blancos if payload.votos_blancos is not None
+           else (_meta_efectiva.votos_blancos or 0 if _meta_efectiva else 0))
+        + (payload.votos_nulos if payload.votos_nulos is not None
+           else (_meta_efectiva.votos_nulos or 0 if _meta_efectiva else 0))
+        + (payload.votos_impugnados if payload.votos_impugnados is not None
+           else (_meta_efectiva.votos_impugnados or 0 if _meta_efectiva else 0))
+    )
+    _electores_efectivos = (
+        payload.total_electores
+        if payload.total_electores is not None
+        else (_meta_efectiva.total_electores or 0 if _meta_efectiva else 0)
     )
     excede_padron = bool(
-        payload.total_electores and votantes > payload.total_electores
+        _electores_efectivos and votantes > _electores_efectivos
     )
     descuadrada = votantes > 0 and votantes != suma_total
 
-    if excede_padron:
-        table.requires_review = True
-        table.status = "requires_review"
-    elif payload.verified:
-        if descuadrada:
-            # Se registra la digitación, pero NO contabiliza hasta que el
-            # coordinador resuelva la observación con el papel a la vista.
-            table.processed = False
-            table.requires_review = True
-            table.status = "requires_review"
-        else:
-            table.processed = True
-            table.requires_review = False
-            table.status = "processed"
+    # Regla del cliente: los datos DEBEN cuadrar para guardar. Un acta con
+    # la suma descuadrada (o con votantes por encima del padrón) no se
+    # rectifica: se rechaza con 409 y el modal muestra el mensaje
+    # interactivo para corregir los números.
+    if excede_padron or descuadrada:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "mensaje": (
+                    "NO COINCIDEN LOS DATOS: la suma de votos no cuadra con el "
+                    "total de votantes que sufragaron. Corrige los números antes de guardar."
+                ),
+                "diferencia": votantes - suma_total,
+                "suma": suma_total,
+                "votantes": votantes,
+            },
+        )
+
+    if payload.verified:
+        table.processed = True
+        table.requires_review = False
+        table.status = "processed"
     db.flush()
 
     # Auditoría obligatoria del rol nacional (append-only, atómica con el acta).
