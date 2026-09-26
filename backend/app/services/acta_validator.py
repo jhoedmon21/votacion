@@ -201,6 +201,30 @@ def validar_acta(
                 )
             )
 
+    # ---- R0: acta vacía (todo en ceros).
+    # Sin esta regla, un registro con sólo ceros "cuadra" (0 = 0) y se
+    # contabiliza como acta válida. La columna completa en ceros significa
+    # que nadie digitó los votos reales del papel: se BLOQUEA.
+    if (
+        col_principal.suma_votos == 0
+        and col_principal.votos_blancos == 0
+        and col_principal.votos_nulos == 0
+        and col_principal.votos_impugnados == 0
+        and col_principal.total_votantes == 0
+    ):
+        hallazgos.append(
+            Hallazgo(
+                "R0_ACTA_VACIA",
+                "BLOQUEANTE",
+                (
+                    f"La columna {col_principal.columna} está en CEROS: no se registró "
+                    "ningún voto. Verifique contra el acta física y digite los totales "
+                    "reales (incluidos blancos y nulos) antes de guardar."
+                ),
+                columna=col_principal.columna,
+            )
+        )
+
     # ---- R1: consistencia de la suma, por cada columna.
     # Un descuadre NO impide registrar el acta: es la observación más común
     # de la jornada y el coordinador la resuelve con el papel a la vista.

@@ -269,8 +269,10 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
   const totalReferencia = dig?.overrideTotal ?? calculo.total;
   const excedePadron = habiles > 0 && totalReferencia > habiles;
   /* Integridad R1: la suma digitada debe cuadrar con el total de referencia
-     (total del papel si se digitó; si no, el automático siempre cuadra). */
+     (total del papel si se digitó; si no, el automático siempre cuadra).
+     R0: un acta con todo en ceros tampoco es registrable. */
   const descuadre = dig ? totalReferencia - calculo.total : 0;
+  const actaVacia = calculo.total === 0 && (dig?.overrideTotal ?? 0) === 0;
   const incompleto =
     !dig ||
     columna?.organizaciones.some((o) => dig.votos[o.numero] === null) ||
@@ -644,6 +646,17 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
               </p>
             </div>
           )}
+          {actaVacia && (
+            <div className="rounded-2xl border-2 border-red-500 bg-red-50 p-4 shadow">
+              <p className="text-lg font-black uppercase tracking-wider text-red-700">
+                ⛔ Acta vacía
+              </p>
+              <p className="mt-1 text-sm font-semibold text-red-800">
+                No se registró ningún voto (todo en ceros). Verifique contra el
+                acta física y digite los totales reales: el guardado está bloqueado.
+              </p>
+            </div>
+          )}
           {descuadre && (
             <div className="rounded-2xl border-2 border-red-500 bg-red-50 p-4 shadow">
               <p className="text-lg font-black uppercase tracking-wider text-red-700">
@@ -672,7 +685,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
                 Cancelar
               </button>
               <button onClick={() => void registrar()}
-                disabled={enviando || incompleto || excedePadron || !!descuadre || !fotoUrl || (checklist ? !checklist.puede_registrar : false)}
+                disabled={enviando || incompleto || excedePadron || actaVacia || !!descuadre || !fotoUrl || (checklist ? !checklist.puede_registrar : false)}
                 title={
                   excedePadron ? "ACTA OBSERVADA: total supera el padrón"
                   : !fotoUrl ? "FALTA CARGAR ACTA: la foto del acta físico es obligatoria"

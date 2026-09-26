@@ -707,6 +707,22 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         _electores_efectivos and votantes > _electores_efectivos
     )
     descuadrada = votantes > 0 and votantes != suma_total
+    # R0: acta vacía — todo en ceros no es un acta registrable (0 = 0 cuadra,
+    # pero nadie digitó los votos del papel).
+    acta_vacia = votantes == 0 and suma_total == 0
+
+    if acta_vacia:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "mensaje": (
+                    "ACTA VACÍA: no se registró ningún voto (todo en ceros). "
+                    "Verifique contra el acta física y digite los totales reales "
+                    "antes de guardar."
+                ),
+                "regla": "R0_ACTA_VACIA",
+            },
+        )
 
     # Regla del cliente: los datos DEBEN cuadrar para guardar. Un acta con
     # la suma descuadrada (o con votantes por encima del padrón) no se

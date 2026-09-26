@@ -228,13 +228,17 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
     # se registra: se rechaza con 409 y el formulario muestra el mensaje
     # interactivo para corregir los números.
     if not payload.impugnada and (not res.consistente or res.bloqueantes):
+        bloqueantes = res.bloqueantes or [h for h in res.hallazgos if h.severidad == "BLOQUEANTE"]
+        mensaje = (
+            bloqueantes[0].mensaje
+            if bloqueantes
+            else "NO COINCIDEN LOS DATOS: la suma de votos no cuadra con el "
+                 "total de votos emitidos. Corrige los números antes de guardar."
+        )
         raise HTTPException(
             status_code=409,
             detail={
-                "mensaje": (
-                    "NO COINCIDEN LOS DATOS: la suma de votos no cuadra con el "
-                    "total de votos emitidos. Corrige los números antes de guardar."
-                ),
+                "mensaje": mensaje,
                 "diferencia": res.diferencia,
                 "hallazgos": [h.to_dict() for h in res.hallazgos],
             },

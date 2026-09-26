@@ -64,6 +64,9 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
     // R2: imposible — más votantes que electores hábiles sí bloquea.
     if (formData.total_electores > 0 && formData.total_votantes > formData.total_electores) {
       newErrors.votes_sum = `Los votantes (${formData.total_votantes}) no pueden superar los electores hábiles (${formData.total_electores})`;
+    } else if (totalVotes === 0) {
+      // R0: acta vacía — todo en ceros no es un acta digitada.
+      newErrors.votes_sum = "ACTA VACÍA: no se registró ningún voto (todo en ceros). Verifique contra el acta física y digite los totales reales antes de guardar.";
     } else if (formData.total_votantes > 0 && totalVotes !== formData.total_votantes) {
       // R1: descuadre contra los votantes BLOQUEA — los datos deben cuadrar
       // antes de guardar (regla del cliente).

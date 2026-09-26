@@ -95,6 +95,9 @@ function SideBySideDigitizationInner({
       formData.total_votantes > formData.total_electores
     ) {
       newErrors.votes_sum = `Los votantes (${formData.total_votantes}) no pueden superar los electores hábiles (${formData.total_electores})`;
+    } else if (totalVotes === 0) {
+      // R0 (acta vacía) BLOQUEA: todo en ceros no es un acta digitada.
+      newErrors.votes_sum = "ACTA VACÍA: no se registró ningún voto (todo en ceros). Verifique contra el acta física y digite los totales reales antes de guardar.";
     } else if (formData.total_votantes > 0 && totalVotes !== formData.total_votantes) {
       // R1 (descuadre) BLOQUEA: los datos deben cuadrar antes de guardar.
       newErrors.votes_sum = `NO COINCIDEN LOS DATOS: la suma de votos (${totalVotes.toLocaleString()}) no cuadra con el total de votantes (${formData.total_votantes.toLocaleString()}). Diferencia: ${(totalVotes - formData.total_votantes > 0 ? "+" : "")}${(totalVotes - formData.total_votantes).toLocaleString()}. Corrige los números.`;
