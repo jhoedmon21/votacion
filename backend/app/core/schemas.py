@@ -30,6 +30,10 @@ class ActaOCRResult(BaseModel):
     votos_blancos: int = 0
     votos_nulos: int = 0
     votos_impugnados: int = 0
+    # Votantes que sufragaron según la cabecera del acta (cabecera "TOTAL DE
+    # VOTANTES"). La suma de votos cuadra contra esta cifra, no contra los
+    # electores hábiles.
+    total_votantes: int = 0
     ocr_confidence: float = Field(ge=0.0, le=1.0)
     image_url: Optional[str] = None
 
@@ -46,6 +50,9 @@ class ActaUpdate(BaseModel):
     ocr_confidence: float = Field(ge=0.0, le=1.0)
     image_url: Optional[str] = None
     total_electores: Optional[int] = None
+    # Votantes que sufragaron (cabecera del acta). Si no cuadra con la suma,
+    # el acta se guarda igual pero queda OBSERVADA para revisión.
+    total_votantes: Optional[int] = None
     verified: bool = True
 
 
@@ -87,6 +94,9 @@ class ActaUpdatePayload(BaseModel):
     ocr_confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     image_url: Optional[str] = None
     total_electores: Optional[int] = None
+    # Votantes que sufragaron (cabecera del acta). Si falta o no cuadra con la
+    # suma, el acta se guarda igual pero queda OBSERVADA para revisión.
+    total_votantes: Optional[int] = None
     verified: bool = False
 
 

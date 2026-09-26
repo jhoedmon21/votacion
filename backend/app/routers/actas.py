@@ -97,6 +97,7 @@ def _serialize_acta(db: Session, table: Table) -> dict:
         "votos_nulos": meta.votos_nulos if meta else 0,
         "votos_impugnados": meta.votos_impugnados if meta else 0,
         "total_electores": meta.total_electores if meta else 0,
+        "total_votantes": meta.total_votantes if meta else None,
     }
 
 
@@ -269,6 +270,8 @@ async def ocr_acta(file: UploadFile = File(...)):
         return {
             "numero_mesa": result.numero_mesa,
             "votos_distrital": [v.model_dump() for v in result.votos_distrital],
+            "votos_provincial": [v.model_dump() for v in result.votos_provincial],
+            "votos_consejero": [v.model_dump() for v in result.votos_consejero],
             "votos_regional": [v.model_dump() for v in result.votos_regional],
             "votos_blancos": result.votos_blancos,
             "votos_nulos": result.votos_nulos,
@@ -339,10 +342,11 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
                          usuario: Usuario = Depends(requerir_rol(*ROLES_CAPTURA))):
     """Registra el acta digitada en la PWA móvil.
 
-    Vuelve a validar con la misma autoridad que ``/validar``: si el acta no
-    cuadra, responde 409 y **no** entra al cómputo (queda para el
-    RESPONSABLE_DISTRITAL como acta observada). Si cuadra, persiste los votos
-    por organización política y el acta pasa a contar en el dashboard.
+    Revalida con las mismas reglas que ``/validar``. Un descuadre R1 (suma ≠
+    votantes) ya NO rechaza el acta: se guarda igual pero queda OBSERVADA
+    (requires_review) y fuera del cómputo hasta que el coordinador la
+    resuelva. Los bloqueantes de verdad (duplicidad, tope del padrón,
+    negativos, ilegible) siguen respondiendo 409.
     """
     ensure_seed_data(db)
 
@@ -400,24 +404,34 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
         firmas_completas=payload.firmas_completas,
     )
 
-    # Puerta de la regla de negocio: un acta inconsistente no se contabiliza.
-    if not resultado.puede_enviar:
+    # Puerta de la regla de negocio: los BLOQUEANTES (duplicidad, tope del
+    # padrón, negativos, ilegible) rechazan el envío con 409. El descuadre
+    # R1 ya es ADVERTENCIA: el acta se guarda y queda OBSERVADA abajo.
+    if resultado.bloqueantes:
         raise HTTPException(
             status_code=409,
             detail={
-                "mensaje": "Acta no contabilizada: quedó OBSERVADA para revisión del coordinador.",
+                "mensaje": "Acta rechazada: contiene errores que impiden su registro.",
                 "estado_sugerido": resultado.estado_sugerido,
                 "diferencia": resultado.diferencia,
-                "hallazgos": [h.to_dict() for h in resultado.hallazgos],
+                "hallazgos": [h.to_dict() for h in resultado.bloqueantes],
             },
         )
 
     # El padrón digitado queda en la mesa (fija el tope R2 de la plantilla).
     if payload.electores_habiles:
         table.electores_habiles = payload.electores_habiles
-    table.processed = True
-    table.requires_review = False
-    table.status = "processed"
+    # Descuadre R1 (suma ≠ votantes): se registra pero queda OBSERVADA —
+    # fuera del cómputo hasta que el coordinador la resuelva.
+    descuadrada = any(h.regla == "R1_SUMA_VOTOS" for h in resultado.hallazgos)
+    if descuadrada:
+        table.processed = False
+        table.requires_review = True
+        table.status = "requires_review"
+    else:
+        table.processed = True
+        table.requires_review = False
+        table.status = "processed"
     table.ocr_confidence = None  # digitación manual, sin OCR
     db.flush()
 
@@ -502,6 +516,7 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
         meta.votos_nulos = principal.votos_nulos
         meta.votos_impugnados = principal.votos_impugnados
         meta.total_electores = payload.electores_habiles
+        meta.total_votantes = principal.total_votantes
 
     db.commit()
     db.refresh(table)
@@ -597,13 +612,41 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         votos_nulos=payload.votos_nulos,
         votos_impugnados=payload.votos_impugnados,
         total_electores=payload.total_electores,
+        total_votantes=payload.total_votantes,
     )
 
-    if payload.verified:
-        table.processed = True
-        table.requires_review = False
-        table.status = "processed"
+    # La suma de votos debe cuadrar contra los VOTANTES que sufragaron
+    # (cabecera del acta), no contra los electores hábiles. Un descuadre no
+    # impide registrar: el acta queda OBSERVADA para revisión del
+    # coordinador. R2 (más votantes que electores) sí bloquea.
+    votantes = payload.total_votantes or 0
+    suma_total = (
+        sum(v.votes for v in (payload.votos_distrital or []))
+        + sum(v.votes for v in (payload.votos_consejero or []))
+        + sum(v.votes for v in (payload.votos_regional or []))
+        + (payload.votos_blancos or 0)
+        + (payload.votos_nulos or 0)
+        + (payload.votos_impugnados or 0)
+    )
+    excede_padron = bool(
+        payload.total_electores and votantes > payload.total_electores
+    )
+    descuadrada = votantes > 0 and votantes != suma_total
 
+    if excede_padron:
+        table.requires_review = True
+        table.status = "requires_review"
+    elif payload.verified:
+        if descuadrada:
+            # Se registra la digitación, pero NO contabiliza hasta que el
+            # coordinador resuelva la observación con el papel a la vista.
+            table.processed = False
+            table.requires_review = True
+            table.status = "requires_review"
+        else:
+            table.processed = True
+            table.requires_review = False
+            table.status = "processed"
     db.flush()
 
     # Auditoría obligatoria del rol nacional (append-only, atómica con el acta).
@@ -665,12 +708,8 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
         db.add(table)
         db.flush()
 
-    table.processed = True
-    table.requires_review = False
-    table.status = "processed"
     table.ocr_confidence = payload.ocr_confidence
     table.image_url = payload.image_url
-    db.flush()
 
     _apply_votes(db, table.id, "district", payload.votos_distrital)
     _apply_votes(db, table.id, "provincial", payload.votos_provincial)
@@ -684,7 +723,34 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
         votos_nulos=payload.votos_nulos,
         votos_impugnados=payload.votos_impugnados,
         total_electores=payload.total_electores,
+        total_votantes=payload.total_votantes,
     )
+
+    # Misma regla que en PUT: la suma cuadra contra los VOTANTES (cabecera),
+    # no contra los electores hábiles. Descuadre → OBSERVADA (requiere
+    # revisión); exceso sobre el padrón también.
+    votantes = payload.total_votantes or 0
+    suma_total = (
+        sum(v.votes for v in (payload.votos_distrital or []))
+        + sum(v.votes for v in (payload.votos_consejero or []))
+        + sum(v.votes for v in (payload.votos_regional or []))
+        + (payload.votos_blancos or 0)
+        + (payload.votos_nulos or 0)
+        + (payload.votos_impugnados or 0)
+    )
+    excede_padron = bool(
+        payload.total_electores and votantes > payload.total_electores
+    )
+    descuadrada = votantes > 0 and votantes != suma_total
+    if excede_padron or descuadrada:
+        table.processed = False
+        table.requires_review = True
+        table.status = "requires_review"
+    else:
+        table.processed = True
+        table.requires_review = False
+        table.status = "processed"
+    db.flush()
 
     db.commit()
     db.refresh(table)

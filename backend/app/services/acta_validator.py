@@ -201,21 +201,24 @@ def validar_acta(
                 )
             )
 
-    # ---- R1: consistencia de la suma, por cada columna
+    # ---- R1: consistencia de la suma, por cada columna.
+    # Un descuadre NO impide registrar el acta: es la observación más común
+    # de la jornada y el coordinador la resuelve con el papel a la vista.
+    # Se guarda igual pero queda OBSERVADA (no contabiliza hasta resolverse).
+    # Sí bloquean los imposibles: votos negativos, tope del padrón, duplicidad.
     for columna in por_nombre.values():
         if columna.diferencia != 0:
-            severidad: Severidad = "BLOQUEANTE"
             hallazgos.append(
                 Hallazgo(
                     "R1_SUMA_VOTOS",
-                    severidad,
+                    "ADVERTENCIA",
                     (
                         f"La columna {columna.columna} no cuadra: "
                         f"total de votantes {columna.total_votantes} vs "
                         f"suma {columna.suma_total} "
                         f"(Σ votos {columna.suma_votos} + blancos {columna.votos_blancos} "
                         f"+ nulos {columna.votos_nulos} + impugnados {columna.votos_impugnados}). "
-                        f"Diferencia: {columna.diferencia:+d}."
+                        f"Diferencia: {columna.diferencia:+d}. El acta queda OBSERVADA."
                     ),
                     diferencia=columna.diferencia,
                     columna=columna.columna,

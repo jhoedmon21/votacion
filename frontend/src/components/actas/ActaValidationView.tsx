@@ -149,13 +149,15 @@ export default function ActaValidationView({ acta, onClose, onValidated }: ActaV
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onKeyDown={handleKeyDown}>
+    <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/50 sm:items-center sm:p-4">
+      {/* Responsivo: pantalla completa en móvil (imagen arriba, formulario
+          debajo) y modal lado-a-lado desde sm. */}
       <div
-        className={`relative w-[95vw] max-w-[1400px] h-[90vh] mx-4 bg-white rounded-xl shadow-2xl overflow-hidden flex ${
-          isFullscreen ? "fixed inset-0 w-screen h-screen max-w-none max-h-none rounded-none" : ""
+        className={`relative flex h-[100dvh] w-full flex-col overflow-hidden rounded-none bg-white shadow-2xl sm:mx-4 sm:h-[90vh] sm:w-[95vw] sm:max-w-[1400px] sm:rounded-xl ${
+          isFullscreen ? "fixed inset-0 h-screen w-screen max-h-none max-w-none rounded-none" : ""
         }`}
       >
-        <div className="flex items-center justify-between p-4 bg-slate-100 border-b sticky top-0 z-10">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-slate-100 border-b">
           <div className="flex items-center gap-4">
             <h2 className="text-xl font-bold text-[#E02020]">
               Validación Visual contra Acta Original
@@ -168,9 +170,9 @@ export default function ActaValidationView({ acta, onClose, onValidated }: ActaV
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 p-2">✕</button>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto sm:flex-row sm:overflow-hidden">
           {/* LEFT: IMAGE */}
-          <div className="w-1/2 border-r border-slate-200 bg-slate-50 flex flex-col relative">
+          <div className="flex w-full shrink-0 flex-col border-b border-slate-200 bg-slate-50 sm:w-1/2 sm:border-b-0 sm:border-r">
             <div className="flex items-center justify-between p-3 bg-white border-b border-slate-200 sticky top-0 z-5">
               <h3 className="font-semibold text-slate-800">Documento Original - Acta Digitalizada</h3>
               <div className="flex items-center gap-2">
@@ -219,7 +221,7 @@ export default function ActaValidationView({ acta, onClose, onValidated }: ActaV
           </div>
 
           {/* RIGHT: VALIDATION CHECKLIST */}
-          <div className="w-1/2 flex flex-col overflow-y-auto bg-white">
+          <div className="flex w-full flex-col bg-white sm:w-1/2 sm:overflow-y-auto">
             <div className="p-4 border-b border-slate-200 sticky top-0 z-5 bg-white">
               <h3 className="font-semibold text-slate-800">Checklist de Validación</h3>
               <p className="text-xs text-slate-500 mt-1">
@@ -312,7 +314,7 @@ export default function ActaValidationView({ acta, onClose, onValidated }: ActaV
 
                 <Card className="mb-4" variant="outline">
                   <h4 className="font-semibold text-slate-800 mb-3">Datos del Validador</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="block text-xs font-bold text-slate-600 mb-1">Nombre completo</label>
                       <input

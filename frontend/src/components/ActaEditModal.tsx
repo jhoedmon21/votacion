@@ -29,6 +29,9 @@ function ActaEditForm({ acta, onClose, onSave }: {
 }) {
   const [formData, setFormData] = useState({
     total_electores: acta.total_electores,
+    /* Votantes que sufragaron (cabecera del acta): contra esta cifra debe
+       cuadrar la suma, no contra los electores hábiles. */
+    total_votantes: (acta as unknown as { total_votantes?: number | null }).total_votantes ?? 0,
     votos_distrital: acta.votos_distrital.map((c) => ({
       candidate_id: c.candidate_id,
       votes: c.votes,
@@ -66,8 +69,16 @@ function ActaEditForm({ acta, onClose, onSave }: {
       newErrors.total_electores = "El número de electores no puede ser negativo";
     }
 
-    if (formData.total_electores > 0 && totalVotes !== formData.total_electores) {
-      newErrors.votes_sum = `La suma de votos (${totalVotes.toLocaleString()}) no coincide con el total de electores (${formData.total_electores.toLocaleString()})`;
+    // R2 (imposible): más votantes que electores hábiles bloquea.
+    if (
+      formData.total_electores > 0 &&
+      formData.total_votantes > formData.total_electores
+    ) {
+      newErrors.votes_sum = `Los votantes (${formData.total_votantes}) no pueden superar los electores hábiles (${formData.total_electores})`;
+    } else if (formData.total_votantes > 0 && totalVotes !== formData.total_votantes) {
+      // R1 (descuadre): no bloquea — el acta se guarda OBSERVADA para
+      // revisión del coordinador con el papel a la vista.
+      newErrors.votes_sum = `La suma de votos (${totalVotes.toLocaleString()}) no coincide con los votantes (${formData.total_votantes.toLocaleString()}). Puede guardar: el acta quedará OBSERVADA.`;
     }
 
     setErrors(newErrors);
@@ -109,6 +120,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
         votos_nulos: formData.votos_nulos,
         votos_impugnados: formData.votos_impugnados,
         total_electores: formData.total_electores,
+        total_votantes: formData.total_votantes,
         verified: true,
       };
 
@@ -168,7 +180,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
             <h3 className="font-semibold text-slate-800">Metadatos</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Total de electores hábiles</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Electores Hábiles de la Mesa</label>
                 <input
                   type="number"
                   value={formData.total_electores || 0}
@@ -177,6 +189,21 @@ function ActaEditForm({ acta, onClose, onSave }: {
                   min="0"
                 />
                 {errors.total_electores && <p className="text-xs text-red-600 mt-1">{errors.total_electores}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Votantes que Sufragaron (cabecera del acta)</label>
+                <input
+                  type="number"
+                  value={formData.total_votantes || 0}
+                  onChange={(e) => handleInputChange('total_votantes', Number(e.target.value) || 0)}
+                  className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                    errors.votes_sum && errors.votes_sum.includes("superar") ? "border-red-500" : ""
+                  }`}
+                  min="0"
+                />
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  La suma de votos debe cuadrar contra esta cifra, no contra los electores hábiles.
+                </p>
               </div>
             </div>
           </div>
@@ -324,7 +351,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
                 <div className="flex-1 text-sm text-slate-600">Total de votos:</div>
                 <div className="flex-1 text-sm text-slate-600 font-mono text-right">{totalVotes.toLocaleString()}</div>
               </div>
-              {errors.votes_sum && <div className="flex items-center space-x-3"><div className="flex-1 text-sm text-red-600">Estado:</div><div className="flex-1 text-sm text-red-600 font-medium">{errors.votes_sum}</div></div>}
+              {errors.votes_sum && <div className="flex items-center space-x-3"><div className={`flex-1 text-sm ${errors.votes_sum.includes("superar") ? "text-red-600" : "text-amber-600"}`}>Estado:</div><div className={`flex-1 text-sm font-medium ${errors.votes_sum.includes("superar") ? "text-red-600" : "text-amber-600"}`}>{errors.votes_sum}</div></div>}
               {!errors.votes_sum && formData.total_electores > 0 && <div className="flex items-center space-x-3"><div className="flex-1 text-sm text-green-600">Estado:</div><div className="flex-1 text-sm text-green-600 font-medium">Votos válidos ✓</div></div>}
               <div className="flex items-center space-x-3 mt-2">
                 <div className="flex-1 text-sm text-slate-600">Participación:</div>
@@ -341,7 +368,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
 
           <div className="flex justify-end space-x-3">
             <button onClick={onClose} className="w-full px-4 py-2.5 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50 sm:w-auto">Cancelar</button>
-            <button onClick={handleSave} disabled={isSaving || Object.keys(errors).length > 0} className={`w-full px-4 py-2.5 bg-[#E02020] text-white rounded-md text-sm font-medium hover:bg-[#A01010] disabled:bg-slate-400 disabled:cursor-not-allowed sm:w-auto`}>
+            <button onClick={handleSave} disabled={isSaving || Object.entries(errors).some(([k, v]) => v && k !== "votes_sum")} className={`w-full px-4 py-2.5 bg-[#E02020] text-white rounded-md text-sm font-medium hover:bg-[#A01010] disabled:bg-slate-400 disabled:cursor-not-allowed sm:w-auto`}>
               {isSaving ? "Guardando..." : "Guardar Cambios"}
             </button>
           </div>

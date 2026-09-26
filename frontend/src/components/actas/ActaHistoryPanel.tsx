@@ -113,8 +113,9 @@ export default function ActaHistoryPanel({ acta, onClose }: ActaHistoryPanelProp
   if (!acta) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="relative w-[90vw] max-w-[1000px] h-[90vh] mx-4 bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/50 sm:items-center sm:p-4">
+      {/* Responsivo: pantalla completa en móvil, tarjeta centrada desde sm. */}
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden rounded-none bg-white shadow-2xl sm:mx-4 sm:h-[90vh] sm:w-[90vw] sm:max-w-[1000px] sm:rounded-xl">
         <div className="flex items-center justify-between p-4 bg-slate-100 border-b sticky top-0 z-10">
           <h2 className="text-xl font-bold text-[#E02020]">
             Historial de Cambios - Mesa {acta.numero_mesa}

@@ -208,6 +208,10 @@ class ActaMetadata(Base):
     votos_nulos = Column(Integer, default=0)
     votos_impugnados = Column(Integer, default=0)
     total_electores = Column(Integer)
+    # Votantes que sufragaron según la cabecera del acta física: es la cifra
+    # contra la que debe cuadrar la suma de votos (NO contra los electores
+    # hábiles, que casi siempre son más porque nadie está obligado a votar).
+    total_votantes = Column(Integer)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

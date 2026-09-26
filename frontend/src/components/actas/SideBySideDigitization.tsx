@@ -27,11 +27,18 @@ function SideBySideDigitizationInner({
 }: SideBySideDigitizationProps & { acta: ActaRecord }) {
   const [formData, setFormData] = useState({
     total_electores: acta.total_electores,
+    /* Votantes que sufragaron (cabecera del acta): contra esta cifra cuadra
+       la suma, no contra los electores hábiles. */
+    total_votantes: (acta as unknown as { total_votantes?: number | null }).total_votantes ?? 0,
     votos_distrital: acta.votos_distrital.map((c) => ({
       candidate_id: c.candidate_id,
       votes: c.votes,
     })),
     votos_provincial: acta.votos_provincial.map((c) => ({
+      candidate_id: c.candidate_id,
+      votes: c.votes,
+    })),
+    votos_consejero: (acta.votos_consejero ?? []).map((c) => ({
       candidate_id: c.candidate_id,
       votes: c.votes,
     })),
@@ -64,7 +71,8 @@ function SideBySideDigitizationInner({
     const districtSum = formData.votos_distrital.reduce((sum, c) => sum + c.votes, 0);
     const regionalSum = formData.votos_regional.reduce((sum, c) => sum + c.votes, 0);
     const provincialSum = formData.votos_provincial.reduce((sum, c) => sum + c.votes, 0);
-    const totalValidVotes = districtSum + regionalSum + provincialSum;
+    const consejeroSum = formData.votos_consejero.reduce((sum, c) => sum + c.votes, 0);
+    const totalValidVotes = districtSum + regionalSum + provincialSum + consejeroSum;
     const totalVotes = totalValidVotes + formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados;
 
     const newErrors: { total_electores?: string; votes_sum?: string } = {};
@@ -73,12 +81,20 @@ function SideBySideDigitizationInner({
       newErrors.total_electores = "El número de electores no puede ser negativo";
     }
 
-    if (formData.total_electores > 0 && totalVotes !== formData.total_electores) {
-      newErrors.votes_sum = `La suma de votos (${totalVotes.toLocaleString()}) no coincide con el total de electores (${formData.total_electores.toLocaleString()})`;
+    // R2 (imposible): más votantes que electores hábiles bloquea.
+    if (
+      formData.total_electores > 0 &&
+      formData.total_votantes > formData.total_electores
+    ) {
+      newErrors.votes_sum = `Los votantes (${formData.total_votantes}) no pueden superar los electores hábiles (${formData.total_electores})`;
+    } else if (formData.total_votantes > 0 && totalVotes !== formData.total_votantes) {
+      // R1 (descuadre): no bloquea — se guarda y queda OBSERVADA.
+      newErrors.votes_sum = `La suma de votos (${totalVotes.toLocaleString()}) no coincide con los votantes (${formData.total_votantes.toLocaleString()}). Puede guardar: el acta quedará OBSERVADA.`;
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    // Sólo los errores bloqueantes (no el descuadre informativo) impiden guardar.
+    return !newErrors.total_electores && !(newErrors.votes_sum && newErrors.votes_sum.includes("superar"));
   }, [formData]);
 
   useEffect(() => {
@@ -111,6 +127,7 @@ function SideBySideDigitizationInner({
         votos_nulos: formData.votos_nulos,
         votos_impugnados: formData.votos_impugnados,
         total_electores: formData.total_electores,
+        total_votantes: formData.total_votantes,
         verified: false,
       };
       await api.updateActa(acta.id, payload);
@@ -144,6 +161,7 @@ function SideBySideDigitizationInner({
         votos_nulos: formData.votos_nulos,
         votos_impugnados: formData.votos_impugnados,
         total_electores: formData.total_electores,
+        total_votantes: formData.total_votantes,
         verified: mode === "validate",
       };
 
@@ -195,7 +213,8 @@ function SideBySideDigitizationInner({
   const districtSum = formData.votos_distrital.reduce((sum, c) => sum + c.votes, 0);
   const provincialSum = formData.votos_provincial.reduce((sum, c) => sum + c.votes, 0);
   const regionalSum = formData.votos_regional.reduce((sum, c) => sum + c.votes, 0);
-  const totalValidVotes = districtSum + provincialSum + regionalSum;
+  const consejeroSum = formData.votos_consejero.reduce((sum, c) => sum + c.votes, 0);
+  const totalValidVotes = districtSum + provincialSum + regionalSum + consejeroSum;
   const totalVotes = totalValidVotes + formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados;
   const participationRate = formData.total_electores > 0 ? (totalVotes / formData.total_electores) * 100 : 0;
 
@@ -240,6 +259,48 @@ function SideBySideDigitizationInner({
           />
         )}
         {readonly && (
+          <div className="w-24 text-right font-mono text-base text-slate-700">
+            {voteValue.toLocaleString()}
+          </div>
+        )}      </div>
+    );
+  };
+
+  /* Filas de votos de CONSEJEROS: el índice va sobre votos_consejero (la
+     oferta provincial de la mesa), no sobre las listas distritales. */
+  const renderVoteRowConsejero = (candidate: RankingEntry, index: number) => {
+    const voteValue = formData.votos_consejero[index]?.votes ?? 0;
+    return (
+      <div key={`consejero-${candidate.candidate_id}`} className="border-t border-slate-100 py-3 flex items-center gap-3">
+        <div className="w-6 text-right font-mono text-xs text-slate-400 shrink-0">
+          {candidate.candidate_id}
+        </div>
+        {candidate.symbol && (
+          <img src={candidate.symbol} alt="" className="h-7 w-7 shrink-0 rounded object-contain" />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-slate-800 text-sm">{candidate.name}</p>
+          <p className="truncate text-xs text-slate-500">{candidate.party}</p>
+        </div>
+        {!readonly ? (
+          <Input
+            type="number"
+            min={0}
+            value={voteValue}
+            onChange={(e) => {
+              const votes = Number(e.target.value) || 0;
+              setFormData((prev) => {
+                const newData = { ...prev };
+                newData.votos_consejero = [...prev.votos_consejero];
+                newData.votos_consejero[index] = { ...prev.votos_consejero[index], votes };
+                return newData;
+              });
+            }}
+            className="w-24 text-right font-mono text-base"
+            inputMode="numeric"
+            aria-label={`Votos consejero ${candidate.name}`}
+          />
+        ) : (
           <div className="w-24 text-right font-mono text-base text-slate-700">
             {voteValue.toLocaleString()}
           </div>
@@ -472,7 +533,7 @@ function SideBySideDigitizationInner({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1">Total Electores Hábiles</label>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Electores Hábiles de la Mesa</label>
                     {!readonly ? (
                       <Input
                         type="number"
@@ -488,6 +549,26 @@ function SideBySideDigitizationInner({
                       <Input value={formData.total_electores.toLocaleString()} disabled className="bg-slate-50 font-mono text-lg" />
                     )}
                     {errors.total_electores && <p className="text-xs text-red-600 mt-1">{errors.total_electores}</p>}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Votantes que Sufragaron (cabecera del acta)</label>
+                    {!readonly ? (
+                      <Input
+                        type="number"
+                        min={0}
+                        value={formData.total_votantes}
+                        onChange={(e) => handleInputChange('total_votantes', Number(e.target.value) || 0)}
+                        onFocus={() => setActiveField('total_votantes')}
+                        onBlur={() => setActiveField(null)}
+                        className={errors.votes_sum && errors.votes_sum.includes("superar") ? "border-red-500" : ""}
+                        inputMode="numeric"
+                      />
+                    ) : (
+                      <Input value={formData.total_votantes.toLocaleString()} disabled className="bg-slate-50 font-mono text-lg" />
+                    )}
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      La suma de votos debe cuadrar contra esta cifra, no contra los electores hábiles. Si no cuadra, el acta se guarda OBSERVADA.
+                    </p>
                   </div>
                 </div>
               </Card>
@@ -525,6 +606,21 @@ function SideBySideDigitizationInner({
                 </div>
               </Card>
 
+              {/* CONSEJEROS REGIONALES: columna CONSEJEROS del acta física,
+                  elegidos POR PROVINCIA. Sólo se muestra si la mesa tiene
+                  consejeros en carrera (oferta provincial del local). */}
+              {formData.votos_consejero.length > 0 && (
+                <Card className="p-4">
+                  <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-[#0ea5e9] text-white text-xs flex items-center justify-center">C</span>
+                    Consejeros Regionales (por provincia) — {consejeroSum.toLocaleString()} votos
+                  </h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {(acta.votos_consejero ?? []).map((c, i) => renderVoteRowConsejero(c, i))}
+                  </div>
+                </Card>
+              )}
+
               {/* OTROS VOTOS */}
               <Card className="p-4 bg-slate-50 border-slate-200">
                 <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
@@ -552,6 +648,12 @@ function SideBySideDigitizationInner({
                     <span className="text-slate-600">Votos válidos regionales:</span>
                     <span className="font-mono font-bold">{regionalSum.toLocaleString()}</span>
                   </div>
+                  {consejeroSum > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Votos válidos consejeros:</span>
+                      <span className="font-mono font-bold">{consejeroSum.toLocaleString()}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between border-t border-slate-200 pt-2">
                     <span className="text-slate-600 font-medium">Total votos válidos:</span>
                     <span className="font-mono font-bold text-[#E02020]">{totalValidVotes.toLocaleString()}</span>

@@ -12,11 +12,15 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
   const [formData, setFormData] = useState({
     numero_mesa: acta.numero_mesa,
     votos_distrital: acta.votos_distrital.map(v => ({ ...v })),
+    votos_consejero: (acta.votos_consejero ?? []).map(v => ({ ...v })),
     votos_regional: acta.votos_regional.map(v => ({ ...v })),
     votos_blancos: acta.votos_blancos,
     votos_nulos: acta.votos_nulos,
     votos_impugnados: acta.votos_impugnados,
     total_electores: acta.total_electores,
+    /* Votantes que sufragaron (cabecera del acta): la suma debe cuadrar
+       contra esta cifra, NO contra los electores hábiles. */
+    total_votantes: (acta as unknown as { total_votantes?: number | null }).total_votantes ?? 0,
   });
 
   const [errors, setErrors] = useState<{
@@ -32,14 +36,15 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
   // Calculate totals for validation
   const calculateTotals = () => {
     const districtSum = formData.votos_distrital.reduce((sum, c) => sum + c.votes, 0);
+    const consejeroSum = formData.votos_consejero.reduce((sum, c) => sum + c.votes, 0);
     const regionalSum = formData.votos_regional.reduce((sum, c) => sum + c.votes, 0);
-    const totalValidVotes = districtSum + regionalSum;
+    const totalValidVotes = districtSum + consejeroSum + regionalSum;
     const totalVotes = totalValidVotes + formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados;
     
-    return { districtSum, regionalSum, totalValidVotes, totalVotes };
+    return { districtSum, consejeroSum, regionalSum, totalValidVotes, totalVotes };
   };
 
-  const { districtSum, regionalSum, totalValidVotes, totalVotes } = calculateTotals();
+  const { districtSum, consejeroSum, regionalSum, totalValidVotes, totalVotes } = calculateTotals();
   const participationRate = formData.total_electores > 0 ? (totalVotes / formData.total_electores) * 100 : 0;
 
   // Validation
@@ -55,10 +60,14 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
     if (formData.total_electores < 0) {
       newErrors.total_electores = "El número de electores no puede ser negativo";
     }
-    
-    // Validate vote sum consistency
-    if (formData.total_electores > 0 && totalVotes !== formData.total_electores) {
-      newErrors.votes_sum = `La suma de votos (${totalVotes.toLocaleString()}) no coincide con el total de electores (${formData.total_electores.toLocaleString()})`;
+
+    // R2: imposible — más votantes que electores hábiles sí bloquea.
+    if (formData.total_electores > 0 && formData.total_votantes > formData.total_electores) {
+      newErrors.votes_sum = `Los votantes (${formData.total_votantes}) no pueden superar los electores hábiles (${formData.total_electores})`;
+    } else if (formData.total_votantes > 0 && totalVotes !== formData.total_votantes) {
+      // R1: descuadre contra los votantes → no bloquea, el acta queda
+      // OBSERVADA en el servidor para revisión del coordinador.
+      newErrors.votes_sum = `La suma de votos (${totalVotes.toLocaleString()}) no coincide con los votantes (${formData.total_votantes.toLocaleString()}). Puede guardar: el acta quedará OBSERVADA para revisión.`;
     }
     
     setErrors(newErrors);
@@ -71,12 +80,15 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
     }));
   };
 
-  const handleCandidateVoteChange = (type: 'distrital' | 'regional', index: number, votes: number) => {
+  const handleCandidateVoteChange = (type: 'distrital' | 'consejero' | 'regional', index: number, votes: number) => {
     setFormData(prev => {
       const newData = {...prev};
       if (type === 'distrital') {
         newData.votos_distrital = [...prev.votos_distrital];
         newData.votos_distrital[index] = {...prev.votos_distrital[index], votes};
+      } else if (type === 'consejero') {
+        newData.votos_consejero = [...prev.votos_consejero];
+        newData.votos_consejero[index] = {...prev.votos_consejero[index], votes};
       } else {
         newData.votos_regional = [...prev.votos_regional];
         newData.votos_regional[index] = {...prev.votos_regional[index], votes};
@@ -98,11 +110,13 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
       const actaToSave = {
         numero_mesa: formData.numero_mesa,
         votos_distrital: formData.votos_distrital,
+        votos_consejero: formData.votos_consejero,
         votos_regional: formData.votos_regional,
         votos_blancos: formData.votos_blancos,
         votos_nulos: formData.votos_nulos,
         votos_impugnados: formData.votos_impugnados,
         total_electores: formData.total_electores,
+        total_votantes: formData.total_votantes,
         ocr_confidence: acta.ocr_confidence, // Keep original OCR confidence
         image_url: acta.image_url, // Keep original image URL
         verified: true,
@@ -125,6 +139,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
         latitude: savedActa.latitude ?? 0,
         longitude: savedActa.longitude ?? 0,
         votos_distrital: savedActa.votos_distrital,
+        votos_consejero: savedActa.votos_consejero ?? [],
         votos_regional: savedActa.votos_regional,
         votos_blancos: savedActa.votos_blancos,
         votos_nulos: savedActa.votos_nulos,
@@ -236,7 +251,7 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Total de Electores Hábiles
+                    Electores Hábiles de la Mesa
                   </label>
                   <input
                     type="number"
@@ -250,6 +265,23 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                   {errors.total_electores && (
                     <p className="text-xs text-red-600 mt-1">{errors.total_electores}</p>
                   )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Votantes que Sufragaron (cabecera del acta)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.total_votantes}
+                    onChange={(e) => handleInputChange('total_votantes', Number(e.target.value) || 0)}
+                    className={`w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                      errors.votes_sum && errors.votes_sum.includes("superar") ? "border-red-500" : ""
+                    }`}
+                    min="0"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    La suma de votos debe cuadrar contra esta cifra, no contra los electores hábiles.
+                  </p>
                 </div>
               </div>
             </div>
@@ -290,6 +322,42 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                     ))}
                   </div>
                 </div>
+                
+                {/* CONSEJEROS REGIONALES: columna CONSEJEROS del acta física.
+                    La oferta viene del backend (JNE); sólo se muestra cuando
+                    la mesa tiene consejeros en carrera (provincia de la mesa). */}
+                {formData.votos_consejero.length > 0 && (
+                <div className="border-t border-slate-200 pt-4">
+                  <h5 className="font-medium text-slate-700 mb-2">Consejeros Regionales (por provincia)</h5>
+                  <div className="space-y-2">
+                    {(acta.votos_consejero ?? []).map((originalCandidate, index) => (
+                      <div key={originalCandidate.candidate_id} className="border-t border-slate-200 pt-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-slate-800 truncate">
+                              {originalCandidate.name}
+                            </p>
+                            <p className="text-xs text-slate-500 truncate">
+                              {originalCandidate.party}
+                            </p>
+                          </div>
+                          <div className="w-20">
+                            <input
+                              type="number"
+                              value={formData.votos_consejero[index].votes}
+                              onChange={(e) => handleCandidateVoteChange('consejero', index, Number(e.target.value) || 0)}
+                              className={`w-full px-3 py-2 text-center border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                                errors[`voto_consejero_${index}`] ? "border-red-500" : ""
+                              }`}
+                              min="0"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                )}
                 
                 <div className="border-t border-slate-200 pt-4">
                   <h5 className="font-medium text-slate-700 mb-2">Votos Regionales</h5>
@@ -405,6 +473,14 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="flex-1 text-sm text-slate-600">
+                    Votos válidos consejeros:
+                  </div>
+                  <div className="flex-1 text-sm text-slate-600 font-mono text-right">
+                    {consejeroSum.toLocaleString()}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="flex-1 text-sm text-slate-600">
                     Total votos válidos:
                   </div>
                   <div className="flex-1 text-sm text-slate-600 font-mono text-right">
@@ -428,16 +504,16 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
                   </div>
                 </div>
                 {errors.votes_sum && (
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-1 text-sm text-red-600">
+                  <div className={`flex items-center space-x-3 ${errors.votes_sum.includes("superar") ? "" : ""}`}>
+                    <div className={`flex-1 text-sm ${errors.votes_sum.includes("superar") ? "text-red-600" : "text-amber-600"}`}>
                       Estado:
                     </div>
-                    <div className="flex-1 text-sm text-red-600 font-medium">
+                    <div className={`flex-1 text-sm font-medium ${errors.votes_sum.includes("superar") ? "text-red-600" : "text-amber-600"}`}>
                       {errors.votes_sum}
                     </div>
                   </div>
                 )}
-                {!errors.votes_sum && formData.total_electores > 0 && (
+                {!errors.votes_sum && formData.total_votantes > 0 && (
                   <div className="flex items-center space-x-3">
                     <div className="flex-1 text-sm text-green-600">
                       Estado:
@@ -466,13 +542,13 @@ export default function ActaValidationForm({ acta, onSave, onCancel }: ActaValid
               >
                 Cancelar
               </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving || Object.keys(errors).length > 0}
-                className={`px-4 py-2 bg-[#E02020] text-white rounded-md text-sm font-medium hover:bg-[#A01010] disabled:bg-slate-400 disabled:cursor-not-allowed`}
-              >
-                {isSaving ? "Guardando..." : "Confirmar y Guardar Acta"}
-              </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || Object.entries(errors).some(([k, v]) => v && k !== "votes_sum")}
+              className={`px-4 py-2 bg-[#E02020] text-white rounded-md text-sm font-medium hover:bg-[#A01010] disabled:bg-slate-400 disabled:cursor-not-allowed`}
+            >
+              {isSaving ? "Guardando..." : "Confirmar y Guardar Acta"}
+            </button>
             </div>
           </form>
         </div>
