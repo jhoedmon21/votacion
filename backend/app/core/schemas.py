@@ -303,6 +303,8 @@ class V1GanadorDistrito(BaseModel):
     # Foto y logo del candidato cabecera (estilo Top 2 en el panel).
     foto: str | None = None
     logo: str | None = None
+    # Curules obtenidas por d'Hondt (sólo en escaños del Consejo Regional).
+    curules_ganados: int = 1
 
 
 class V1ConsejeroProvincia(BaseModel):

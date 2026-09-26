@@ -38,6 +38,10 @@ interface EscanoConsejero {
   organizacion: string;
   color: string;
   votos: number;
+  electos: string[];
+  curules_ganados?: number;
+  foto?: string | null;
+  logo?: string | null;
 }
 interface ConsejeroProvincia {
   provincia: string;
@@ -304,26 +308,85 @@ export default function Dashboard() {
                     </div>
                     {p.ganador ? (
                       <>
-                        <div className="mt-2 flex items-center gap-2">
-                          <span className="inline-block h-3 w-3 rounded-full"
-                            style={{ backgroundColor: p.ganador.color }} />
-                          <span className="truncate text-xs font-bold text-slate-800" title={p.ganador.organizacion}>
-                            {p.ganador.organizacion}
+                        {/* Ganador estilo Top 2: avatar con anillo del partido +
+                            gradiente + foto del candidato cabecera (igual al Panel). */}
+                        <div
+                          className="-mx-3 -mt-2 mb-3 flex items-center gap-2.5 rounded-t-xl px-3 py-2.5"
+                          style={{
+                            background: `linear-gradient(135deg, ${p.ganador.color}1A 0%, transparent 70%)`,
+                          }}
+                        >
+                          <span
+                            className="shrink-0 rounded-full p-[3px] shadow-md"
+                            style={{ background: `linear-gradient(135deg, ${p.ganador.color}, ${p.ganador.color}99)` }}
+                          >
+                            {p.ganador.foto ? (
+                              <img
+                                src={p.ganador.foto}
+                                alt={p.ganador.electos?.[0] || p.ganador.organizacion}
+                                className="h-12 w-12 rounded-full border-2 border-white object-cover"
+                              />
+                            ) : (
+                              <span
+                                className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white text-base font-black text-white"
+                                style={{ backgroundColor: p.ganador.color }}
+                              >
+                                {(p.ganador.organizacion ?? "?").charAt(0)}
+                              </span>
+                            )}
                           </span>
-                          <span className="ml-auto font-mono text-[11px] font-bold text-[#E02020]">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[12px] font-black leading-tight text-slate-800" title={p.ganador.organizacion}>
+                              {p.ganador.organizacion}
+                            </p>
+                            {p.ganador.electos?.[0] && (
+                              <p className="truncate text-[10px] font-semibold text-slate-500" title={p.ganador.electos[0]}>
+                                {p.ganador.electos[0]}
+                              </p>
+                            )}
+                            <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                              Lista más votada
+                            </p>
+                          </div>
+                          <span className="shrink-0 font-mono text-base font-black tabular-nums text-[#E02020]">
                             {p.ganador.votos.toLocaleString("es-PE")}
                           </span>
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-1">
+                        {/* Escaños d'Hondt: logo del partido, cabeza de lista y curules */}
+                        <div className="space-y-1.5">
                           {p.escanos.map((e, i) => (
-                            <span key={`${e.organizacion}-${i}`} title={`${e.organizacion} · ${e.votos} votos`}
-                              className="inline-block h-4 w-4 rounded-sm border border-white shadow-sm"
-                              style={{ backgroundColor: e.color }} />
+                            <div key={`${e.organizacion}-${i}`}
+                              className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-2 py-1.5">
+                              {e.logo ? (
+                                <img src={e.logo} alt={e.organizacion} title={e.organizacion}
+                                  className="h-7 w-7 shrink-0 rounded-lg border border-slate-200 bg-white object-contain p-0.5"
+                                />
+                              ) : (
+                                <span
+                                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-black text-white"
+                                  style={{ backgroundColor: e.color }}
+                                  title={e.organizacion}
+                                >
+                                  {(e.organizacion ?? "?").charAt(0)}
+                                </span>
+                              )}
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-[10px] font-bold text-slate-700" title={e.organizacion}>
+                                  {e.organizacion}
+                                </span>
+                                <span className="block truncate text-[9px] font-medium text-slate-400" title={(e.electos ?? []).join(", ")}>
+                                  {(e.electos ?? []).join(", ") || "—"}
+                                </span>
+                              </span>
+                              <span
+                                className="shrink-0 rounded-full bg-white px-1.5 py-0.5 font-mono text-[10px] font-black text-slate-700 shadow-xs"
+                                title={`${e.curules_ganados ?? 1} curul(es) por d'Hondt`}
+                              >
+                                ×{e.curules_ganados ?? 1}
+                              </span>
+                            </div>
                           ))}
                         </div>
-                        <p className="mt-1.5 text-[10px] text-slate-400">
-                          Escaños: {p.escanos.map((e) => e.organizacion.split(" ")[0]).join(", ") || "—"}
-                        </p>
                       </>
                     ) : (
                       <p className="mt-2 text-[11px] text-slate-400">

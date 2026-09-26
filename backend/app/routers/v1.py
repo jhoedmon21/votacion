@@ -493,7 +493,8 @@ def resumen(tipo_eleccion: str = Query("DISTRITAL"),
             escanos = [
                 V1GanadorDistrito(
                     organizacion=e.organizacion, color=e.color, votos=e.votos,
-                    electos=e.electos, foto=e.foto, logo=e.logo)
+                    electos=e.electos, foto=e.foto, logo=e.logo,
+                    curules_ganados=e.curules_ganados)
                 for e in p.escanos
             ]
             consejeros.append(V1ConsejeroProvincia(
