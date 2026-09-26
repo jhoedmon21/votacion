@@ -589,8 +589,11 @@ function SideBySideDigitizationInner({
             </div>
           </div>
 
-          {/* RIGHT PANEL: DIGITIZATION FORM */}
-          <div className="flex w-full flex-col bg-white sm:w-1/2 sm:overflow-y-auto">
+          {/* RIGHT PANEL: DIGITIZATION FORM. El SCROLL vive SIEMPRE en la
+              columna del formulario (antes sólo en sm+): en pantallas chicas
+              el modal corta el flujo y secciones como "Otros Votos", el
+              resumen y el botón Guardar quedaban inalcanzables. */}
+          <div className="flex w-full flex-col overflow-y-auto bg-white sm:w-1/2">
             <div className="p-4 border-b border-slate-200 sticky top-0 z-5 bg-white">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-slate-800">Formulario de Digitación</h3>
@@ -611,7 +614,7 @@ function SideBySideDigitizationInner({
               </Alerta>
             )}
 
-            <div className="p-4 space-y-6 sm:flex-1 sm:overflow-y-auto">
+            <div className="p-4 space-y-6 flex-1">
               {/* METADATOS */}
               <Card className="p-4">
                 <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
