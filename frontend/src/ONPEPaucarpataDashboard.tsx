@@ -503,7 +503,7 @@ export default function ONPEPaucarpataDashboard() {
           )}
 
           {/* KPIs EJECUTIVOS (estilo Material: baldosa + dato) */}
-          <section aria-label="Indicadores" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-8">
+          <section aria-label="Indicadores" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
             {([
               ["Mesas en padrón", formatVotes(summary.total_tables ?? 0), "locales en tu alcance",
                 <ClipboardList key="k1" className="h-5 w-5" />, "bg-[#E02020]"],
@@ -527,13 +527,15 @@ export default function ONPEPaucarpataDashboard() {
                   {icono}
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">
                     {etiqueta}
                   </span>
                   <span className="block font-mono text-xl font-black tabular-nums text-slate-900">
                     {valor}
                   </span>
-                  <span className="block truncate text-[11px] text-slate-400">{bajada}</span>
+                  {/* Sin truncate: el texto de apoyo se envuelve para que
+                      siempre sea legible (antes se cortaba y no se entendía). */}
+                  <span className="block text-[11px] leading-snug text-slate-400">{bajada}</span>
                 </span>
               </div>
             ))}
