@@ -10,7 +10,7 @@ from app.core.auth import (alcance_ubigeos, es_rol_global, requerir_rol,
                            usuario_actual, validar_alcance_venue,
                            venues_en_alcance)
 from app.core.database import get_db
-from app.core.models import (ActaMetadata, ConsejeroCandidate,
+from app.core.models import (ActaMetadata, ActaRechazo, ConsejeroCandidate,
                              DistrictCandidate, ProvincialCandidate, Record,
                              RegionalCandidate, ROLES_SISTEMA, Table, Usuario, Venue)
 from app.core.schemas import (ActaParseResult, ActaUpdate, ActaUpdatePayload,
@@ -41,28 +41,40 @@ ROLES_SUPERVISION = ROLES_SISTEMA  # todos pueden consultar
 
 
 def _ranking(db: Session, table_id: int, candidate_type: str) -> list[dict]:
-    """Votes recorded for one acta, enriched with candidate info."""
+    """Oferta completa de un nivel para el acta, con los votos digitados.
+
+    Devuelve TODAS las organizaciones del ámbito del local (no sólo las que
+    tienen registro): una fila sin votos va con ``votes: 0``. Así el modal de
+    edición siempre hidrata las 4 secciones — antes, un acta registrada en
+    ceros no tenía registros y el modal quedaba sin filas que editar.
+    """
     model = CANDIDATE_MODELS[candidate_type]
-    candidates = {c.id: c for c in db.query(model).all()}
-    rows = (
-        db.query(Record)
+    fila = (
+        db.query(Venue.ubigeo)
+        .join(Table, Table.venue_id == Venue.id)
+        .filter(Table.id == table_id)
+        .first()
+    )
+    ambito = ubigeo_de_nivel(fila[0] if fila else "", candidate_type)
+    oferta = list(candidatos_del_ambito(db, model, ambito).all())
+    votos = {
+        r.candidate_id: (r.votes or 0)
+        for r in db.query(Record)
         .filter(Record.table_id == table_id, Record.candidate_type == candidate_type)
         .all()
-    )
-    ranking = []
-    for row in rows:
-        candidate = candidates.get(row.candidate_id)
-        if candidate is None:
-            continue
-        ranking.append({
-            "candidate_id": candidate.sort_order,
-            "name": candidate.name,
-            "party": candidate.party,
-            "color": candidate.color,
-            "votes": row.votes or 0,
-            "symbol": candidate.symbol,
-            "photo_url": candidate.photo_url,
-        })
+    }
+    ranking = [
+        {
+            "candidate_id": c.sort_order,
+            "name": c.name,
+            "party": c.party,
+            "color": c.color,
+            "votes": votos.get(c.id, 0),
+            "symbol": c.symbol,
+            "photo_url": c.photo_url,
+        }
+        for c in oferta
+    ]
     ranking.sort(key=lambda item: item["candidate_id"])
     return ranking
 
@@ -119,6 +131,24 @@ def _mesa_con_acta(db: Session, numero_mesa: str | None, clave_tipo: str) -> boo
         .first()
         is not None
     )
+
+
+def _registrar_rechazo(db: Session, *, numero_mesa: str, tipo_eleccion: str,
+                       regla: str, mensaje: str, usuario: Usuario | None) -> None:
+    """Deja constancia de un intento de registro rechazado (log R0-R2).
+
+    Nunca interrumpe el flujo: si el log falla, el rechazo sigue ocurriendo.
+    """
+    try:
+        db.add(ActaRechazo(
+            numero_mesa=numero_mesa or "?", tipo_eleccion=tipo_eleccion,
+            regla=regla, mensaje=(mensaje or "")[:400],
+            usuario_email=usuario.email if usuario else None,
+        ))
+        db.commit()
+    except Exception:  # noqa: BLE001 — el log no debe romper el rechazo
+        db.rollback()
+        logger.warning("No se pudo registrar el rechazo de acta (%s)", regla)
 
 
 def _ubigeo_del_ambito(db: Session, table_id: int, nivel: str) -> str:
@@ -698,13 +728,11 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         + (payload.votos_impugnados if payload.votos_impugnados is not None
            else (_meta_efectiva.votos_impugnados or 0 if _meta_efectiva else 0))
     )
-    _electores_efectivos = (
-        payload.total_electores
-        if payload.total_electores is not None
-        else (_meta_efectiva.total_electores or 0 if _meta_efectiva else 0)
-    )
+    # R2 SIEMPRE contra el padrón REAL de la mesa (tables.electores_habiles,
+    # fuente ONPE): la metadata puede estar vacía/vieja o el formulario traer
+    # otro valor; un acta con votantes > padrón es imposible y se bloquea.
     excede_padron = bool(
-        _electores_efectivos and votantes > _electores_efectivos
+        (table.electores_habiles or 0) and votantes > table.electores_habiles
     )
     descuadrada = votantes > 0 and votantes != suma_total
     # R0: acta vacía — todo en ceros no es un acta registrable (0 = 0 cuadra,
@@ -712,6 +740,9 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     acta_vacia = votantes == 0 and suma_total == 0
 
     if acta_vacia:
+        _registrar_rechazo(db, numero_mesa=table.numero_mesa,
+                           tipo_eleccion="RECTIFICACION", regla="R0_ACTA_VACIA",
+                           mensaje="Acta en ceros", usuario=usuario)
         raise HTTPException(
             status_code=409,
             detail={
@@ -729,6 +760,11 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     # rectifica: se rechaza con 409 y el modal muestra el mensaje
     # interactivo para corregir los números.
     if excede_padron or descuadrada:
+        _registrar_rechazo(db, numero_mesa=table.numero_mesa,
+                           tipo_eleccion="RECTIFICACION",
+                           regla="R2_TOPE_ELECTORES" if excede_padron else "R1_SUMA_VOTOS",
+                           mensaje=f"suma={suma_total} vs votantes={votantes}",
+                           usuario=usuario)
         raise HTTPException(
             status_code=409,
             detail={

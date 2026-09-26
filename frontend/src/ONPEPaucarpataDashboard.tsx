@@ -38,6 +38,8 @@ interface AlmacenStats {
   peso_final_kb: number;
   ahorro_kb: number;
   ahorro_pct: number;
+  actas_vacias_rechazadas: number;
+  rechazos_integridad: number;
 }
 
 function formatKB(kb: number): string {
@@ -501,7 +503,7 @@ export default function ONPEPaucarpataDashboard() {
           )}
 
           {/* KPIs EJECUTIVOS (estilo Material: baldosa + dato) */}
-          <section aria-label="Indicadores" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-7">
+          <section aria-label="Indicadores" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-8">
             {([
               ["Mesas en padrón", formatVotes(summary.total_tables ?? 0), "locales en tu alcance",
                 <ClipboardList key="k1" className="h-5 w-5" />, "bg-[#E02020]"],
@@ -517,6 +519,8 @@ export default function ONPEPaucarpataDashboard() {
                 <IdCard key="k6" className="h-5 w-5" />, "bg-sky-600"],
               ["Ahorro WebP", formatKB(almacen?.ahorro_kb ?? 0), `${almacen?.ahorro_pct ?? 0}% · ${formatVotes(almacen?.imagenes_procesadas ?? 0)} fotos`,
                 <HardDrive key="k7" className="h-5 w-5" />, "bg-violet-600"],
+              ["Actas vacías", formatVotes(almacen?.actas_vacias_rechazadas ?? 0), `${formatVotes(almacen?.rechazos_integridad ?? 0)} otros rechazos (R0-R2)`,
+                <ShieldCheck key="k8" className="h-5 w-5" />, "bg-rose-700"],
             ] as const).map(([etiqueta, valor, bajada, icono, color]) => (
               <div key={etiqueta} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
                 <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-xs ${color}`}>

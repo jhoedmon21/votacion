@@ -645,38 +645,46 @@ function SideBySideDigitizationInner({
                 </div>
               </Card>
 
-              {/* VOTOS DISTRITALES */}
-              <Card className="p-4">
-                <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#10b981] text-white text-xs flex items-center justify-center">2</span>
-                  Votos Distritales (Alcalde Distrital) — {districtSum.toLocaleString()} votos
-                </h4>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {acta.votos_distrital.map((c, i) => renderVoteRow(c, 'distrital', i))}
-                </div>
-              </Card>
+              {/* VOTOS DISTRITALES (sólo si el distrito de la mesa tiene
+                  candidatas cargadas; si no, la sección confundiría al
+                  corrector con una lista vacía de ceros). */}
+              {formData.votos_distrital.length > 0 && (
+                <Card className="p-4">
+                  <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-[#10b981] text-white text-xs flex items-center justify-center">2</span>
+                    Votos Distritales (Alcalde Distrital) — {districtSum.toLocaleString()} votos
+                  </h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {acta.votos_distrital.map((c, i) => renderVoteRow(c, 'distrital', i))}
+                  </div>
+                </Card>
+              )}
 
               {/* VOTOS PROVINCIALES */}
-              <Card className="p-4">
-                <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#8b5cf6] text-white text-xs flex items-center justify-center">3</span>
-                  Votos Provinciales (Alcalde Provincial) — {provincialSum.toLocaleString()} votos
-                </h4>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {acta.votos_provincial.map((c, i) => renderVoteRow(c, 'provincial', i))}
-                </div>
-              </Card>
+              {formData.votos_provincial.length > 0 && (
+                <Card className="p-4">
+                  <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-[#8b5cf6] text-white text-xs flex items-center justify-center">3</span>
+                    Votos Provinciales (Alcalde Provincial) — {provincialSum.toLocaleString()} votos
+                  </h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {acta.votos_provincial.map((c, i) => renderVoteRow(c, 'provincial', i))}
+                  </div>
+                </Card>
+              )}
 
               {/* VOTOS REGIONALES */}
-              <Card className="p-4">
-                <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#f59e0b] text-white text-xs flex items-center justify-center">4</span>
-                  Votos Regionales (Gobernador Regional) — {regionalSum.toLocaleString()} votos
-                </h4>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {acta.votos_regional.map((c, i) => renderVoteRow(c, 'regional', i))}
-                </div>
-              </Card>
+              {formData.votos_regional.length > 0 && (
+                <Card className="p-4">
+                  <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-[#f59e0b] text-white text-xs flex items-center justify-center">4</span>
+                    Votos Regionales (Gobernador Regional) — {regionalSum.toLocaleString()} votos
+                  </h4>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {acta.votos_regional.map((c, i) => renderVoteRow(c, 'regional', i))}
+                  </div>
+                </Card>
+              )}
 
               {/* CONSEJEROS REGIONALES: columna CONSEJEROS del acta física,
                   elegidos POR PROVINCIA. Sólo se muestra si la mesa tiene

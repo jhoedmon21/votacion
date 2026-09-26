@@ -268,6 +268,23 @@ class CheckinPersonero(Base):
 ACCIONES_AUDITORIA_ACTA = ("CREAR", "MODIFICAR")
 
 
+class ActaRechazo(Base):
+    """Log de intentos de registro rechazados por las reglas R0-R2.
+
+    Alimenta el contador de actas vacías y otros rechazos del panel: cada
+    409 del flujo de actas queda registrado con su regla, mesa y usuario.
+    """
+
+    __tablename__ = "acta_rechazos"
+    id = Column(Integer, primary_key=True, index=True)
+    numero_mesa = Column(String(6), nullable=False, index=True)
+    tipo_eleccion = Column(String(20), nullable=False)
+    regla = Column(String(40), nullable=False, index=True)
+    mensaje = Column(String(400))
+    usuario_email = Column(String(160))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class ActaAuditoriaGlobal(Base):
     """Log estricto de cada intervención del Digitador Global sobre un acta."""
 

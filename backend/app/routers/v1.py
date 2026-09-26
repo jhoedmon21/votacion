@@ -27,7 +27,7 @@ from app.core.auth import (alcance_ubigeos, es_rol_global, requerir_rol,
                             usuario_actual, validar_alcance_venue,
                             venues_en_alcance)
 from app.core.database import get_db
-from app.core.models import (ActaMetadata, ConsejeroCandidate,
+from app.core.models import (ActaMetadata, ActaRechazo, ConsejeroCandidate,
                               DistrictCandidate, ProvincialCandidate, Record,
                               RegionalCandidate, Table, Usuario, Venue)
 from app.core.schemas import (V1ActaStatusFila, V1ActaStatusTotales,
@@ -147,6 +147,18 @@ def estadisticas_almacenamiento(db: Session = Depends(get_db),
         "peso_final_kb": round(final_kb, 1),
         "ahorro_kb": round(ahorro_kb, 1),
         "ahorro_pct": round(100 * ahorro_kb / original_kb, 1) if original_kb else 0.0,
+        # Contador de actas vacías detectadas y rechazadas (regla R0) y
+        # de los demás rechazos de integridad (R1/R2), del log acta_rechazos.
+        "actas_vacias_rechazadas": (
+            db.query(func.count(ActaRechazo.id))
+            .filter(ActaRechazo.regla == "R0_ACTA_VACIA")
+            .scalar() or 0
+        ),
+        "rechazos_integridad": (
+            db.query(func.count(ActaRechazo.id))
+            .filter(ActaRechazo.regla != "R0_ACTA_VACIA")
+            .scalar() or 0
+        ),
     }
 
 
@@ -235,6 +247,15 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
             else "NO COINCIDEN LOS DATOS: la suma de votos no cuadra con el "
                  "total de votos emitidos. Corrige los números antes de guardar."
         )
+        try:  # log de rechazos para el contador del panel (nunca rompe el flujo)
+            db.add(ActaRechazo(
+                numero_mesa=payload.numero_mesa, tipo_eleccion=tipo,
+                regla=(bloqueantes[0].regla if bloqueantes else "R1_SUMA_VOTOS"),
+                mensaje=mensaje[:400], usuario_email=usuario.email,
+            ))
+            db.commit()
+        except Exception:  # noqa: BLE001
+            db.rollback()
         raise HTTPException(
             status_code=409,
             detail={
