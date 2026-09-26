@@ -247,14 +247,13 @@ async def process_acta(file: UploadFile = File(...), db: Session = Depends(get_d
     try:
         # La imagen se normaliza antes de guardar: EXIF → RGB → máx. 1600 px
         # → WebP de alta calidad (peso mínimo, legibilidad intacta).
+        # FOTO SIEMPRE ACEPTADA: si falla el procesamiento se guarda el
+        # original — la evidencia nunca se rechaza por compresión.
         try:
             from app.services.imagen_acta import procesar_acta
             tmp_path = procesar_acta(tmp_path)[0]
-        except Exception as exc:  # noqa: BLE001 — imagen corrupta
-            raise HTTPException(
-                status_code=422,
-                detail="La imagen del acta no se pudo procesar. Vuelva a tomarla con buena luz y sin recortes.",
-            ) from exc
+        except Exception:  # noqa: BLE001 — formato exótico/corrupta: respaldo
+            logger.warning("Foto sin procesar (se guarda original): %s", file.filename)
         result, table = _parse_and_store(db, tmp_path)
         _verificar_venue_en_alcance(db, usuario, table.venue_id)
         payload = _serialize_acta(db, table)
@@ -601,6 +600,18 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         raise HTTPException(status_code=404, detail=f"Acta {acta_id} no encontrada")
     _verificar_venue_en_alcance(db, usuario, table.venue_id)
 
+    # R5 estricta también en la rectificación: una corrección sin la foto del
+    # acta no es verificable. Sólo se permite si ya tiene imagen o si la
+    # corrección adjunta una (el modal la sube vía /v1/actas/foto).
+    if not (table.image_url or payload.image_url):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "FALTA CARGAR ACTA: adjunte la fotografía del acta física antes de "
+                "guardar la corrección. Es obligatoria como evidencia."
+            ),
+        )
+
     # Snapshot previo para la auditoría (cabecera + votos + conteos).
     meta_prev = db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).first()
     antes = {
@@ -618,6 +629,13 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         table.numero_mesa = payload.numero_mesa
     if payload.image_url:
         table.image_url = payload.image_url
+    # Métricas del procesamiento WebP (si el cliente las trae).
+    metricas = {k: v for k, v in (
+        ("image_peso_original_kb", payload.image_peso_original_kb),
+        ("image_peso_final_kb", payload.image_peso_final_kb),
+    ) if v is not None}
+    if metricas:
+        _upsert_metadata(db, table.id, **metricas)
     if payload.ocr_confidence is not None:
         table.ocr_confidence = payload.ocr_confidence
 

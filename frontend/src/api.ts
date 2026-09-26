@@ -255,6 +255,10 @@ export const api = {
   /* Sube la foto del acta (endpoint de la PWA) y devuelve su URL pública;
      sirve tanto para la captura como para adjuntarla al EDITAR un acta que
      se guardó sin imagen. */
+  /* Sube la foto del acta y devuelve la URL pública + las métricas del
+     procesamiento WebP hecho en el servidor (peso original → final) para
+     persistirlas al guardar el acta y alimentar las estadísticas de
+     almacenamiento del panel. */
   subirFotoActa: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);
@@ -270,8 +274,15 @@ export const api = {
         throw new Error("Sesión expirada");
       }
       if (!r.ok) throw new Error(await errorMessage(r, "No se pudo subir la imagen"));
-      const d = await r.json();
-      return d.url as string;
+      const d = (await r.json()) as {
+        url: string;
+        procesamiento?: { peso_original_kb?: number; peso_final_kb?: number };
+      };
+      return {
+        url: d.url as string,
+        pesoOriginalKb: d.procesamiento?.peso_original_kb ?? null,
+        pesoFinalKb: d.procesamiento?.peso_final_kb ?? null,
+      };
     });
   },
   usuarios: () => request<UsuarioAdmin[]>("/auth/usuarios"),

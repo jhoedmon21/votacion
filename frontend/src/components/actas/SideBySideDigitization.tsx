@@ -71,6 +71,9 @@ function SideBySideDigitizationInner({
      persistida al Guardar Cambios. */
   const [imageUrl, setImageUrl] = useState<string>(acta.image_url ?? "");
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  /* Métricas WebP de la última imagen subida (para las estadísticas de
+     almacenamiento; se persisten junto al acta al Guardar Cambios). */
+  const [fotoPesos, setFotoPesos] = useState<{ original: number | null; final: number | null }>({ original: null, final: null });
 
   const validateForm = useCallback(() => {
     const districtSum = formData.votos_distrital.reduce((sum, c) => sum + c.votes, 0);
@@ -122,6 +125,13 @@ function SideBySideDigitizationInner({
 
   const handleAutoSave = useCallback(async () => {
     if (readonly || mode === "view") return;
+    // R5: sin foto del acta el PUT la rechaza; el autoguardado no martilla:
+    // se detiene hasta que el usuario suba la imagen (el botón Guardar
+    // sí intenta y muestra el mensaje del servidor si falta).
+    if (!imageUrl && !acta.image_url) {
+      setAutoSaveStatus("idle");
+      return;
+    }
     setAutoSaveStatus("saving");
     try {
       const payload = {
@@ -134,6 +144,8 @@ function SideBySideDigitizationInner({
         total_electores: formData.total_electores,
         total_votantes: formData.total_votantes,
         image_url: imageUrl || undefined,
+        image_peso_original_kb: fotoPesos.original ?? undefined,
+        image_peso_final_kb: fotoPesos.final ?? undefined,
         verified: false,
       };
       await api.updateActa(acta.id, payload);
@@ -169,6 +181,8 @@ function SideBySideDigitizationInner({
         total_electores: formData.total_electores,
         total_votantes: formData.total_votantes,
         image_url: imageUrl || undefined,
+        image_peso_original_kb: fotoPesos.original ?? undefined,
+        image_peso_final_kb: fotoPesos.final ?? undefined,
         verified: mode === "validate",
       };
 
@@ -239,11 +253,16 @@ function SideBySideDigitizationInner({
     setSubiendoFoto(true);
     setSaveMessage(null);
     try {
-      const url = await api.subirFotoActa(file);
-      setImageUrl(url);
+      const r = await api.subirFotoActa(file);
+      setImageUrl(r.url);
+      setFotoPesos({ original: r.pesoOriginalKb, final: r.pesoFinalKb });
       setZoomLevel(1);
       setRotation(0);
-      setSaveMessage("Imagen cargada. Presiona Guardar Cambios para adjuntarla al acta.");
+      setSaveMessage(
+        r.pesoFinalKb
+          ? `Imagen optimizada: ${r.pesoOriginalKb} KB → ${r.pesoFinalKb} KB (WebP). Presiona Guardar Cambios.`
+          : "Imagen cargada. Presiona Guardar Cambios para adjuntarla al acta."
+      );
     } catch (e) {
       setSaveMessage(`Error al subir la imagen: ${e instanceof Error ? e.message : String(e)}`);
     } finally {

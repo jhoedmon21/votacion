@@ -86,14 +86,16 @@ async def subir_foto_acta(file: UploadFile = File(...),
         # La foto se NORMALIZA antes de almacenarse: orientación EXIF,
         # máx. 1600 px y WebP de alta calidad — el acta sigue legible para el
         # cotejo/OCR pero pesa una fracción del original del celular.
+        # FOTO SIEMPRE ACEPTADA: si el procesamiento falla (formato exótico,
+        # imagen corrupta) se guarda el ORIGINAL tal cual — la evidencia
+        # nunca se rechaza por no poder comprimirse.
+        metricas: dict = {}
         try:
             from app.services.imagen_acta import procesar_acta
             tmp_path, metricas = procesar_acta(tmp_path)
-        except Exception as exc:  # noqa: BLE001 — imagen corrupta o formato no soportado
-            raise HTTPException(
-                status_code=422,
-                detail="La imagen del acta no se pudo procesar. Vuelva a tomarla con buena luz y sin recortes.",
-            ) from exc
+        except Exception:  # noqa: BLE001 — formato exótico/corrupta: respaldo
+            logger.warning("Foto sin procesar (se guarda original): %s", file.filename)
+            metricas = {}
         url = storage_service.upload(
             str(tmp_path),
             filename=f"actas/{uuid4().hex}{tmp_path.suffix or '.webp'}",
@@ -101,6 +103,51 @@ async def subir_foto_acta(file: UploadFile = File(...),
     finally:
         tmp_path.unlink(missing_ok=True)
     return {"url": url, "procesamiento": metricas}
+
+
+@router.get("/almacenamiento/estadisticas")
+def estadisticas_almacenamiento(db: Session = Depends(get_db),
+                                usuario: Usuario = Depends(usuario_actual)):
+    """Estadísticas de almacenamiento de las fotos de actas (tarjeta del panel).
+
+    * Con foto / sin foto: cobertura de evidencia fotográfica sobre el total
+      de mesas del padrón.
+    * Espacio: suma de pesos finales guardados vs. los pesos originales que
+      habría ocupado la misma foto sin el procesamiento WebP en servidor.
+    """
+    _ = usuario
+    total_mesas = db.query(func.count(Table.id)).scalar() or 0
+    con_foto = (
+        db.query(func.count(Table.id))
+        .filter(Table.image_url.isnot(None), Table.image_url != "")
+        .scalar() or 0
+    )
+    pesos = (
+        db.query(
+            func.coalesce(func.sum(ActaMetadata.image_peso_original_kb), 0.0),
+            func.coalesce(func.sum(ActaMetadata.image_peso_final_kb), 0.0),
+        )
+        .filter(ActaMetadata.image_peso_final_kb > 0)
+        .one()
+    )
+    original_kb = float(pesos[0] or 0)
+    final_kb = float(pesos[1] or 0)
+    ahorro_kb = max(0.0, original_kb - final_kb)
+    return {
+        "total_mesas": total_mesas,
+        "con_foto": con_foto,
+        "sin_foto": max(0, total_mesas - con_foto),
+        "cobertura_foto_pct": round(100 * con_foto / total_mesas, 2) if total_mesas else 0.0,
+        "imagenes_procesadas": (
+            db.query(func.count(ActaMetadata.id))
+            .filter(ActaMetadata.image_peso_final_kb > 0)
+            .scalar() or 0
+        ),
+        "peso_original_kb": round(original_kb, 1),
+        "peso_final_kb": round(final_kb, 1),
+        "ahorro_kb": round(ahorro_kb, 1),
+        "ahorro_pct": round(100 * ahorro_kb / original_kb, 1) if original_kb else 0.0,
+    }
 
 
 @router.post("/actas/registrar", response_model=V1RegistrarOut)
@@ -215,6 +262,11 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
     meta.total_electores = habiles
     if payload.image_url:
         table.image_url = payload.image_url
+    # Métricas del procesamiento WebP (las entrega POST /v1/actas/foto).
+    if payload.image_peso_original_kb is not None:
+        meta.image_peso_original_kb = payload.image_peso_original_kb
+    if payload.image_peso_final_kb is not None:
+        meta.image_peso_final_kb = payload.image_peso_final_kb
     db.commit()
     db.refresh(table)
 

@@ -212,6 +212,10 @@ class ActaMetadata(Base):
     # contra la que debe cuadrar la suma de votos (NO contra los electores
     # hábiles, que casi siempre son más porque nadie está obligado a votar).
     total_votantes = Column(Integer)
+    # Métricas del procesamiento de la imagen del acta (WebP en servidor):
+    # permiten medir el espacio ahorrado frente a la foto original del celular.
+    image_peso_original_kb = Column(Float, default=0.0)
+    image_peso_final_kb = Column(Float, default=0.0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

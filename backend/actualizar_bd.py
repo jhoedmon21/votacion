@@ -69,6 +69,9 @@ def paso_esquema(dry_run: bool) -> None:
         "acta_metadata": {
             # Votantes que sufragaron (cabecera del acta); regla de cuadre.
             "total_votantes": "INTEGER",
+            # Métricas del procesamiento WebP de la imagen del acta.
+            "image_peso_original_kb": "DOUBLE PRECISION DEFAULT 0",
+            "image_peso_final_kb": "DOUBLE PRECISION DEFAULT 0",
         },
         "consejero_candidates": {
             # Por si el despliegue viene de una base anterior al nivel.

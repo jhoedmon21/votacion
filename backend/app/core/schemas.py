@@ -93,6 +93,10 @@ class ActaUpdatePayload(BaseModel):
     votos_impugnados: Optional[int] = None
     ocr_confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     image_url: Optional[str] = None
+    # Métricas del procesamiento WebP de la imagen (las devuelve
+    # POST /v1/actas/foto en ``procesamiento`` y se persisten al guardar).
+    image_peso_original_kb: Optional[float] = None
+    image_peso_final_kb: Optional[float] = None
     total_electores: Optional[int] = None
     # Votantes que sufragaron (cabecera del acta). Si falta o no cuadra con la
     # suma, el acta se guarda igual pero queda OBSERVADA para revisión.
@@ -246,6 +250,9 @@ class V1RegistrarIn(BaseModel):
     # URL pública de la foto del acta (opcional; la sube antes
     # POST /api/v1/actas/foto y el formulario la asocia aquí).
     image_url: Optional[str] = None
+    # Métricas del procesamiento WebP que devuelve esa subida.
+    image_peso_original_kb: Optional[float] = None
+    image_peso_final_kb: Optional[float] = None
     foto_hash_sha256: Optional[str] = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 

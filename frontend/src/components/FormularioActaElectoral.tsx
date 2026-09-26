@@ -99,8 +99,11 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
   const [checklist, setChecklist] = useState<Checklist | null>(null);
   const [localizando, setLocalizando] = useState(false);
 
-  /* Evidencia fotográfica del acta (se sube aparte y se asocia al registrar). */
+  /* Evidencia fotográfica del acta (se sube aparte y se asocia al registrar).
+     Las métricas WebP del servidor se persisten para las estadísticas de
+     almacenamiento del panel. */
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [fotoPesos, setFotoPesos] = useState<{ original: number | null; final: number | null }>({ original: null, final: null });
   const [subiendoFoto, setSubiendoFoto] = useState(false);
   const fotoRef = useRef<HTMLInputElement>(null);
 
@@ -301,9 +304,16 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
       }
       const body = await res.json();
       setFotoUrl(body.url);
+      setFotoPesos({
+        original: body.procesamiento?.peso_original_kb ?? null,
+        final: body.procesamiento?.peso_final_kb ?? null,
+      });
+      const p = body.procesamiento;
       setAvisos((prev) => [
         ...prev.filter((a) => !a.startsWith("📷")),
-        "📷 Foto del acta cargada. Se asociará al registrar la primera elección.",
+        p?.peso_final_kb
+          ? `📷 Foto cargada y optimizada: ${p.peso_original_kb} KB → ${p.peso_final_kb} KB (WebP). Se asociará al registrar.`
+          : "📷 Foto del acta cargada. Se asociará al registrar la primera elección.",
       ]);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -336,6 +346,8 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
           total_emitidos: totalReferencia,
           impugnada: false,
           image_url: fotoUrl,
+          image_peso_original_kb: fotoPesos.original ?? undefined,
+          image_peso_final_kb: fotoPesos.final ?? undefined,
         }),
       });
       const body = await res.json();

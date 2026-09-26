@@ -20,6 +20,15 @@ from pathlib import Path
 
 from PIL import Image, ImageOps
 
+# HEIC/HEIF (fotos de iPhone): si el plugin está instalado, registrar el opener
+# hace que Pillow las abra como cualquier otra imagen. Sin él, el bloque de
+# respaldo del caller guarda el original sin bloquear la evidencia.
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+except ImportError:  # noqa: BLE001 — build sin pillow-heif: cae al respaldo
+    pass
+
 logger = logging.getLogger(__name__)
 
 LADO_MAYOR_MAX = 1600

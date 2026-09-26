@@ -54,9 +54,6 @@ echo    LISTO. Comparte esta direccion con otras PCs de tu red:
 echo.
 echo        %URL%
 echo.
-echo    Login demo:   admin@computoarequipa.gob.pe
-echo    Contrasena:   Admin.Arequipa2026
-echo.
 echo    Deja abiertas las dos ventanas minimizadas
 echo    (API 8000 y Web 3000). Cerralas para DETENER el sistema.
 echo  ==========================================================

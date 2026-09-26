@@ -4,7 +4,7 @@ import {
   ROLES_GESTORES_CAMPO, sesionGuardada,
 } from "./api";
 import {
-  BarChart3, ClipboardList, IdCard, LayoutDashboard, MapPin, PieChart, ShieldCheck, UserCheck, Users, Vote,
+  BarChart3, ClipboardList, HardDrive, IdCard, LayoutDashboard, MapPin, PieChart, ShieldCheck, UserCheck, Users, Vote,
 } from "lucide-react";
 import Actas from "./Actas";
 import CoberturaPanel from "./components/CoberturaPanel";
@@ -25,6 +25,23 @@ interface DistritoOpt {
   provincia_nombre: string;
   distrito: string;
   mesas: number;
+}
+
+/* Respuesta de GET /v1/almacenamiento/estadisticas. */
+interface AlmacenStats {
+  total_mesas: number;
+  con_foto: number;
+  sin_foto: number;
+  cobertura_foto_pct: number;
+  imagenes_procesadas: number;
+  peso_original_kb: number;
+  peso_final_kb: number;
+  ahorro_kb: number;
+  ahorro_pct: number;
+}
+
+function formatKB(kb: number): string {
+  return kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`;
 }
 
 /* Orden oficial de la jornada: 1º Regional (Gobernador), 1º-bis Consejeros
@@ -148,6 +165,8 @@ export default function ONPEPaucarpataDashboard() {
     verdes: number;
     total: number;
   } | null>(null);
+  /* Almacenamiento: cobertura de foto del acta y ahorro WebP. */
+  const [almacen, setAlmacen] = useState<AlmacenStats | null>(null);
 
   useEffect(() => {
     fetch("/api/v1/ubigeo/distritos", {
@@ -156,6 +175,14 @@ export default function ONPEPaucarpataDashboard() {
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setDistritos(d as DistritoOpt[]))
       .catch(() => setDistritos([]));
+
+    // Estadísticas de almacenamiento de fotos de actas (tarjeta del panel).
+    fetch("/api/v1/almacenamiento/estadisticas", {
+      headers: sesionGuardada() ? { Authorization: `Bearer ${sesionGuardada()!.token}` } : {},
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setAlmacen(d as AlmacenStats | null))
+      .catch(() => setAlmacen(null));
 
     // Resumen ejecutivo de cobertura (una sola carga, todo el alcance).
     api
@@ -474,7 +501,7 @@ export default function ONPEPaucarpataDashboard() {
           )}
 
           {/* KPIs EJECUTIVOS (estilo Material: baldosa + dato) */}
-          <section aria-label="Indicadores" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+          <section aria-label="Indicadores" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-7">
             {([
               ["Mesas en padrón", formatVotes(summary.total_tables ?? 0), "locales en tu alcance",
                 <ClipboardList key="k1" className="h-5 w-5" />, "bg-[#E02020]"],
@@ -486,6 +513,10 @@ export default function ONPEPaucarpataDashboard() {
                 <PieChart key="k4" className="h-5 w-5" />, "bg-red-700"],
               ["Sin cubrir", formatVotes(coberturaResumen?.rojos ?? 0), `de ${formatVotes(coberturaResumen?.total ?? 0)} locales`,
                 <MapPin key="k5" className="h-5 w-5" />, "bg-red-600"],
+              ["Con foto", formatVotes(almacen?.con_foto ?? 0), `${formatVotes(almacen?.sin_foto ?? 0)} sin imagen`,
+                <IdCard key="k6" className="h-5 w-5" />, "bg-sky-600"],
+              ["Ahorro WebP", formatKB(almacen?.ahorro_kb ?? 0), `${almacen?.ahorro_pct ?? 0}% · ${formatVotes(almacen?.imagenes_procesadas ?? 0)} fotos`,
+                <HardDrive key="k7" className="h-5 w-5" />, "bg-violet-600"],
             ] as const).map(([etiqueta, valor, bajada, icono, color]) => (
               <div key={etiqueta} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
                 <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-xs ${color}`}>

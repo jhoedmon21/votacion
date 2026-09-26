@@ -12,6 +12,7 @@ watchdog==6.0.0
 openai==1.59.6
 httpx==0.28.1
 pillow==11.1.0
+pillow-heif==1.8.0
 python-dotenv==1.0.1
 # Local OCR fallback (optional — Tesseract binary required on host)
 opencv-python-headless==4.10.0.84

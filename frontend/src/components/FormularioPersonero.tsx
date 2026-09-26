@@ -47,6 +47,7 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
      al registrar. Sin ella el backend rechaza el registro (R5). */
   const fotoRef = useRef<HTMLInputElement>(null);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [fotoPesos, setFotoPesos] = useState<{ original: number | null; final: number | null }>({ original: null, final: null });
   const [subiendoFoto, setSubiendoFoto] = useState(false);
 
   const [cargando, setCargando] = useState(false);
@@ -153,9 +154,14 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
     setSubiendoFoto(true);
     setError(null);
     try {
-      const url = await api.subirFotoActa(file);
-      setFotoUrl(url);
-      setAviso("📷 Foto del acta cargada. Es la evidencia del registro.");
+      const r = await api.subirFotoActa(file);
+      setFotoUrl(r.url);
+      setFotoPesos({ original: r.pesoOriginalKb, final: r.pesoFinalKb });
+      setAviso(
+        r.pesoFinalKb
+          ? `📷 Foto cargada y optimizada: ${r.pesoOriginalKb} KB → ${r.pesoFinalKb} KB (WebP).`
+          : "📷 Foto del acta cargada. Es la evidencia del registro."
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -223,6 +229,8 @@ export default function FormularioPersonero({ onGuardada, onCancelar, mesaInicia
           total_emitidos: total,
           impugnada: false,
           image_url: fotoUrl,
+          image_peso_original_kb: fotoPesos.original ?? undefined,
+          image_peso_final_kb: fotoPesos.final ?? undefined,
         }),
       });
       const body = await res.json();

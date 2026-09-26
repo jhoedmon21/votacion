@@ -284,6 +284,12 @@ export default function ActaTable({
                       <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${BADGE[f.estado] || "bg-gray-100 text-gray-800"}`}>
                         {f.estado === "REGISTRADA" ? "Registrada" : f.estado === "OBSERVADA" ? "Observada" : "Pendiente"}
                       </span>
+                      {f.estado !== "PENDIENTE" && !f.tiene_foto && (
+                        <span title="Sin la foto del acta física (evidencia obligatoria)"
+                          className="ml-1.5 inline-block rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-700">
+                          sin imagen
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-xs text-slate-600">{f.digitador ?? "—"}</td>
                     <td className="px-4 py-2.5 font-mono text-[11px] tabular-nums text-slate-500">{fechaCorta(f.actualizada_en)}</td>
