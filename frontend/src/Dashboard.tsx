@@ -55,6 +55,18 @@ interface Ganador {
   color: string;
   votos: number;
 }
+interface InconsistenciaActa {
+  acta_id: number;
+  numero_mesa: string;
+  local: string;
+  distrito: string;
+  suma_votos: number;
+  total_votantes: number;
+  electores_habiles: number;
+  diferencia: number;
+  tipo: "SIN_VOTANTES" | "DESCUADRE" | "EXCEDE_PADRON";
+  mensaje: string;
+}
 
 interface Resumen {
   total_mesas: number;
@@ -75,6 +87,8 @@ interface Resumen {
   observadas: ActaObservada[];
   ganadores?: Record<string, Ganador>;
   consejeros?: ConsejeroProvincia[];
+  total_votantes_actas?: number;
+  inconsistencias?: InconsistenciaActa[];
 }
 
 /* Orden oficial de la jornada; CONSEJERO = Consejo Regional (por provincia). */
@@ -223,6 +237,48 @@ export default function Dashboard() {
             <Kpi etiqueta="% Participación" valor={`${resumen.participacion_pct}%`}
               sub={`${resumen.electores_habiles.toLocaleString("es-PE")} hábiles`} />
           </div>
+
+          {/* ALERTA DE INTEGRIDAD: el total de votos de cada acta debe cuadrar
+              con los VOTANTES de su cabecera y no exceder los electores
+              hábiles del padrón. Si algo no cuadra, hay datos erróneos. */}
+          {(resumen.inconsistencias?.length ?? 0) > 0 && (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-amber-500 px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-white">
+                  ⚠ Datos erróneos detectados
+                </span>
+                <span className="text-sm font-bold text-amber-900">
+                  {resumen.inconsistencias!.length} acta{resumen.inconsistencias!.length === 1 ? "" : "s"} cuyo total NO coincide
+                </span>
+                <span className="ml-auto text-[11px] font-medium text-amber-700">
+                  Σ votos emitidos {resumen.votos_emitidos.toLocaleString("es-PE")} vs votantes declarados {(resumen.total_votantes_actas ?? 0).toLocaleString("es-PE")} · electores hábiles {resumen.electores_habiles.toLocaleString("es-PE")}
+                </span>
+              </div>
+              <ul className="mt-3 space-y-1.5">
+                {resumen.inconsistencias!.slice(0, 6).map((i) => (
+                  <li key={`${i.acta_id}-${i.tipo}`}
+                    className={`rounded-lg border px-3 py-2 text-xs ${
+                      i.tipo === "EXCEDE_PADRON"
+                        ? "border-red-300 bg-red-50 text-red-800"
+                        : "border-amber-200 bg-white text-amber-900"
+                    }`}>
+                    <span className="font-mono font-black">{i.numero_mesa}</span>
+                    {" "}
+                    <span className="font-semibold">{i.distrito || i.local}</span>
+                    {" — "}{i.mensaje}
+                    <span className="ml-1 font-mono">
+                      (suma {i.suma_votos} vs votantes {i.total_votantes || "—"})
+                    </span>
+                  </li>
+                ))}
+                {(resumen.inconsistencias?.length ?? 0) > 6 && (
+                  <li className="px-3 text-[11px] font-bold text-amber-700">
+                    …y {(resumen.inconsistencias?.length ?? 0) - 6} más. Revise la bandeja de actas.
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
 
           {/* Mapa de resultados: color = ganador, clic = foca el cómputo */}
           <section className="rounded-2xl border border-slate-200 bg-white p-4">

@@ -302,6 +302,24 @@ class V1ActaObservada(BaseModel):
     distrito: str
 
 
+class V1InconsistenciaActa(BaseModel):
+    """Acta contabilizada cuyo total NO cuadra: datos erróneos a revisar."""
+    acta_id: int
+    numero_mesa: str
+    local: str = ""
+    distrito: str = ""
+    # Σ votos digitados (votos por organización + blancos + nulos + impugnados)
+    suma_votos: int
+    # Votantes que sufragaron según la cabecera del acta (0 = no se registró)
+    total_votantes: int
+    # Electores hábiles del padrón de la mesa
+    electores_habiles: int
+    diferencia: int  # suma_votos - total_votantes
+    # "SIN_VOTANTES" (no se registró la cabecera) o "DESCUADRE"
+    tipo: str
+    mensaje: str
+
+
 class V1GanadorDistrito(BaseModel):
     """Organización ganadora (o más votada) en un distrito para el mapa."""
     organizacion: str
@@ -347,6 +365,11 @@ class V1ResumenOut(BaseModel):
     votos_nulos: int = 0
     votos_impugnados: int = 0
     votos_emitidos: int = 0
+    # Control de integridad macro: Σ votos_emitidos de cada acta vs los
+    # VOTANTES que declaró su cabecera y vs los electores hábiles del padrón.
+    # inconsistencias > 0 => hay actas con datos erróneos (mostrar alerta).
+    total_votantes_actas: int = 0
+    inconsistencias: list[V1InconsistenciaActa] = Field(default_factory=list)
     partidos: list[V1PartidoResumen] = Field(default_factory=list)
     distritos: list[V1DistritoAvance] = Field(default_factory=list)
     observadas: list[V1ActaObservada] = Field(default_factory=list)

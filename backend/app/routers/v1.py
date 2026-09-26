@@ -32,9 +32,9 @@ from app.core.models import (ActaMetadata, ConsejeroCandidate,
                               RegionalCandidate, Table, Usuario, Venue)
 from app.core.schemas import (V1ActaStatusFila, V1ActaStatusTotales,
                                V1ConsejeroProvincia, V1GanadorDistrito,
-                               V1LocalOpt, V1OcrPreviewOut,
-                               V1RegistrarIn, V1RegistrarOut, V1ResumenOut,
-                               V1ResumenStatusOut)
+                               V1InconsistenciaActa, V1LocalOpt,
+                               V1OcrPreviewOut, V1RegistrarIn, V1RegistrarOut,
+                               V1ResumenOut, V1ResumenStatusOut)
 from app.core.ubigeo import candidatos_del_ambito, nivel_desde_tipo
 from app.core.ubigeo import ubigeo_de_nivel
 from app.core.ubigeo_catalogo import PROVINCIA_NOMBRE, UBIGEO_PROVINCIA
@@ -450,6 +450,72 @@ def resumen(tipo_eleccion: str = Query("DISTRITAL"),
 
     venue_por_id = {v.id: v for v in venues}
 
+    # Control de integridad macro: cada acta contabilizada debe cumplir
+    #   Σ votos digitados == total de VOTANTES de su cabecera
+    # y los votantes no pueden superar los electores hábiles del padrón.
+    # Lo que no cuadra son DATOS ERRÓNEOS: se listan para revisión y el
+    # dashboard muestra la alerta.
+    inconsistencias: list[V1InconsistenciaActa] = []
+    total_votantes_actas = 0
+    if pids:
+        from app.core.ubigeo_catalogo import UBIGEO_DISTRITO as _UD
+
+        sumas = dict(
+            db.query(Record.table_id, func.sum(Record.votes))
+            .filter(Record.table_id.in_(pids))
+            .group_by(Record.table_id).all())
+        metas = {m.table_id: m for m in (
+            db.query(ActaMetadata)
+            .filter(ActaMetadata.table_id.in_(pids)).all())}
+        for t in procesadas:
+            m = metas.get(t.id)
+            blancos_a = m.votos_blancos if m else 0
+            nulos_a = m.votos_nulos if m else 0
+            impug_a = m.votos_impugnados if m else 0
+            suma = int(sumas.get(t.id, 0) or 0) + blancos_a + nulos_a + impug_a
+            votantes = int(m.total_votantes or 0) if m else 0
+            total_votantes_actas += votantes
+            vinfo = venue_por_id.get(t.venue_id)
+            base = {
+                "acta_id": t.id, "numero_mesa": t.numero_mesa,
+                "local": vinfo.name if vinfo else "",
+                "distrito": _UD.get((vinfo.ubigeo if vinfo else "") or "", ""),
+                "suma_votos": suma, "total_votantes": votantes,
+                "electores_habiles": t.electores_habiles or 0,
+            }
+            hab = t.electores_habiles or 0
+            if hab and votantes > hab:
+                # Imposible físico: lo más grave, se alerta primero.
+                inconsistencias.append(V1InconsistenciaActa(
+                    **base, diferencia=votantes - hab,
+                    tipo="EXCEDE_PADRON",
+                    mensaje=(
+                        f"La mesa {t.numero_mesa} declara {votantes} votantes, "
+                        "más que sus "
+                        f"{hab} electores hábiles. IMPOSIBLE: revise el acta."
+                    )))
+            elif votantes == 0:
+                # Sin cabecera de votantes no hay contra qué cuadrar.
+                if suma > 0:
+                    inconsistencias.append(V1InconsistenciaActa(
+                        **base, diferencia=suma,
+                        tipo="SIN_VOTANTES",
+                        mensaje=(
+                            f"La mesa {t.numero_mesa} registra {suma} votos pero "
+                            "no tiene el total de VOTANTES que sufragaron. "
+                            "Complete la cabecera del acta."
+                        )))
+            elif suma != votantes:
+                inconsistencias.append(V1InconsistenciaActa(
+                    **base, diferencia=suma - votantes,
+                    tipo="DESCUADRE",
+                    mensaje=(
+                        f"La mesa {t.numero_mesa} registra {suma} votos emitidos "
+                        f"pero su cabecera declara {votantes} votantes "
+                        f"(diferencia {suma - votantes:+d}). DATOS ERRÓNEOS: "
+                        "corrija el acta o verifique el papel."
+                    )))
+
     # Ganador (organización más votada) por distrito para el mapa de resultados:
     # sólo mesas contabilizadas, empate -> primera alfabéticamente (determinista).
     ganadores: dict[str, V1GanadorDistrito] = {}
@@ -528,6 +594,8 @@ def resumen(tipo_eleccion: str = Query("DISTRITAL"),
         votos_nulos=nulos,
         votos_impugnados=impug,
         votos_emitidos=emitidos,
+        total_votantes_actas=total_votantes_actas,
+        inconsistencias=inconsistencias,
         partidos=partidos,
         distritos=distritos,
         observadas=obs_lista,
