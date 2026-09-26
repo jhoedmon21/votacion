@@ -12,6 +12,10 @@ rem ============================================================
 set "IP_LOCAL=192.168.1.11"
 set "URL=http://%IP_LOCAL%:3000"
 
+rem --- Límite de memoria del frontend (heap de Node/Vite): 1 GB es de sobra
+rem --- para el dev server incluso con 100 navegadores conectados.
+set "NODE_OPTIONS=--max-old-space-size=1024"
+
 echo.
 echo  ==========================================================
 echo    SISTEMA DE COMPUTO ELECTORAL  -  AREQUIPA 2026
@@ -24,7 +28,9 @@ curl -s -o nul --max-time 3 http://localhost:3000/ >nul 2>&1
 if not errorlevel 1 goto ya_corriendo
 
 echo  [1/2] Iniciando backend (API, puerto 8000)...
-start "FA Backend - API 8000 (NO CERRAR)" /min cmd /c "cd /d %~dp0backend && venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+rem  Un solo worker uvicorn: cada worker duplica la memoria base (~120 MB);
+rem  con 100 usuarios concurrentes conviene 1 worker + threads de asyncio.
+start "FA Backend - API 8000 (NO CERRAR)" /min cmd /c "cd /d %~dp0backend && venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1"
 
 echo  [2/2] Iniciando frontend (Web, puerto 3000)...
 start "FA Frontend - Web 3000 (NO CERRAR)" /min cmd /c "cd /d %~dp0frontend && npm run dev"
