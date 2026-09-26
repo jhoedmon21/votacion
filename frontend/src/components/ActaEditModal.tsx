@@ -153,14 +153,17 @@ function ActaEditForm({ acta, onClose, onSave }: {
   const participationRate = formData.total_electores > 0 ? (totalVotes / formData.total_electores) * 100 : 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="relative w-[90vw] max-w-[600px] mx-4 bg-white rounded-xl shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-4 bg-slate-100 border-b">
-          <h2 className="text-xl font-bold">Editar Mesa {acta.numero_mesa}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-0 sm:p-4">
+      {/* Responsivo: a pantalla completa en móvil (sin bordes) y tarjeta
+          centrada con scroll interno desde sm; el contenido largo nunca
+          se corta porque el header queda fijo y el cuerpo hace scroll. */}
+      <div className="relative flex max-h-[100dvh] w-full flex-col overflow-hidden rounded-none bg-white shadow-2xl sm:mx-4 sm:h-auto sm:max-h-[90vh] sm:w-[90vw] sm:max-w-[600px] sm:rounded-xl">
+        <div className="flex shrink-0 items-center justify-between gap-2 p-4 bg-slate-100 border-b">
+          <h2 className="truncate text-lg font-bold sm:text-xl">Editar Mesa {acta.numero_mesa}</h2>
+          <button onClick={onClose} className="shrink-0 text-gray-500 hover:text-gray-700">✕</button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="space-y-6 overflow-y-auto p-4 sm:p-6">
           <div>
             <h3 className="font-semibold text-slate-800">Metadatos</h3>
             <div className="space-y-4">
@@ -269,7 +272,7 @@ function ActaEditForm({ acta, onClose, onSave }: {
           <div>
             <h3 className="font-semibold text-slate-800">Otros Votos</h3>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Votos Blancos</label>
                   <input
@@ -337,8 +340,8 @@ function ActaEditForm({ acta, onClose, onSave }: {
           )}
 
           <div className="flex justify-end space-x-3">
-            <button onClick={onClose} className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50">Cancelar</button>
-            <button onClick={handleSave} disabled={isSaving || Object.keys(errors).length > 0} className={`px-4 py-2 bg-[#E02020] text-white rounded-md text-sm font-medium hover:bg-[#A01010] disabled:bg-slate-400 disabled:cursor-not-allowed`}>
+            <button onClick={onClose} className="w-full px-4 py-2.5 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50 sm:w-auto">Cancelar</button>
+            <button onClick={handleSave} disabled={isSaving || Object.keys(errors).length > 0} className={`w-full px-4 py-2.5 bg-[#E02020] text-white rounded-md text-sm font-medium hover:bg-[#A01010] disabled:bg-slate-400 disabled:cursor-not-allowed sm:w-auto`}>
               {isSaving ? "Guardando..." : "Guardar Cambios"}
             </button>
           </div>

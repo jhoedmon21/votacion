@@ -307,15 +307,18 @@ function SideBySideDigitizationInner({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onKeyDown={handleKeyDown}>
+    <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/50 sm:items-center sm:p-4">
+      {/* Responsivo: pantalla completa en móvil (imagen arriba, formulario
+          debajo, scroll único) y modal lado-a-lado con scroll independiente
+          por columna desde sm. En pantalla completa se expande del todo. */}
       <div
-        className={`relative w-[95vw] max-w-[1400px] h-[90vh] mx-4 bg-white rounded-xl shadow-2xl overflow-hidden flex ${
-          isFullscreen ? "fixed inset-0 w-screen h-screen max-w-none max-h-none rounded-none" : ""
+        className={`relative flex h-[100dvh] w-full flex-col overflow-hidden rounded-none bg-white shadow-2xl sm:mx-4 sm:h-[90vh] sm:w-[95vw] sm:max-w-[1400px] sm:rounded-xl ${
+          isFullscreen ? "fixed inset-0 h-screen w-screen max-h-none max-w-none rounded-none" : ""
         }`}
       >
-        <div className="flex items-center justify-between p-4 bg-slate-100 border-b sticky top-0 z-10">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-bold text-[#E02020]">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-slate-100 border-b">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-4">
+            <h2 className="text-base font-bold leading-tight text-[#E02020] sm:text-xl">
               {mode === "validate" ? "Validar contra Acta" : mode === "view" ? "Ver Acta" : "Editar Acta"}
               <span className="ml-2 text-sm font-normal text-slate-600">Mesa {acta.numero_mesa}</span>
             </h2>
@@ -323,7 +326,7 @@ function SideBySideDigitizationInner({
               {getStatusLabel(acta.status)}
             </span>
             {autoSaveStatus !== "idle" && (
-              <span className="text-xs text-slate-500 flex items-center gap-1">
+              <span className="hidden text-xs text-slate-500 items-center gap-1 sm:flex">
                 {autoSaveStatus === "saving" && "⟳"}
                 {autoSaveStatus === "saved" && "✓"}
                 {autoSaveStatus === "error" && "✗"}
@@ -331,9 +334,9 @@ function SideBySideDigitizationInner({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {mode !== "view" && !readonly && (
-              <Boton variante="exito" onClick={handleSave} disabled={isSaving || Object.keys(errors).length > 0}>
+              <Boton variante="exito" onClick={handleSave} disabled={isSaving || Object.keys(errors).length > 0} clase="px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm">
                 {isSaving ? "Guardando..." : "Guardar Cambios"}
               </Boton>
             )}
@@ -343,12 +346,12 @@ function SideBySideDigitizationInner({
           </div>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
-          {/* LEFT PANEL: IMAGE VIEWER */}
-          <div className="w-1/2 border-r border-slate-200 bg-slate-50 flex flex-col relative">
-            <div className="flex items-center justify-between p-3 bg-white border-b border-slate-200 sticky top-0 z-5">
-              <h3 className="font-semibold text-slate-800">Documento Original - Acta Digitalizada</h3>
-              <div className="flex items-center gap-2">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto sm:flex-row sm:overflow-hidden">
+          {/* LEFT PANEL: IMAGE VIEWER — altura fija en móvil, columna en desktop */}
+          <div className="flex w-full shrink-0 flex-col border-b border-slate-200 bg-slate-50 sm:w-1/2 sm:border-b-0 sm:border-r">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-white border-b border-slate-200">
+              <h3 className="font-semibold text-slate-800">Documento Original</h3>
+            <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setZoomLevel(z => Math.min(z + 0.2, 4))}
                   className="px-2 py-1 bg-white border border-slate-300 rounded text-xs hover:bg-slate-50"
@@ -399,7 +402,7 @@ function SideBySideDigitizationInner({
               </div>
             </div>
 
-            <div className="flex-1 flex items-center justify-center relative overflow-auto p-4" ref={imageRef}>
+            <div className="flex h-72 shrink-0 items-center justify-center relative overflow-auto p-4 sm:h-auto sm:flex-1 sm:shrink" ref={imageRef}>
               {acta.image_url ? (
                 <div
                   className="relative flex items-center justify-center"
@@ -431,7 +434,7 @@ function SideBySideDigitizationInner({
           </div>
 
           {/* RIGHT PANEL: DIGITIZATION FORM */}
-          <div className="w-1/2 flex flex-col overflow-y-auto bg-white">
+          <div className="flex w-full flex-col bg-white sm:w-1/2 sm:overflow-y-auto">
             <div className="p-4 border-b border-slate-200 sticky top-0 z-5 bg-white">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-slate-800">Formulario de Digitación</h3>
@@ -452,14 +455,14 @@ function SideBySideDigitizationInner({
               </Alerta>
             )}
 
-            <div className="p-4 space-y-6 flex-1 overflow-y-auto">
+            <div className="p-4 space-y-6 sm:flex-1 sm:overflow-y-auto">
               {/* METADATOS */}
               <Card className="p-4">
                 <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-[#E02020] text-white text-xs flex items-center justify-center">1</span>
                   Identificación del Acta
                 </h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs font-bold text-slate-600 mb-1">N° de Mesa</label>
                     <Input
@@ -528,7 +531,7 @@ function SideBySideDigitizationInner({
                   <span className="w-6 h-6 rounded-full bg-slate-600 text-white text-xs flex items-center justify-center">5</span>
                   Otros Votos
                 </h4>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   {renderOtherVotes()}
                 </div>
               </Card>
@@ -584,12 +587,13 @@ function SideBySideDigitizationInner({
 
               {/* ACTIONS */}
               {mode !== "view" && !readonly && (
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-                  <Boton variante="secundario" onClick={onClose}>Cancelar</Boton>
+                <div className="flex flex-col justify-end gap-3 pt-4 border-t border-slate-200 sm:flex-row">
+                  <Boton variante="secundario" onClick={onClose} clase="w-full sm:w-auto">Cancelar</Boton>
                   <Boton
                     variante="primario"
                     onClick={handleSave}
                     disabled={isSaving || Object.keys(errors).length > 0}
+                    clase="w-full sm:w-auto"
                   >
                     {isSaving ? "Guardando..." : mode === "validate" ? "Confirmar Validación" : "Guardar Cambios"}
                   </Boton>
