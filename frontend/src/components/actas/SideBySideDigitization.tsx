@@ -80,8 +80,13 @@ function SideBySideDigitizationInner({
     const regionalSum = formData.votos_regional.reduce((sum, c) => sum + c.votes, 0);
     const provincialSum = formData.votos_provincial.reduce((sum, c) => sum + c.votes, 0);
     const consejeroSum = formData.votos_consejero.reduce((sum, c) => sum + c.votes, 0);
-    const totalValidVotes = districtSum + regionalSum + provincialSum + consejeroSum;
-    const totalVotes = totalValidVotes + formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados;
+    /* Regla ONPE: cada columna cuadra independientemente contra los
+       votantes — el mismo elector vota en TODAS las columnas del papel, así
+       que la referencia es la COLUMNA MAYOR (la que representa la cabecera
+       "total de votantes"), nunca la suma de todos los niveles. */
+    const otrosVotos = formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados;
+    const columnaMayor = Math.max(districtSum, regionalSum, provincialSum, consejeroSum);
+    const totalVotes = columnaMayor + otrosVotos;
 
     const newErrors: { total_electores?: string; votes_sum?: string } = {};
 
@@ -95,12 +100,12 @@ function SideBySideDigitizationInner({
       formData.total_votantes > formData.total_electores
     ) {
       newErrors.votes_sum = `Los votantes (${formData.total_votantes}) no pueden superar los electores hábiles (${formData.total_electores})`;
-    } else if (totalVotes === 0) {
+    } else if (columnaMayor === 0 && otrosVotos === 0) {
       // R0 (acta vacía) BLOQUEA: todo en ceros no es un acta digitada.
       newErrors.votes_sum = "ACTA VACÍA: no se registró ningún voto (todo en ceros). Verifique contra el acta física y digite los totales reales antes de guardar.";
     } else if (formData.total_votantes > 0 && totalVotes !== formData.total_votantes) {
       // R1 (descuadre) BLOQUEA: los datos deben cuadrar antes de guardar.
-      newErrors.votes_sum = `NO COINCIDEN LOS DATOS: la suma de votos (${totalVotes.toLocaleString()}) no cuadra con el total de votantes (${formData.total_votantes.toLocaleString()}). Diferencia: ${(totalVotes - formData.total_votantes > 0 ? "+" : "")}${(totalVotes - formData.total_votantes).toLocaleString()}. Corrige los números.`;
+      newErrors.votes_sum = `NO COINCIDEN LOS DATOS: la columna con más votos (${columnaMayor.toLocaleString()}) más blancos/nulos/impugnados (${otrosVotos.toLocaleString()}) no cuadra con el total de votantes (${formData.total_votantes.toLocaleString()}). Diferencia: ${(totalVotes - formData.total_votantes > 0 ? "+" : "")}${(totalVotes - formData.total_votantes).toLocaleString()}. Corrige los números.`;
     }
 
     setErrors(newErrors);
@@ -238,9 +243,16 @@ function SideBySideDigitizationInner({
   const provincialSum = formData.votos_provincial.reduce((sum, c) => sum + c.votes, 0);
   const regionalSum = formData.votos_regional.reduce((sum, c) => sum + c.votes, 0);
   const consejeroSum = formData.votos_consejero.reduce((sum, c) => sum + c.votes, 0);
-  const totalValidVotes = districtSum + provincialSum + regionalSum + consejeroSum;
-  const totalVotes = totalValidVotes + formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados;
-  const participationRate = formData.total_electores > 0 ? (totalVotes / formData.total_electores) * 100 : 0;  const toggleFullscreen = () => {
+  /* Resumen POR COLUMNA (regla ONPE): cada nivel del acta debe cuadrar
+     independientemente con los votantes que sufragaron — los mismos 200
+     electores votan en la columna regional Y en la de consejeros, así que
+     sumar ambos niveles (400 vs 200) es un falso descuadre. La
+     participación se calcula con la columna mayor (la cabecera del papel). */
+  const otrosVotos = formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados;
+  const sumaPorColumna = Math.max(districtSum, provincialSum, regionalSum, consejeroSum) + otrosVotos;
+  const totalVotes = sumaPorColumna;
+  const participationRate = formData.total_electores > 0 ? (sumaPorColumna / formData.total_electores) * 100 : 0;
+  const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
     if (!isFullscreen && imageRef.current) {
       imageRef.current.requestFullscreen();
@@ -715,37 +727,30 @@ function SideBySideDigitizationInner({
               {/* RESUMEN DE VALIDACIÓN */}
               <Card className="p-4" variant={errors.votes_sum ? "error" : "outline"}>
                 <h4 className="font-semibold text-slate-800 mb-3">Resumen de Validación</h4>
+                {/* Regla ONPE: CADA columna del acta (distrital, provincial,
+                    regional, consejeros) cuadra independientemente contra los
+                    votantes que sufragaron — no se suman entre niveles. */}
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Votos válidos distritales:</span>
-                    <span className="font-mono font-bold">{districtSum.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Votos válidos provinciales:</span>
-                    <span className="font-mono font-bold">{provincialSum.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Votos válidos regionales:</span>
-                    <span className="font-mono font-bold">{regionalSum.toLocaleString()}</span>
-                  </div>
-                  {consejeroSum > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">Votos válidos consejeros:</span>
-                      <span className="font-mono font-bold">{consejeroSum.toLocaleString()}</span>
+                  {[
+                    ["Distrital (Alcalde)", districtSum],
+                    ["Provincial (Alcalde)", provincialSum],
+                    ["Regional (Gobernador)", regionalSum],
+                    ["Consejeros Regionales", consejeroSum],
+                  ].filter(([, s]) => (s as number) > 0 || districtSum + provincialSum + regionalSum + consejeroSum === 0).map(([etiqueta, s]) => (
+                    <div key={etiqueta as string} className="flex justify-between">
+                      <span className="text-slate-600">Votos válidos {etiqueta}:</span>
+                      <span className={`font-mono font-bold ${s !== Math.max(districtSum, provincialSum, regionalSum, consejeroSum) ? "text-slate-400" : ""}`}
+                        title={s !== Math.max(districtSum, provincialSum, regionalSum, consejeroSum) ? "Columna con menos votos: verifíquela contra el papel (puede haber votos anulados en esa columna)" : undefined}>
+                        {(s as number).toLocaleString()}
+                      </span>
                     </div>
-                  )}
-                  <div className="flex justify-between border-t border-slate-200 pt-2">
-                    <span className="text-slate-600 font-medium">Total votos válidos:</span>
-                    <span className="font-mono font-bold text-[#E02020]">{totalValidVotes.toLocaleString()}</span>
-                  </div>
+                  ))}
                   <div className="flex justify-between">
                     <span className="text-slate-600">Blancos + Nulos + Impugnados:</span>
-                    <span className="font-mono font-bold">
-                      {(formData.votos_blancos + formData.votos_nulos + formData.votos_impugnados).toLocaleString()}
-                    </span>
+                    <span className="font-mono font-bold">{otrosVotos.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between border-t border-slate-200 pt-2 font-medium">
-                    <span className="text-slate-800">Total de votos emitidos:</span>
+                    <span className="text-slate-800">Emitidos en la columna mayor:</span>
                     <span className="font-mono font-bold text-lg">{totalVotes.toLocaleString()}</span>
                   </div>
                   {errors.votes_sum && (

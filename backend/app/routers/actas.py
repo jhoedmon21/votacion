@@ -716,18 +716,24 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         if payload.total_votantes is not None
         else (_meta_efectiva.total_votantes or 0 if _meta_efectiva else 0)
     )
-    suma_total = (
-        _suma_nivel(payload.votos_distrital, "district")
-        + _suma_nivel(payload.votos_provincial, "provincial")
-        + _suma_nivel(payload.votos_consejero, "consejero")
-        + _suma_nivel(payload.votos_regional, "regional")
-        + (payload.votos_blancos if payload.votos_blancos is not None
-           else (_meta_efectiva.votos_blancos or 0 if _meta_efectiva else 0))
-        + (payload.votos_nulos if payload.votos_nulos is not None
-           else (_meta_efectiva.votos_nulos or 0 if _meta_efectiva else 0))
-        + (payload.votos_impugnados if payload.votos_impugnados is not None
-           else (_meta_efectiva.votos_impugnados or 0 if _meta_efectiva else 0))
-    )
+    # Regla ONPE: cada columna del acta cuadra INDEPENDIENTEMENTE contra los
+    # votantes (el mismo elector vota en todas las columnas del papel), así
+    # que la referencia es la COLUMNA MAYOR, nunca la suma de los niveles —
+    # sumar regional + consejeros (200+200) contra 200 votantes era un
+    # falso descuadre.
+    _blancos = (payload.votos_blancos if payload.votos_blancos is not None
+                else (_meta_efectiva.votos_blancos or 0 if _meta_efectiva else 0))
+    _nulos = (payload.votos_nulos if payload.votos_nulos is not None
+              else (_meta_efectiva.votos_nulos or 0 if _meta_efectiva else 0))
+    _impugnados = (payload.votos_impugnados if payload.votos_impugnados is not None
+                   else (_meta_efectiva.votos_impugnados or 0 if _meta_efectiva else 0))
+    _otros = _blancos + _nulos + _impugnados
+    suma_total = max(
+        _suma_nivel(payload.votos_distrital, "district"),
+        _suma_nivel(payload.votos_provincial, "provincial"),
+        _suma_nivel(payload.votos_consejero, "consejero"),
+        _suma_nivel(payload.votos_regional, "regional"),
+    ) + _otros
     # R2 SIEMPRE contra el padrón REAL de la mesa (tables.electores_habiles,
     # fuente ONPE): la metadata puede estar vacía/vieja o el formulario traer
     # otro valor; un acta con votantes > padrón es imposible y se bloquea.
@@ -861,18 +867,16 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
         total_votantes=payload.total_votantes,
     )
 
-    # Misma regla que en PUT: la suma cuadra contra los VOTANTES (cabecera),
-    # no contra los electores hábiles. Descuadre → OBSERVADA (requiere
-    # revisión); exceso sobre el padrón también.
+    # Misma regla que en PUT: CADA columna cuadra independientemente contra
+    # los votantes (cabecera); la referencia es la columna mayor, no la suma
+    # de niveles (el mismo elector vota en todas las columnas del papel).
     votantes = payload.total_votantes or 0
-    suma_total = (
-        sum(v.votes for v in (payload.votos_distrital or []))
-        + sum(v.votes for v in (payload.votos_consejero or []))
-        + sum(v.votes for v in (payload.votos_regional or []))
-        + (payload.votos_blancos or 0)
-        + (payload.votos_nulos or 0)
-        + (payload.votos_impugnados or 0)
-    )
+    suma_total = max(
+        sum(v.votes for v in (payload.votos_distrital or [])),
+        sum(v.votes for v in (payload.votos_provincial or [])),
+        sum(v.votes for v in (payload.votos_consejero or [])),
+        sum(v.votes for v in (payload.votos_regional or [])),
+    ) + (payload.votos_blancos or 0) + (payload.votos_nulos or 0) + (payload.votos_impugnados or 0)
     excede_padron = bool(
         payload.total_electores and votantes > payload.total_electores
     )
