@@ -807,6 +807,51 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     # pero nadie digitó los votos del papel).
     acta_vacia = votantes == 0 and suma_total == 0
 
+    # R6 — Concentración atípica (>90% de los votos válidos de una columna
+    # en una sola organización): exige reconfirmación contra el acta física.
+    if not payload.confirmado_atipico and not payload.forzar_revision:
+        for _nivel, _lista in (("distrital", payload.votos_distrital),
+                               ("provincial", payload.votos_provincial),
+                               ("consejero", payload.votos_consejero),
+                               ("regional", payload.votos_regional)):
+            _lista = _lista or []
+            _total_nivel = sum(v.votes for v in _lista)
+            if _total_nivel <= 0:
+                continue
+            _maximo = max(v.votes for v in _lista)
+            if _maximo > 0.9 * _total_nivel:
+                _registrar_rechazo(db, numero_mesa=table.numero_mesa,
+                                   tipo_eleccion="RECTIFICACION",
+                                   regla="R6_CONCENTRACION",
+                                   mensaje=f"max={_maximo} de {_total_nivel} en {_nivel}",
+                                   usuario=usuario)
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "mensaje": (
+                            f"VOTOS INUSUALES: la organización líder concentra "
+                            f"{_maximo} de {_total_nivel} votos válidos de la "
+                            f"columna {_nivel} "
+                            f"({round(100 * _maximo / _total_nivel, 1)}%). "
+                            "Verifique contra el acta física y confirme la "
+                            "digitación."
+                        ),
+                        "regla": "R6_CONCENTRACION",
+                        "requiere_confirmacion": True,
+                    },
+                )
+
+    # R1 conocido — Control de calidad: enviar a Revisión / Acta Observada
+    # en lugar de guardar (el digitador reconoce el descuadre del papel).
+    if payload.forzar_revision:
+        table.processed = False
+        table.requires_review = True
+        table.status = "requires_review"
+        db.flush()
+        db.commit()
+        db.refresh(table)
+        return _serialize_acta(db, table)
+
     if acta_vacia:
         _registrar_rechazo(db, numero_mesa=table.numero_mesa,
                            tipo_eleccion="RECTIFICACION", regla="R0_ACTA_VACIA",
@@ -837,14 +882,27 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
             "Regional": _activas.get("regional", 0),
         }
         _imposibles = [f"{n} ({s})" for n, s in _niveles.items() if s > votantes]
-        mensaje = (
-            f"IMPOSIBLE: {', '.join(_imposibles)} supera(n) los votantes que "
-            f"sufragaron ({votantes}). Corrige esos números o el total de votantes."
-            if _imposibles
-            else "NO COINCIDEN LOS DATOS: la columna con más votos más blancos/"
-                 f"nulos/impugnados ({suma_total}) no cuadra con el total de "
-                 f"votantes ({votantes}). Corrige los números antes de guardar."
-        )
+        if excede_padron:
+            mensaje = (
+                f"MESA DESCUADRADA — IMPOSIBLE: los votantes que sufragaron "
+                f"({votantes}) superan los electores hábiles del padrón "
+                f"({table.electores_habiles}); excedente de "
+                f"{votantes - (table.electores_habiles or 0)} votos. Verifique "
+                "el acta física."
+            )
+        elif _imposibles:
+            mensaje = (
+                f"IMPOSIBLE: {', '.join(_imposibles)} supera(n) los votantes que "
+                f"sufragaron ({votantes}). Corrige esos números o el total de votantes."
+            )
+        else:
+            mensaje = (
+                "MESA DESCUADRADA — NO COINCIDEN LOS DATOS: la columna con más "
+                "votos más blancos/"
+                f"nulos/impugnados ({suma_total}) no cuadra con el total de "
+                f"votantes ({votantes}); diferencia {votantes - suma_total:+d}. "
+                "Corrige los números antes de guardar."
+            )
         _registrar_rechazo(db, numero_mesa=table.numero_mesa,
                            tipo_eleccion="RECTIFICACION",
                            regla="R2_TOPE_ELECTORES" if excede_padron else "R1_SUMA_VOTOS",
@@ -1016,6 +1074,42 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
             logger.warning("No se pudo registrar el rechazo de acta (%s)", regla)
         return HTTPException(status_code=409, detail={"mensaje": mensaje, **detalle})
 
+    # R6 — Concentración atípica: una organización con >90% de los votos
+    # válidos exige reconfirmación contra el acta física (checkbox del modal)
+    # salvo que el digitador ya la haya enviado a Revisión.
+    if not payload.confirmado_atipico and not payload.forzar_revision:
+        # Votos VÁLIDOS por organización (sin blancos/nulos/impugnados): la
+        # concentración se mide por CANDIDATO dentro de cada columna activa.
+        for _nivel, _lista in (("distrital", payload.votos_distrital),
+                               ("provincial", payload.votos_provincial),
+                               ("consejero", payload.votos_consejero),
+                               ("regional", payload.votos_regional)):
+            _lista = _lista or []
+            _total_nivel = sum(v.votes for v in _lista)
+            if _total_nivel <= 0:
+                continue
+            _maximo = max(v.votes for v in _lista)
+            if _maximo > 0.9 * _total_nivel:
+                raise _rechazo(
+                    "R6_CONCENTRACION",
+                    f"VOTOS INUSUALES: la organización líder concentra "
+                    f"{_maximo} de {_total_nivel} votos válidos de la columna "
+                    f"{_nivel} ({round(100 * _maximo / _total_nivel, 1)}%). "
+                    "Verifique contra el acta física y confirme la digitación.",
+                    {"regla": "R6_CONCENTRACION", "requiere_confirmacion": True},
+                )
+
+    # R1 conocido — Control de calidad: enviar a Revisión / Acta Observada
+    # en lugar de guardar (el digitador reconoce el descuadre del papel).
+    if payload.forzar_revision:
+        table.processed = False
+        table.requires_review = True
+        table.status = "requires_review"
+        db.flush()
+        db.commit()
+        db.refresh(table)
+        return _serialize_acta(db, table)
+
     if acta_vacia:
         raise _rechazo(
             "R0_ACTA_VACIA",
@@ -1033,14 +1127,27 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
             "Regional": activas.get("regional", 0),
         }
         _imposibles = [f"{n} ({s})" for n, s in _niveles.items() if s > votantes]
-        mensaje = (
-            f"IMPOSIBLE: {', '.join(_imposibles)} supera(n) los votantes que "
-            f"sufragaron ({votantes}). Corrige esos números o el total de votantes."
-            if _imposibles
-            else "NO COINCIDEN LOS DATOS: la columna con más votos más blancos/"
-                 f"nulos/impugnados ({suma_total}) no cuadra con el total de "
-                 f"votantes ({votantes}). Corrige los números antes de guardar."
-        )
+        if excede_padron:
+            mensaje = (
+                f"MESA DESCUADRADA — IMPOSIBLE: los votantes que sufragaron "
+                f"({votantes}) superan los electores hábiles del padrón "
+                f"({table.electores_habiles}); excedente de "
+                f"{votantes - (table.electores_habiles or 0)} votos. Verifique "
+                "el acta física."
+            )
+        elif _imposibles:
+            mensaje = (
+                f"IMPOSIBLE: {', '.join(_imposibles)} supera(n) los votantes que "
+                f"sufragaron ({votantes}). Corrige esos números o el total de votantes."
+            )
+        else:
+            mensaje = (
+                "MESA DESCUADRADA — NO COINCIDEN LOS DATOS: la columna con más "
+                "votos más blancos/"
+                f"nulos/impugnados ({suma_total}) no cuadra con el total de "
+                f"votantes ({votantes}); diferencia {votantes - suma_total:+d}. "
+                "Corrige los números antes de guardar."
+            )
         raise _rechazo(
             "R2_TOPE_ELECTORES" if excede_padron else "R1_SUMA_VOTOS",
             mensaje,

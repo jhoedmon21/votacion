@@ -26,7 +26,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import (alcance_ubigeos, es_rol_global, requerir_rol,
                             usuario_actual, validar_alcance_venue,
                             venues_en_alcance)
-from app.core.database import get_db
+from app.core.database import SessionLocal, get_db
 from app.core.models import (ActaMetadata, ActaRechazo, ConsejeroCandidate,
                               DistrictCandidate, ProvincialCandidate, Record,
                               RegionalCandidate, Table, Usuario, Venue)
@@ -214,6 +214,17 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
             detail=f"Organizaciones desconocidas en el acta: {', '.join(sorted(no_mapeados))}",
         )
 
+    # Caracteres/casillas inválidas: el esquema ya rechaza decimales y
+    # letras (422 de Pydantic); aquí se corta explícitamente el negativo.
+    _negativos = {k: v for k, v in payload.votos.items() if int(v) < 0}
+    if _negativos:
+        raise HTTPException(
+            status_code=422,
+            detail=("CASILLAS INVÁLIDAS: no se permiten valores negativos "
+                    f"({', '.join(sorted(_negativos))}). Verifique contra el "
+                    "acta física."),
+        )
+
     columna = ColumnaActa(
         columna=COLUMNA_PRINCIPAL.get(tipo, "ALCALDE"),
         votos={str(k): int(v) for k, v in payload.votos.items()},
@@ -239,6 +250,85 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
     # total emitido antes de guardar. Un descuadre (o superar el padrón) no
     # se registra: se rechaza con 409 y el formulario muestra el mensaje
     # interactivo para corregir los números.
+    # R6 — Concentración atípica (advertencia con doble confirmación): una
+    # organización con >90% de los votos válidos de la mesa es estadísticamente
+    # inusual (fraude o error de digitación). NO bloquea: exige que el
+    # digitador reconfirme contra el acta física (confirmado_atipico=true).
+    # Cero votos preferenciales en la lista ganadora con voto agrupado alto
+    # se menciona en la misma advertencia (casilla aplicable del acta).
+    votos_validos = sum(int(v) for v in payload.votos.values())
+    if (not payload.impugnada and not payload.confirmado_atipico
+            and not payload.forzar_revision and votos_validos > 0):
+        _ganador = max(payload.votos.items(), key=lambda kv: kv[1])
+        if _ganador[1] > 0.9 * votos_validos:
+            _cand = por_nombre.get(_ganador[0]) or por_orden.get(str(_ganador[0]))
+            _nombre = getattr(_cand, "party", None) or _ganador[0]
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "mensaje": (
+                        f"VOTOS INUSUALES: {_nombre} concentra {_ganador[1]} de "
+                        f"{votos_validos} votos válidos "
+                        f"({round(100 * _ganador[1] / votos_validos, 1)}%). "
+                        "Verifique contra el acta física y confirme la digitación."
+                    ),
+                    "regla": "R6_CONCENTRACION",
+                    "requiere_confirmacion": True,
+                    "hallazgos": [],
+                },
+            )
+
+    # R1 conocido — Control de calidad: si el digitador no puede corregir el
+    # descuadre (papel ilegible/dañado), puede enviar el acta a Revisión /
+    # Acta Observada en lugar de guardarla como contabilizada.
+    if payload.forzar_revision and not payload.impugnada:
+        table.processed = False
+        table.requires_review = True
+        table.status = "requires_review"
+        meta_prev = db.query(ActaMetadata).filter(
+            ActaMetadata.table_id == table.id).first()
+        if meta_prev is None:
+            meta_prev = ActaMetadata(table_id=table.id)
+            db.add(meta_prev)
+        meta_prev.votos_blancos = payload.votos_blancos
+        meta_prev.votos_nulos = payload.votos_nulos
+        meta_prev.votos_impugnados = payload.votos_impugnados
+        meta_prev.total_electores = habiles
+        meta_prev.total_votantes = payload.total_emitidos
+        _pie_nivel_rev = {
+            "REGIONAL": "regional", "CONSEJERO": "consejero",
+            "PROVINCIAL": "provincial", "DISTRITAL": "distrital",
+        }.get(tipo)
+        if _pie_nivel_rev:
+            setattr(meta_prev, f"blancos_{_pie_nivel_rev}", payload.votos_blancos)
+            setattr(meta_prev, f"nulos_{_pie_nivel_rev}", payload.votos_nulos)
+            setattr(meta_prev, f"impugnados_{_pie_nivel_rev}", payload.votos_impugnados)
+        try:
+            with SessionLocal() as log_db:
+                log_db.add(ActaRechazo(
+                    numero_mesa=payload.numero_mesa, tipo_eleccion=tipo,
+                    regla="R1_ENVIADA_REVISION",
+                    mensaje=("Digitador envía el acta a Revisión / Acta "
+                             "Observada (descuadre reconocido).")[:400],
+                    usuario_email=usuario.email,
+                ))
+                log_db.commit()
+        except Exception:  # noqa: BLE001
+            pass
+        db.commit()
+        db.refresh(table)
+        return {
+            "acta_id": table.id,
+            "numero_mesa": table.numero_mesa,
+            "estado": "OBSERVADA",
+            "hallazgos": [{
+                "regla": "R1_ENVIADA_REVISION", "severidad": "ADVERTENCIA",
+                "mensaje": "Acta enviada a Revisión / Acta Observada por el "
+                           "digitador (descuadre reconocido contra la cabecera).",
+                "diferencia": res.diferencia,
+            }],
+        }
+
     if not payload.impugnada and (not res.consistente or res.bloqueantes):
         bloqueantes = res.bloqueantes or [h for h in res.hallazgos if h.severidad == "BLOQUEANTE"]
         mensaje = (

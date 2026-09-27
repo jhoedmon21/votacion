@@ -6,7 +6,9 @@ from pydantic import BaseModel, Field, field_validator
 
 class CandidateVotes(BaseModel):
     candidate_id: int
-    votes: int = 0
+    # ge=0: sin decimales, letras ni negativos — Pydantic rechaza con 422
+    # cualquier valor inválido en las casillas de conteo.
+    votes: int = Field(default=0, ge=0)
 
 
 class ActaParseResult(BaseModel):
@@ -63,6 +65,10 @@ class ActaUpdate(BaseModel):
     ocr_confidence: float = Field(ge=0.0, le=1.0)
     image_url: Optional[str] = None
     total_electores: Optional[int] = None
+    # R6 (concentración atípica >90%): confirmación del acta física.
+    confirmado_atipico: bool = False
+    # R1 conocido: enviar a Revisión / Acta Observada en vez de guardar.
+    forzar_revision: bool = False
     # Votantes que sufragaron (cabecera del acta). Si no cuadra con la suma,
     # el acta se guarda igual pero queda OBSERVADA para revisión.
     total_votantes: Optional[int] = None
@@ -273,6 +279,12 @@ class V1RegistrarIn(BaseModel):
         default=0, ge=0, description="impugnación de identidad")
     total_emitidos: int = Field(default=0, ge=0)
     impugnada: bool = False
+    # R6 (concentración atípica): el digitador confirma con el acta física
+    # que una organización concentró >90% de los votos válidos.
+    confirmado_atipico: bool = False
+    # R1 conocido: en lugar de corregir el descuadre, el digitador pide
+    # enviar el acta a Revisión / Acta Observada (control de calidad).
+    forzar_revision: bool = False
     motivo_impugnacion: Optional[str] = None
     # URL pública de la foto del acta (opcional; la sube antes
     # POST /api/v1/actas/foto y el formulario la asocia aquí).

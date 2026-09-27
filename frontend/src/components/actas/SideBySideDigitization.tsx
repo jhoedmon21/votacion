@@ -88,6 +88,11 @@ function SideBySideDigitizationInner({
   /* Métricas WebP de la última imagen subida (para las estadísticas de
      almacenamiento; se persisten junto al acta al Guardar Cambios). */
   const [fotoPesos, setFotoPesos] = useState<{ original: number | null; final: number | null }>({ original: null, final: null });
+  /* R6 — Advertencia de concentración atípica (>90% de la columna en una
+     organización): exige reconfirmar contra el acta física. El servidor
+     responde 409 requiere_confirmacion y aquí se muestra el modal. */
+  const [avisoAtipico, setAvisoAtipico] = useState<string | null>(null);
+  const [confirmacionActaFisica, setConfirmacionActaFisica] = useState(false);
 
   const validateForm = useCallback(() => {
     const districtSum = formData.votos_distrital.reduce((sum, c) => sum + c.votes, 0);
@@ -255,6 +260,7 @@ function SideBySideDigitizationInner({
         image_peso_original_kb: fotoPesos.original ?? undefined,
         image_peso_final_kb: fotoPesos.final ?? undefined,
         verified: mode === "validate",
+        confirmado_atipico: confirmacionActaFisica,
       };
 
       const updatedActa = await api.updateActa(acta.id, payload);
@@ -281,9 +287,18 @@ function SideBySideDigitizationInner({
       };
 
       setSaveMessage("Acta guardada correctamente");
+      setAvisoAtipico(null);
+      setConfirmacionActaFisica(false);
       onSave(recordActa);
     } catch (error) {
-      setSaveMessage(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes("VOTOS INUSUALES")) {
+        // R6: advertencia con doble confirmación (checkbox del acta física).
+        setAvisoAtipico(msg);
+        setSaveMessage(null);
+      } else {
+        setSaveMessage(`Error: ${msg}`);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -679,6 +694,31 @@ function SideBySideDigitizationInner({
               </Alerta>
             )}
 
+            {/* R6 — Advertencia de concentración atípica con doble confirmación */}
+            {avisoAtipico && (
+              <div className="m-4 rounded-xl border-2 border-amber-400 bg-amber-50 p-4">
+                <p className="text-sm font-black text-amber-800">⚠ {avisoAtipico}</p>
+                <label className="mt-3 flex items-start gap-2 text-xs font-bold text-amber-900">
+                  <input
+                    type="checkbox"
+                    checked={confirmacionActaFisica}
+                    onChange={(e) => setConfirmacionActaFisica(e.target.checked)}
+                    className="mt-0.5 h-4 w-4"
+                  />
+                  Validado manualmente con acta física: los números coinciden con el papel.
+                </label>
+                <div className="mt-3 flex gap-2">
+                  <Boton variante="primario" deshabilitado={!confirmacionActaFisica}
+                    onClick={() => { void handleSave(); }}>
+                    Confirmar y guardar
+                  </Boton>
+                  <Boton variante="borde" onClick={() => { setAvisoAtipico(null); setConfirmacionActaFisica(false); }}>
+                    Revisar dígitación
+                  </Boton>
+                </div>
+              </div>
+            )}
+
             <div className="p-4 space-y-6 flex-1">
               {/* METADATOS */}
               <Card className="p-4">
@@ -834,9 +874,34 @@ function SideBySideDigitizationInner({
                     <span className="font-mono font-bold text-lg">{totalVotes.toLocaleString()}</span>
                   </div>
                   {errors.votes_sum && (
-                    <div className="flex justify-between text-red-600 font-medium bg-red-50 px-3 py-2 rounded">
-                      <span>⚠ Estado:</span>
-                      <span>{errors.votes_sum}</span>
+                    <div className="rounded border-2 border-red-300 bg-red-50 px-3 py-2 text-red-600 font-medium">
+                      <p className="font-black uppercase tracking-wide">Mesa descuadrada</p>
+                      <p className="mt-0.5 text-xs">{errors.votes_sum}</p>
+                      {!readonly && mode === "edit" && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const bloqueoDuro = (errors.votes_sum ?? "").includes("ACTA VACÍA")
+                              || (errors.votes_sum ?? "").includes("IMPOSIBLE");
+                            if (bloqueoDuro) return;
+                            setIsSaving(true);
+                            try {
+                              await api.updateActa(acta.id, {
+                                forzar_revision: true,
+                              });
+                              setSaveMessage("Acta enviada a Revisión / Acta Observada para control de calidad.");
+                              onSave({ ...acta, status: "requires_review", requires_review: true });
+                            } catch (e) {
+                              setSaveMessage(`Error: ${e instanceof Error ? e.message : String(e)}`);
+                            } finally {
+                              setIsSaving(false);
+                            }
+                          }}
+                          className="mt-2 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-black text-red-700 hover:bg-red-100"
+                        >
+                          Enviar a Revisión / Acta Observada →
+                        </button>
+                      )}
                     </div>
                   )}
                   {!errors.votes_sum && formData.total_electores > 0 && (
