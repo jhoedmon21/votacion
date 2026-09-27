@@ -38,3 +38,6 @@ backend/storage/actas/
 
 # Artefacto incremental de TypeScript
 tsconfig.tsbuildinfo
+
+# Backups de limpieza de actas (datos de digitacion sensibles)
+backend/backups/
