@@ -705,7 +705,29 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         "votos_nulos": meta_prev.votos_nulos if meta_prev else 0,
         "votos_impugnados": meta_prev.votos_impugnados if meta_prev else 0,
         "total_electores": meta_prev.total_electores if meta_prev else None,
+        "total_votantes": meta_prev.total_votantes if meta_prev else None,
+        "votos": {
+            t: {r.candidate_id: (r.votes or 0) for r in db.query(Record).filter(
+                Record.table_id == table.id, Record.candidate_type == t).all()}
+            for t in ("district", "provincial", "consejero", "regional")
+        },
     }
+    # Trazabilidad: toda rectificación de un acta OBSERVADA exige motivo.
+    # La petición llega ANTES de aplicar cambios, así que el estado previo
+    # aún está vivo en la sesión.
+    estaba_observada = bool(table.requires_review)
+    motivo_edicion = (payload.motivo or "").strip()
+    if estaba_observada and not motivo_edicion:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "mensaje": (
+                    "MOTIVO REQUERIDO: el acta está OBSERVADA; indique la "
+                    "justificación de la modificación antes de guardar."
+                ),
+                "regla": "MOTIVO_OBLIGATORIO",
+            },
+        )
 
     if payload.numero_mesa:
         table.numero_mesa = payload.numero_mesa
@@ -797,9 +819,12 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         return (b or 0) + (nul or 0) + (i or 0)
 
     def _nivel_activo(tipo: str, lista_payload) -> bool:
-        """El nivel participa del cuadre si fue enviado o ya tiene registros."""
+        """El nivel participa del cuadre si fue enviado (con oferta) o ya
+        tiene registros. Una lista VACÍA no activa: muchas mesas no tienen
+        oferta distrital y el editor la envía como [] — tratarla como activa
+        con suma 0 producía 409 falsos de descuadre al guardar."""
         if lista_payload is not None:
-            return True
+            return len(lista_payload) > 0
         return (
             db.query(Record.id)
             .filter(Record.table_id == table.id, Record.candidate_type == tipo)
@@ -979,25 +1004,33 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         table.status = "processed"
     db.flush()
 
-    # Auditoría obligatoria del rol nacional (append-only, atómica con el acta).
-    if es_rol_global(usuario) and usuario.rol == "DIGITADOR_GLOBAL":
-        meta_new = db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).first()
-        despues = {
-            **antes,
-            "numero_mesa": table.numero_mesa, "status": table.status,
-            "processed": bool(table.processed),
-            "requires_review": bool(table.requires_review),
-            "ocr_confidence": table.ocr_confidence, "image_url": table.image_url,
-            "votos_blancos": meta_new.votos_blancos if meta_new else 0,
-            "votos_nulos": meta_new.votos_nulos if meta_new else 0,
-            "votos_impugnados": meta_new.votos_impugnados if meta_new else 0,
-            "total_electores": meta_new.total_electores if meta_new else None,
-            "payload": payload.model_dump(),
-        }
+    # Auditoría UNIVERSAL (append-only, atómica con el acta): toda edición
+    # deja huella con usuario, timestamp, valores anteriores vs. nuevos y
+    # motivo (obligatorio si el acta estaba observada)." 
+    meta_new = db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).first()
+    despues = {
+        **antes,
+        "numero_mesa": table.numero_mesa, "status": table.status,
+        "processed": bool(table.processed),
+        "requires_review": bool(table.requires_review),
+        "ocr_confidence": table.ocr_confidence, "image_url": table.image_url,
+        "votos_blancos": meta_new.votos_blancos if meta_new else 0,
+        "votos_nulos": meta_new.votos_nulos if meta_new else 0,
+        "votos_impugnados": meta_new.votos_impugnados if meta_new else 0,
+        "total_electores": meta_new.total_electores if meta_new else None,
+        "total_votantes": meta_new.total_votantes if meta_new else None,
+        "votos": {
+            t: {r.candidate_id: (r.votes or 0) for r in db.query(Record).filter(
+                Record.table_id == table.id, Record.candidate_type == t).all()}
+            for t in ("district", "provincial", "consejero", "regional")
+        },
+    }
+    if despues != antes:
         _auditar(db, acta_id=table.id, numero_mesa=table.numero_mesa,
                  accion="MODIFICAR", usuario=usuario,
                  valores_anteriores=antes, valores_nuevos=despues,
-                 motivo="rectificación vía PUT /api/actas/{id}", request=request)
+                 motivo=motivo_edicion or "rectificación vía PUT /api/actas/{id}",
+                 request=request)
 
     db.commit()
     db.refresh(table)

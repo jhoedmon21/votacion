@@ -73,6 +73,10 @@ class ActaUpdate(BaseModel):
     # el acta se guarda igual pero queda OBSERVADA para revisión.
     total_votantes: Optional[int] = None
     verified: bool = True
+    # Trazabilidad: motivo/justificación de la modificación. Obligatorio si
+    # el acta estaba OBSERVADA (el endpoint lo valida); se persiste en la
+    # huella de auditoría.
+    motivo: Optional[str] = Field(default=None, max_length=400)
 
 
 # ---------------------------------------------------------------------------
@@ -139,6 +143,8 @@ class ActaUpdatePayload(BaseModel):
     # R1 conocido: enviar a Revisión / Acta Observada en vez de guardar.
     forzar_revision: bool = False
     verified: bool = False
+    # Trazabilidad: motivo/justificación de la modificación (PUT parcial).
+    motivo: Optional[str] = Field(default=None, max_length=400)
 
 
 class ActaResponse(BaseModel):

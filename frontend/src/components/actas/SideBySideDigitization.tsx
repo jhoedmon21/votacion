@@ -93,6 +93,20 @@ function SideBySideDigitizationInner({
      organización): exige reconfirmar contra el acta física. El servidor
      responde 409 requiere_confirmacion y aquí se muestra el modal. */
   const [avisoAtipico, setAvisoAtipico] = useState<string | null>(null);
+  /* Lectura inicial (snapshot al abrir el editor): permite resaltar los
+     campos que el digitador modificó respecto a la digitación previa/OCR. */
+  const valoresIniciales = useRef(formData);
+  /* Motivo/justificación de la modificación: obligatorio si el acta está
+     observada (lo valida también el backend). Queda en la auditoría. */
+  const [motivoEdicion, setMotivoEdicion] = useState("");
+  /* Toast de error de guardado (red/servidor): se cierra solo; el
+     formulario conserva TODO lo digitado para reintentar. */
+  const [errorToast, setErrorToast] = useState(false);
+  useEffect(() => {
+    if (!errorToast) return;
+    const t = setTimeout(() => setErrorToast(false), 6000);
+    return () => clearTimeout(t);
+  }, [errorToast]);
   const [confirmacionActaFisica, setConfirmacionActaFisica] = useState(false);
   /* R0 — Bloqueo por acta vacía (todo en ceros): modal rojo centrado, igual
      que en el registro (FormularioActaElectoral). */
@@ -163,6 +177,31 @@ function SideBySideDigitizationInner({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  /* ---- Helpers de digitación rápida y segura ----
+     1) parseEntero: sólo enteros positivos — bloquea letras, decimales,
+        negativos y espacios (el backend además valida ge=0 con Pydantic).
+     2) enfocarSiguiente: Enter avanza a la próxima casilla numérica (Tab
+        ya funciona nativamente) para corrección rápida por teclado.
+     3) claseCampo: resalta en ámbar los campos modificados respecto a la
+        lectura inicial del editor (digitación previa/OCR). */
+  const parseEntero = (v: string): number => {
+    const digitos = v.replace(/[^0-9]/g, "");
+    return digitos === "" ? 0 : parseInt(digitos.slice(0, 6), 10);
+  };
+
+  const enfocarSiguiente = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const casillas = [...document.querySelectorAll<HTMLInputElement>(
+      'input[inputmode="numeric"]:not(:disabled)')];
+    const i = casillas.indexOf(e.currentTarget);
+    casillas[i + 1]?.focus();
+    casillas[i + 1]?.select();
+  };
+
+  const claseCampo = (modificado: boolean, error: boolean = false) =>
+    error ? "border-red-500" : modificado ? "ring-2 ring-amber-400 border-amber-400" : "";
+
   const handleCandidateVoteChange = (type: 'distrital' | 'provincial' | 'regional', index: number, votes: number) => {
     setFormData(prev => {
       const newData = { ...prev };
@@ -220,6 +259,7 @@ function SideBySideDigitizationInner({
         image_peso_original_kb: fotoPesos.original ?? undefined,
         image_peso_final_kb: fotoPesos.final ?? undefined,
         verified: false,
+        motivo: motivoEdicion.trim() || undefined,
       };
       await api.updateActa(acta.id, payload);
       setAutoSaveStatus("saved");
@@ -290,6 +330,7 @@ function SideBySideDigitizationInner({
         image_peso_final_kb: fotoPesos.final ?? undefined,
         verified: mode === "validate",
         confirmado_atipico: confirmacionActaFisica,
+        motivo: motivoEdicion.trim() || undefined,
       };
 
       const updatedActa = await api.updateActa(acta.id, payload);
@@ -332,13 +373,17 @@ function SideBySideDigitizationInner({
         setBloqueoVacia(true);
         setSaveMessage(null);
       } else if (msg.includes("cabecera declara 0 votantes")) {
-        // R7: cabecera en ceros con votos colgados — enfoca la cabecera.
+        // R7: cabecera en ceros con votos colgados — enfoca la cabecera
+        // (la pestaña con la cabecera usa aria-label "Votantes que sufragaron").
         setSaveMessage(`Error: ${msg}`);
         document.querySelector<HTMLInputElement>(
-          'input[aria-label^="Votantes"]'
+          'input[aria-label="Votantes que sufragaron"]'
         )?.focus();
       } else {
-        setSaveMessage(`Error: ${msg}`);
+        // Error de red/servidor: notificación clara SIN perder lo digitado
+        // (el formulario no se toca; el usuario reintenta con Guardar).
+        setSaveMessage(`Error: ${msg || "Error al guardar el acta. Intente nuevamente."}`);
+        setErrorToast(true);
       }
     } finally {
       setIsSaving(false);
@@ -439,10 +484,13 @@ function SideBySideDigitizationInner({
             type="number"
             min={0}
             value={voteValue}
-            onChange={(e) => handleCandidateVoteChange(type, index, Number(e.target.value) || 0)}
+            onChange={(e) => handleCandidateVoteChange(type, index, parseEntero(e.target.value))}
+            onKeyDown={enfocarSiguiente}
             onFocus={() => setActiveField(`${type}_${index}`)}
             onBlur={() => setActiveField(null)}
-            className="w-24 text-right font-mono text-base"
+            className={`w-24 text-right font-mono text-base ${claseCampo(
+              voteValue !== ((valoresIniciales.current as unknown as Record<string, RankingEntry[] | undefined>)[`votos_${type}`]?.[index]?.votes ?? 0)
+            )}`}
             inputMode="numeric"
             aria-label={`Votos ${candidate.name}`}
           />
@@ -477,7 +525,7 @@ function SideBySideDigitizationInner({
             min={0}
             value={voteValue}
             onChange={(e) => {
-              const votes = Number(e.target.value) || 0;
+              const votes = parseEntero(e.target.value);
               setFormData((prev) => {
                 const newData = { ...prev };
                 newData.votos_consejero = [...prev.votos_consejero];
@@ -485,7 +533,10 @@ function SideBySideDigitizationInner({
                 return newData;
               });
             }}
-            className="w-24 text-right font-mono text-base"
+            onKeyDown={enfocarSiguiente}
+            className={`w-24 text-right font-mono text-base ${claseCampo(
+              voteValue !== (valoresIniciales.current.votos_consejero[index]?.votes ?? 0)
+            )}`}
             inputMode="numeric"
             aria-label={`Votos consejero ${candidate.name}`}
           />
@@ -512,10 +563,14 @@ function SideBySideDigitizationInner({
           type="number"
           min={0}
           value={(formData as Record<string, number | undefined>)[field as string] ?? 0}
-          onChange={(e) => handleInputChange(field as keyof typeof formData, Number(e.target.value) || 0)}
+          onChange={(e) => handleInputChange(field as keyof typeof formData, parseEntero(e.target.value))}
+          onKeyDown={enfocarSiguiente}
           onFocus={() => setActiveField(field as string)}
           onBlur={() => setActiveField(null)}
-          className="w-32 text-right font-mono text-base"
+          className={`w-32 text-right font-mono text-base ${claseCampo(
+            ((formData as Record<string, number | undefined>)[field as string] ?? 0)
+            !== ((valoresIniciales.current as unknown as Record<string, number | undefined>)[field as string] ?? 0)
+          )}`}
           inputMode="numeric"
         />
       ) : (
@@ -762,7 +817,8 @@ function SideBySideDigitizationInner({
                         type="number"
                         min={0}
                         value={formData.total_electores}
-                        onChange={(e) => handleInputChange('total_electores', Number(e.target.value) || 0)}
+                        onChange={(e) => handleInputChange('total_electores', parseEntero(e.target.value))}
+                        onKeyDown={enfocarSiguiente}
                         onFocus={() => setActiveField('total_electores')}
                         onBlur={() => setActiveField(null)}
                         className={errors.total_electores ? "border-red-500" : ""}
@@ -780,11 +836,16 @@ function SideBySideDigitizationInner({
                         type="number"
                         min={0}
                         value={formData.total_votantes}
-                        onChange={(e) => handleInputChange('total_votantes', Number(e.target.value) || 0)}
+                        onChange={(e) => handleInputChange('total_votantes', parseEntero(e.target.value))}
+                        onKeyDown={enfocarSiguiente}
                         onFocus={() => setActiveField('total_votantes')}
                         onBlur={() => setActiveField(null)}
-                        className={errors.votes_sum && errors.votes_sum.includes("superar") ? "border-red-500" : ""}
+                        className={`w-full ${claseCampo(
+                          formData.total_votantes !== (valoresIniciales.current.total_votantes ?? 0),
+                          !!(errors.votes_sum && errors.votes_sum.includes("superar"))
+                        )}`}
                         inputMode="numeric"
+                        aria-label="Votantes que sufragaron"
                       />
                     ) : (
                       <Input value={formData.total_votantes.toLocaleString()} disabled className="bg-slate-50 font-mono text-lg" />
@@ -940,11 +1001,30 @@ function SideBySideDigitizationInner({
               {/* ACTIONS */}
               {mode !== "view" && !readonly && (
                 <div className="flex flex-col justify-end gap-3 pt-4 border-t border-slate-200 sm:flex-row">
-                  <Boton variante="secundario" onClick={onClose} clase="w-full sm:w-auto">Cancelar</Boton>
+                  {/* Motivo de la modificación: obligatorio si el acta está
+                      observada (backend lo revalida y lo guarda en auditoría). */}
+                  {acta.requires_review && (
+                    <div className="w-full">
+                      <label className="block text-xs font-bold text-slate-600 mb-1">
+                        Motivo de la modificación <span className="text-red-600">*</span>
+                        <span className="ml-1 font-normal text-slate-400">(acta observada)</span>
+                      </label>
+                      <Input
+                        value={motivoEdicion}
+                        onChange={(e) => setMotivoEdicion(e.target.value)}
+                        maxLength={400}
+                        placeholder="Ej.: dígito ilegible en columna regional; corregido contra el papel"
+                        className={`w-full ${motivoEdicion.trim() ? "" : "border-amber-400"}`}
+                        aria-label="Motivo de la modificación"
+                      />
+                    </div>
+                  )}
+                  <Boton variante="suave" onClick={onClose} clase="w-full sm:w-auto">Cancelar</Boton>
                   <Boton
                     variante="primario"
                     onClick={handleSave}
-                    deshabilitado={isSaving || Object.keys(errors).length > 0}
+                    deshabilitado={isSaving || Object.keys(errors).length > 0
+                      || (acta.requires_review && motivoEdicion.trim().length === 0)}
                     clase="w-full sm:w-auto"
                   >
                     {isSaving ? "Guardando..." : mode === "validate" ? "Confirmar Validación" : "Guardar Cambios"}
@@ -975,6 +1055,16 @@ function SideBySideDigitizationInner({
             (mayor.el ?? casillas[0])?.scrollIntoView({ behavior: "smooth", block: "center" });
           }}
         />
+      )}
+
+      {/* ===== TOAST DE ERROR DE GUARDADO (no pierde lo digitado) ===== */}
+      {errorToast && (
+        <div
+          role="alert"
+          className="fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-xl border-2 border-red-300 bg-red-50 px-5 py-3 text-sm font-bold text-red-800 shadow-lg"
+        >
+          ⚠ Error al guardar el acta. Intente nuevamente — sus datos siguen en el formulario.
+        </div>
       )}
 
       {/* ===== MODAL EMERGENTE CENTRADO (R0, bloqueo por acta vacía) ===== */}
