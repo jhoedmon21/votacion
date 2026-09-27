@@ -15,8 +15,9 @@ Seguridad:
   * Exige --si para ejecutar; sin el flag solo imprime el plan (dry-run).
 
 Uso (desde backend/):
-  Windows:  venv\Scripts\python.exe ..\scripts\limpiar_actas.py --si
+  Windows:  venv/Scripts/python.exe ../scripts/limpiar_actas.py --si
   Linux:    venv/bin/python3 ../scripts/limpiar_actas.py --si
+
 Toma la conexion de DATABASE_URL en backend/.env (o la local por defecto).
 """
 
