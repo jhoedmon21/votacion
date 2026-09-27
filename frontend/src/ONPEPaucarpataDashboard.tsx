@@ -4,7 +4,7 @@ import {
   ROLES_GESTORES_CAMPO, sesionGuardada,
 } from "./api";
 import {
-  BarChart3, ClipboardList, HardDrive, IdCard, LayoutDashboard, MapPin, PieChart, ShieldCheck, UserCheck, Users, Vote,
+  BarChart3, ClipboardList, HardDrive, IdCard, LayoutDashboard, MapPin, PieChart, ShieldAlert, ShieldCheck, UserCheck, Users, Vote,
 } from "lucide-react";
 import Actas from "./Actas";
 import ActaDetailModal from "./components/ActaDetailModal";
@@ -210,6 +210,15 @@ export default function ONPEPaucarpataDashboard() {
       .catch(() => setCoberturaResumen(null));
   }, []);
 
+  /* Latido de actualización (Día D): el panel se refresca cada 30 s y al
+     volver a él desde otra pestaña, así las alertas de cómputo se mueven
+     en tiempo real sin recargar manualmente. */
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick((v) => v + 1), 30_000);
+    return () => clearInterval(t);
+  }, []);
+
   useEffect(() => {
     const scopeParam = activeScope.toLowerCase();
     api.summary(scopeParam, ubigeoSel || undefined)
@@ -221,7 +230,8 @@ export default function ONPEPaucarpataDashboard() {
         setError(`Error: ${err.message}`);
         setSummary(null);
       });
-  }, [activeScope, ubigeoSel]);
+    // tick: latido de 30 s; vista: refetch al volver a este panel.
+  }, [activeScope, ubigeoSel, tick, vista]);
 
   const distSel = distritos.find((d) => d.ubigeo === ubigeoSel) ?? null;
   const nombreDistrito = distSel?.distrito ?? null;
@@ -402,6 +412,13 @@ export default function ONPEPaucarpataDashboard() {
     acta_id: number; numero_mesa: string; distrito: string; local: string;
     suma_votos: number; total_votantes: number; tipo: string; mensaje: string;
   }> = summary.actas_inconsistentes ?? [];
+  /* ALERTAS DE CÓMPUTO = actas observadas (JEE) + actas contabilizadas con
+     datos erróneos detectados por integridad (descuadre, excede padrón,
+     sin votantes). Mismo criterio que lista la pestaña Cómputo: un solo
+     número en el panel y desglose por tipo en el tooltip. */
+  const alertasComputo = observed + inconsistentes.length;
+  const porTipoAlerta = inconsistentes.reduce<Record<string, number>>(
+    (acc, i) => ({ ...acc, [i.tipo]: (acc[i.tipo] ?? 0) + 1 }), {});
   const pending = Math.max(0, (summary.total_tables ?? 0) - processed - observed);
   const progressPct = summary.progress_pct ?? 0;
 
@@ -536,6 +553,31 @@ export default function ONPEPaucarpataDashboard() {
 
           {/* KPIs EJECUTIVOS (estilo Material: baldosa + dato) */}
           <section aria-label="Indicadores" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            {/* ALERTAS DE CÓMPUTO: observadas JEE + actas con datos erróneos.
+                Clic → abre la pestaña Cómputo (donde se resuelven). */}
+            <button
+              type="button"
+              onClick={() => irA("computo")}
+              title={`Desglose: ${observed} observada(s) JEE · ${porTipoAlerta.EXCEDE_PADRON ?? 0} excede padrón · ${porTipoAlerta.SIN_VOTANTES ?? 0} sin votantes · ${porTipoAlerta.DESCUADRE ?? 0} descuadre`}
+              className={`flex items-center gap-3 rounded-2xl border-2 p-4 text-left shadow-xs transition hover:shadow-md active:scale-[0.99] ${
+                alertasComputo > 0 ? "border-amber-400 bg-amber-50/70" : "border-slate-200 bg-white"
+              }`}
+            >
+              <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-xs ${alertasComputo > 0 ? "bg-amber-500" : "bg-slate-300"}`}>
+                <ShieldAlert className="h-5 w-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  Alertas de Cómputo
+                </span>
+                <span className="block font-mono text-xl font-black tabular-nums text-slate-900">
+                  {formatVotes(alertasComputo)}
+                </span>
+                <span className="block text-[11px] font-bold leading-snug text-amber-700">
+                  {formatVotes(observed)} JEE · {inconsistentes.length} datos erróneos →
+                </span>
+              </span>
+            </button>
             {([
               ["Mesas en padrón", formatVotes(summary.total_tables ?? 0), "locales en tu alcance",
                 <ClipboardList key="k1" className="h-5 w-5" />, "bg-[#E02020]"],

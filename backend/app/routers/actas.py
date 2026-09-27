@@ -841,6 +841,11 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     # R0: acta vacía — todo en ceros no es un acta registrable (0 = 0 cuadra,
     # pero nadie digitó los votos del papel).
     acta_vacia = votantes == 0 and suma_total == 0
+    # R7 — cabecera en ceros con votos colgados: un guardado parcial (p. ej.
+    # el autoguardado) que borra la cabecera sin borrar TODOS los niveles
+    # deja votantes=0 con votos persistidos. 0 != suma_total: es incoherente
+    # y se bloquea (el 409 detiene el commit del estado a medias).
+    cabecera_cero_con_votos = votantes == 0 and suma_total > 0
 
     # R6 — Concentración atípica (>90% de los votos válidos de una columna
     # en una sola organización): exige reconfirmación contra el acta física.
@@ -900,6 +905,24 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
                     "antes de guardar."
                 ),
                 "regla": "R0_ACTA_VACIA",
+            },
+        )
+
+    if cabecera_cero_con_votos:
+        _registrar_rechazo(db, numero_mesa=table.numero_mesa,
+                           tipo_eleccion="RECTIFICACION", regla="R7_CABECERA_CERO",
+                           mensaje=f"votantes=0 con suma={suma_total}",
+                           usuario=usuario)
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "mensaje": (
+                    "MESA INCOHERENTE: la cabecera declara 0 votantes pero hay "
+                    f"{suma_total} votos digitados. Digite el total de votantes "
+                    "de la cabecera del acta (o corrija los votos) antes de guardar."
+                ),
+                "regla": "R7_CABECERA_CERO",
+                "suma": suma_total,
             },
         )
 
@@ -1082,6 +1105,9 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
         sumas_columna[_clave] = sum(v.votes for v in _lista) + pie
     activas = {k: s for k, s in sumas_columna.items() if s > 0}
     suma_total = max(activas.values()) if activas else 0
+    # R7 — cabecera en ceros con votos colgados (misma regla que en PUT): un
+    # guardado parcial no puede dejar votantes=0 con votos digitados.
+    cabecera_cero_con_votos = votantes == 0 and suma_total > 0
     # R2 SIEMPRE contra el padrón REAL de la mesa (tables.electores_habiles,
     # fuente ONPE), no contra el valor que traiga el formulario.
     excede_padron = bool(
@@ -1150,6 +1176,14 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
             "ACTA VACÍA: no se registró ningún voto (todo en ceros). Verifique "
             "contra el acta física y digite los totales reales antes de guardar.",
             {"regla": "R0_ACTA_VACIA"},
+        )
+    if cabecera_cero_con_votos:
+        raise _rechazo(
+            "R7_CABECERA_CERO",
+            "MESA INCOHERENTE: la cabecera declara 0 votantes pero hay "
+            f"{suma_total} votos digitados. Digite el total de votantes de la "
+            "cabecera del acta antes de guardar.",
+            {"regla": "R7_CABECERA_CERO", "suma": suma_total},
         )
     if excede_padron or descuadrada:
         # Detalle por columna: ningún nivel puede superar a los votantes que

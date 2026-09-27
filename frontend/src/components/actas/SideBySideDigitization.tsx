@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ActaRecord, RankingEntry, CandidateVotes } from "../../types";
 import { api } from "../../api";
-import { ModalVotosInusuales } from "../ModalesDigitacion";
+import { ModalVotosInusuales, ModalActaVacia } from "../ModalesDigitacion";
 import { Boton, Input, Card, Alerta } from "../ui";
 
 interface SideBySideDigitizationProps {
@@ -94,6 +94,9 @@ function SideBySideDigitizationInner({
      responde 409 requiere_confirmacion y aquí se muestra el modal. */
   const [avisoAtipico, setAvisoAtipico] = useState<string | null>(null);
   const [confirmacionActaFisica, setConfirmacionActaFisica] = useState(false);
+  /* R0 — Bloqueo por acta vacía (todo en ceros): modal rojo centrado, igual
+     que en el registro (FormularioActaElectoral). */
+  const [bloqueoVacia, setBloqueoVacia] = useState(false);
 
   const validateForm = useCallback(() => {
     const districtSum = formData.votos_distrital.reduce((sum, c) => sum + c.votes, 0);
@@ -179,6 +182,14 @@ function SideBySideDigitizationInner({
       setAutoSaveStatus("idle");
       return;
     }
+    // R0/R7: el autoguardado no persiste estados no guardables. Con la
+    // cabecera en 0 nada lo es (acta vacía si todo es cero; incoherente si
+    // quedan votos colgados): se detiene hasta que el digitador complete la
+    // cabecera y use Guardar Cambios.
+    if (formData.total_votantes === 0) {
+      setAutoSaveStatus("idle");
+      return;
+    }
     setAutoSaveStatus("saving");
     try {
       const payload = {
@@ -227,6 +238,23 @@ function SideBySideDigitizationInner({
   }, [formData, handleAutoSave, readonly, mode]);
 
   const handleSave = async () => {
+    /* R0 — acta vacía: el cliente bloquea el guardado (validateForm), así que
+       se detecta aquí mismo y se muestra el modal rojo centrado en lugar del
+       banner genérico (misma UX que el registro). */
+    const piesCero = formData.blancos_distrital + formData.nulos_distrital + formData.impugnados_distrital
+      + formData.blancos_provincial + formData.nulos_provincial + formData.impugnados_provincial
+      + formData.blancos_consejero + formData.nulos_consejero + formData.impugnados_consejero
+      + formData.blancos_regional + formData.nulos_regional + formData.impugnados_regional === 0;
+    const actaVacia = formData.total_votantes === 0 && piesCero
+      && formData.votos_distrital.every((c) => c.votes === 0)
+      && formData.votos_provincial.every((c) => c.votes === 0)
+      && formData.votos_consejero.every((c) => c.votes === 0)
+      && formData.votos_regional.every((c) => c.votes === 0);
+    if (actaVacia) {
+      setBloqueoVacia(true);
+      setSaveMessage(null);
+      return;
+    }
     if (!validateForm()) return;
 
     setIsSaving(true);
@@ -297,6 +325,18 @@ function SideBySideDigitizationInner({
         // R6: advertencia con doble confirmación (checkbox del acta física).
         setAvisoAtipico(msg);
         setSaveMessage(null);
+      } else if (msg.includes("todo en ceros")) {
+        // R0: acta vacía — bloqueo con modal rojo centrado (el backend
+        // responde 409 con "ACTA VACÍA: ... todo en ceros ..." y errorMessage
+        // lo aplana a un solo string).
+        setBloqueoVacia(true);
+        setSaveMessage(null);
+      } else if (msg.includes("cabecera declara 0 votantes")) {
+        // R7: cabecera en ceros con votos colgados — enfoca la cabecera.
+        setSaveMessage(`Error: ${msg}`);
+        document.querySelector<HTMLInputElement>(
+          'input[aria-label^="Votantes"]'
+        )?.focus();
       } else {
         setSaveMessage(`Error: ${msg}`);
       }
@@ -306,7 +346,8 @@ function SideBySideDigitizationInner({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") onClose();
+    // Con un modal centrado abierto (R6/R0), Escape le pertenece al modal.
+    if (e.key === "Escape" && !avisoAtipico && !bloqueoVacia) onClose();
     if (e.ctrlKey && e.key === "s") {
       e.preventDefault();
       handleSave();
@@ -932,6 +973,20 @@ function SideBySideDigitizationInner({
               }, { el: null, v: -1 });
             (mayor.el ?? casillas[0])?.focus();
             (mayor.el ?? casillas[0])?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}
+        />
+      )}
+
+      {/* ===== MODAL EMERGENTE CENTRADO (R0, bloqueo por acta vacía) ===== */}
+      {bloqueoVacia && (
+        <ModalActaVacia
+          onVolverADigitar={() => {
+            setBloqueoVacia(false);
+            // Enfoca la PRIMERA casilla de votación para iniciar la corrección.
+            const primera = document.querySelector<HTMLInputElement>(
+              'input[aria-label^="Votos "]');
+            primera?.focus();
+            primera?.scrollIntoView({ behavior: "smooth", block: "center" });
           }}
         />
       )}
