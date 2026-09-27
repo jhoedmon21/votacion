@@ -208,6 +208,29 @@ def _ubigeo_del_ambito(db: Session, table_id: int, nivel: str) -> str:
     return ubigeo_de_nivel(fila[0] if fila else "", nivel)
 
 
+def _votos_snapshot(db: Session, table_id: int) -> dict:
+    """Votos por nivel indexados por CASILLA (sort_order), igual que los ve
+    el digitador en el formulario — no por id interno de BD. Así el diff
+    del historial de auditoría es legible para un humano.
+    """
+    out: dict[str, dict[str, int]] = {}
+    for tipo, modelo in CANDIDATE_MODELS.items():
+        ambito = _ubigeo_del_ambito(db, table_id, tipo)
+        casillas = {
+            c.id: str(c.sort_order)
+            for c in candidatos_del_ambito(db, modelo, ambito).all()
+        }
+        filas: dict[str, int] = {}
+        for r in db.query(Record).filter(
+            Record.table_id == table_id, Record.candidate_type == tipo
+        ).all():
+            casilla = casillas.get(r.candidate_id)
+            if casilla is not None:
+                filas[casilla] = r.votes or 0
+        out[tipo] = filas
+    return out
+
+
 def _apply_votes(db: Session, table_id: int, candidate_type: str, votes_list) -> None:
     """Upsert vote records for one candidate type. Accepts raw vote lists.
 
@@ -662,6 +685,59 @@ def get_acta(acta_id: int, db: Session = Depends(get_db),
     return _serialize_acta(db, table)
 
 
+@router.get("/{acta_id}/auditoria")
+def get_auditoria_acta(acta_id: int, db: Session = Depends(get_db),
+                       usuario: Usuario = Depends(usuario_actual)):
+    """Historial de ediciones del acta (huella de auditoría).
+
+    Devuelve cada intervención MODIFICAR/CREAR con usuario, rol, timestamp,
+    IP, motivo y los valores anteriores/nuevos (JSON) para mostrar el diff
+    en la ficha. Respeta el alcance territorial de quien consulta.
+    """
+    from app.core.models import ActaAuditoriaGlobal
+
+    table = db.query(Table).filter(Table.id == acta_id).first()
+    if table is None:
+        raise HTTPException(status_code=404, detail=f"Acta {acta_id} no encontrada")
+    _verificar_venue_en_alcance(db, usuario, table.venue_id)
+    filas = (
+        db.query(ActaAuditoriaGlobal)
+        .filter(ActaAuditoriaGlobal.acta_id == acta_id)
+        .order_by(ActaAuditoriaGlobal.created_at.desc())
+        .limit(30)
+        .all()
+    )
+
+    import json as _json
+
+    def _safe_json(txt: str | None) -> dict:
+        try:
+            d = _json.loads(txt or "{}")
+            return d if isinstance(d, dict) else {}
+        except Exception:  # noqa: BLE001 — huella corrupta no rompe la ficha
+            return {}
+
+    return {
+        "acta_id": acta_id,
+        "numero_mesa": table.numero_mesa,
+        "total": len(filas),
+        "items": [
+            {
+                "id": f.id,
+                "accion": f.accion,
+                "usuario": f.usuario_email,
+                "rol": f.usuario_rol,
+                "ip": f.ip,
+                "motivo": f.motivo,
+                "fecha": (f.created_at.isoformat() if f.created_at else None),
+                "antes": _safe_json(f.valores_anteriores),
+                "despues": _safe_json(f.valores_nuevos),
+            }
+            for f in filas
+        ],
+    }
+
+
 @router.put("/{acta_id}")
 async def update_acta(acta_id: int, payload: ActaUpdatePayload,
                       request: Request, db: Session = Depends(get_db),
@@ -706,11 +782,7 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         "votos_impugnados": meta_prev.votos_impugnados if meta_prev else 0,
         "total_electores": meta_prev.total_electores if meta_prev else None,
         "total_votantes": meta_prev.total_votantes if meta_prev else None,
-        "votos": {
-            t: {r.candidate_id: (r.votes or 0) for r in db.query(Record).filter(
-                Record.table_id == table.id, Record.candidate_type == t).all()}
-            for t in ("district", "provincial", "consejero", "regional")
-        },
+        "votos": _votos_snapshot(db, table.id),
     }
     # Trazabilidad: toda rectificación de un acta OBSERVADA exige motivo.
     # La petición llega ANTES de aplicar cambios, así que el estado previo
@@ -1006,7 +1078,7 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
 
     # Auditoría UNIVERSAL (append-only, atómica con el acta): toda edición
     # deja huella con usuario, timestamp, valores anteriores vs. nuevos y
-    # motivo (obligatorio si el acta estaba observada)." 
+    # motivo (obligatorio si el acta estaba observada).
     meta_new = db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).first()
     despues = {
         **antes,
@@ -1019,11 +1091,7 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         "votos_impugnados": meta_new.votos_impugnados if meta_new else 0,
         "total_electores": meta_new.total_electores if meta_new else None,
         "total_votantes": meta_new.total_votantes if meta_new else None,
-        "votos": {
-            t: {r.candidate_id: (r.votes or 0) for r in db.query(Record).filter(
-                Record.table_id == table.id, Record.candidate_type == t).all()}
-            for t in ("district", "provincial", "consejero", "regional")
-        },
+        "votos": _votos_snapshot(db, table.id),
     }
     if despues != antes:
         _auditar(db, acta_id=table.id, numero_mesa=table.numero_mesa,

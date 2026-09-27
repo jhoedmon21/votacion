@@ -16,6 +16,20 @@ type ActaConAuditoria = ActaRecord & {
   incidencias?: Incidencia[];
 };
 
+/* Entrada del historial de auditoría (GET /actas/{id}/auditoria). */
+interface AuditoriaItem {
+  id: number;
+  accion: string;
+  usuario: string;
+  rol: string;
+  ip: string | null;
+  motivo: string | null;
+  fecha: string | null;
+  antes: Record<string, unknown>;
+  despues: Record<string, unknown>;
+}
+type Auditoria = { acta_id: number; numero_mesa: string; total: number; items: AuditoriaItem[] };
+
 /* ==================================================================== *
  *  Ficha de acta / mesa — la vista de "Ver" de la Gestión de Actas.
  *
@@ -54,6 +68,53 @@ const suma = (filas: RankingEntry[] | undefined) =>
 
 const num = (v: number | null | undefined) => (v ?? 0).toLocaleString("es-PE");
 
+/* Etiquetas legibles de las claves de la huella de auditoría. */
+const ETIQUETA_AUDIT: Record<string, string> = {
+  status: "Estado", processed: "Contabilizada", requires_review: "Observada",
+  votos_blancos: "Blancos", votos_nulos: "Nulos", votos_impugnados: "Impugnados",
+  total_electores: "Electores hábiles", total_votantes: "Votantes (cabecera)",
+  numero_mesa: "N° de mesa", image_url: "Foto del acta", ocr_confidence: "Confianza OCR",
+};
+const NIVEL_AUDIT: Record<string, string> = {
+  district: "Distrital", provincial: "Provincial",
+  consejero: "Consejeros", regional: "Regional",
+};
+
+/* Diferencias legibles entre la huella "antes" y "después" de una edición:
+   cabecera (status, votantes, pie…) y votos por candidato y nivel. */
+function diferenciasAuditoria(
+  antes: Record<string, unknown>,
+  despues: Record<string, unknown>,
+): string[] {
+  const out: string[] = [];
+  const esNum = (v: unknown) => typeof v === "number" || typeof v === "boolean";
+  for (const [k, d] of Object.entries(despues)) {
+    if (k === "votos" || k === "payload" || k === "numero_mesa") continue;
+    const a = antes[k];
+    if (a === d || (esNum(a) && esNum(d) && Number(a) === Number(d))) continue;
+    const et = ETIQUETA_AUDIT[k] ?? k;
+    const fmt = (v: unknown) =>
+      typeof v === "boolean" ? (v ? "sí" : "no")
+      : k === "status" ? String(v ?? "—")
+      : esNum(v) ? num(Number(v)) : String(v ?? "—");
+    out.push(`${et}: ${fmt(a)} → ${fmt(d)}`);
+  }
+  const votosA = (antes.votos ?? {}) as Record<string, Record<string, number>>;
+  const votosD = (despues.votos ?? {}) as Record<string, Record<string, number>>;
+  for (const nivel of new Set([...Object.keys(votosA), ...Object.keys(votosD)])) {
+    const fa = votosA[nivel] ?? {};
+    const fd = votosD[nivel] ?? {};
+    for (const cid of new Set([...Object.keys(fa), ...Object.keys(fd)])) {
+      const a = fa[cid] ?? 0;
+      const d = fd[cid] ?? 0;
+      if (Number(a) !== Number(d)) {
+        out.push(`${NIVEL_AUDIT[nivel] ?? nivel} · casilla ${cid}: ${num(a)} → ${num(d)}`);
+      }
+    }
+  }
+  return out;
+}
+
 export default function ActaDetailModal({
   acta: actaBase, numeroMesa, onClose, onEditar, onCargar,
 }: Props) {
@@ -62,6 +123,11 @@ export default function ActaDetailModal({
   const [checklist, setChecklist] = useState<Checklist | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [fotoGrande, setFotoGrande] = useState(false);
+  /* Historial de auditoría: se carga sólo para actas registradas. */
+  const [auditoria, setAuditoria] = useState<Auditoria | null>(null);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  /* Ítem del historial expandido (para ver el diff antes/después). */
+  const [auditAbierta, setAuditAbierta] = useState<number | null>(null);
 
   useEffect(() => {
     const cerrar = (e: KeyboardEvent) => {
@@ -87,6 +153,19 @@ export default function ActaDetailModal({
       });
     return () => { vigente = false; };
   }, [mesa]);
+
+  useEffect(() => {
+    setAuditoria(null);
+    setAuditError(null);
+    if (!acta?.id) return;
+    let vigente = true;    api.auditoriaActa(acta.id)
+      .then((a) => { if (vigente) setAuditoria(a); })
+      .catch((e) => {
+        // El historial es complementario: su fallo no rompe la ficha.
+        if (vigente) setAuditError(String(e instanceof Error ? e.message : e));
+      });
+    return () => { vigente = false; };
+  }, [acta?.id]);
 
   if (!acta && !numeroMesa) return null;
 
@@ -389,6 +468,93 @@ export default function ActaDetailModal({
               </div>
             )}
           </section>
+
+          {/* ============ D. HISTORIAL DE EDICIONES (auditoría) ============ */}
+          {tieneActa && (
+            <section className="rounded-xl border border-slate-200 p-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                  🕘 Historial de ediciones
+                </h3>
+                {auditoria && auditoria.total > 0 && (
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">
+                    {auditoria.total} {auditoria.total === 1 ? "edición" : "ediciones"}
+                  </span>
+                )}
+              </div>
+              {auditError && (
+                <p className="mt-1 text-[11px] text-slate-400">Historial no disponible: {auditError}</p>
+              )}
+              {auditoria && auditoria.items.length === 0 && (
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Sin ediciones registradas: el acta se guardó una sola vez y no ha sido rectificada.
+                </p>
+              )}
+              {auditoria && auditoria.items.length > 0 && (
+                <ul className="mt-2 space-y-1.5">
+                  {auditoria.items.map((it) => {
+                    const abierta = auditAbierta === it.id;
+                    const difs = diferenciasAuditoria(it.antes, it.despues);
+                    return (
+                      <li key={it.id} className="rounded-lg border border-slate-100 bg-slate-50/60">
+                        <button
+                          type="button"
+                          onClick={() => setAuditAbierta(abierta ? null : it.id)}
+                          aria-expanded={abierta}
+                          className="flex w-full flex-wrap items-center gap-x-3 gap-y-0.5 px-2.5 py-1.5 text-left"
+                        >
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                            it.accion === "CREAR" ? "bg-emerald-100 text-emerald-700"
+                            : "bg-indigo-100 text-indigo-700"}`}>
+                            {it.accion === "CREAR" ? "Registro" : "Edición"}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-[11px] font-bold text-slate-700">
+                            {it.usuario}
+                            <span className="ml-1 font-normal text-slate-400">({it.rol})</span>
+                          </span>
+                          {it.fecha && (
+                            <span className="font-mono text-[10px] text-slate-400">
+                              {new Date(it.fecha).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" })}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-slate-400">{abierta ? "▲" : "▼"}</span>
+                        </button>
+                        <div className="border-t border-slate-100 px-2.5 py-1.5">
+                          {it.motivo && (
+                            <p className="text-[11px] text-slate-600">
+                              <span className="font-black uppercase tracking-wide text-slate-400">Motivo: </span>
+                              {it.motivo}
+                            </p>
+                          )}
+                          {!it.motivo && it.accion === "MODIFICAR" && (
+                            <p className="text-[11px] italic text-slate-400">Sin motivo registrado (edición anterior a la trazabilidad).</p>
+                          )}
+                          {abierta && (
+                            <div className="mt-1.5">
+                              {difs.length === 0 ? (
+                                <p className="text-[11px] text-slate-400">Sin cambios de valores respecto a la edición anterior.</p>
+                              ) : (
+                                <ul className="space-y-0.5 font-mono text-[11px]">
+                                  {difs.map((d, idx) => (
+                                    <li key={idx} className="text-slate-700">
+                                      <span className="text-slate-400">·</span> {d}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                              {it.ip && (
+                                <p className="mt-1 font-mono text-[10px] text-slate-300">ip {it.ip}</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          )}
 
           {/* Checklist ONPE */}
           {checklist && checklist.items.length > 0 && (

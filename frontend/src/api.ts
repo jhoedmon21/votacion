@@ -237,6 +237,25 @@ export const api = {
   cobertura: () => request<CoberturaLocal[]>("/analytics/cobertura"),
   reviewList: () => request<ActaRecord[]>("/actas/review"),
   getActa: (id: number) => request<ActaRecord>(`/actas/${id}`),
+  /* Historial de auditoría del acta: ediciones con usuario, motivo y
+     valores antes/después (lo consume la ficha del acta). */
+  auditoriaActa: (id: number) =>
+    request<{
+      acta_id: number;
+      numero_mesa: string;
+      total: number;
+      items: Array<{
+        id: number;
+        accion: string;
+        usuario: string;
+        rol: string;
+        ip: string | null;
+        motivo: string | null;
+        fecha: string | null;
+        antes: Record<string, unknown>;
+        despues: Record<string, unknown>;
+      }>;
+    }>(`/actas/${id}/auditoria`),
   updateActa: (id: number, payload: unknown) =>
     request<ActaRecord>(`/actas/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   ocrActa: (file: File) => {
