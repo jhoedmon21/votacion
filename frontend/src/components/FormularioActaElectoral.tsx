@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ColumnaActa, OrgColumna, PlantillaActa } from "./ActaIngresoForm";
 import { sesionGuardada } from "../api";
 import { ModalActaVacia, ModalVotosInusuales } from "./ModalesDigitacion";
+import VisorActa from "./VisorActa";
 
 /* ==================================================================== *
  *  FormularioActaElectoral — Captura de votos, Provincia de Arequipa
@@ -101,6 +102,9 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
   const [avisoAtipico, setAvisoAtipico] = useState<string | null>(null);
   /* R0 — Bloqueo por acta vacía (todo en ceros): modal rojo centrado. */
   const [bloqueoVacia, setBloqueoVacia] = useState(false);
+  /* Ancla del bloque de datos: al terminar la carga ASÍNCRONA de la mesa
+     (plantilla + checklist ya en el DOM) el scroll salta aquí suave. */
+  const datosRef = useRef<HTMLDivElement>(null);
   const [avisos, setAvisos] = useState<string[]>([]);
   const [checklist, setChecklist] = useState<Checklist | null>(null);
   const [localizando, setLocalizando] = useState(false);
@@ -108,10 +112,20 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
   /* Evidencia fotográfica del acta (se sube aparte y se asocia al registrar).
      Las métricas WebP del servidor se persisten para las estadísticas de
      almacenamiento del panel. */
-  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
-  const [fotoPesos, setFotoPesos] = useState<{ original: number | null; final: number | null }>({ original: null, final: null });
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);  const [fotoPesos, setFotoPesos] = useState<{ original: number | null; final: number | null }>({ original: null, final: null });
   const [subiendoFoto, setSubiendoFoto] = useState(false);
-  const fotoRef = useRef<HTMLInputElement>(null);
+
+  /* Scroll suave a los datos de la mesa UNA VEZ renderizados: plantilla
+     (oferta de elecciones) y checklist son el resultado del fetch; el
+     efecto corre después del render que los pinta en el DOM. Alinea el
+     INICIO DEL GRID (visor + formulario) porque con mesaInicial el montaje
+     es progresivo y el ancla interna saltaría a mitad de tarjeta. */
+  useEffect(() => {
+    if (plantilla && checklist && datosRef.current) {
+      const grid = datosRef.current.closest(".grid") ?? datosRef.current;
+      grid.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [plantilla, checklist]);
 
   /* Catálogo de distritos */
   useEffect(() => {
@@ -315,6 +329,11 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
       }
       const body = await res.json();
       setFotoUrl(body.url);
+      /* Móvil: tras cargar, asegura el visor a la vista (split apilado).
+         El scroll-mt-20 del visor deja margen bajo el header fijo. */
+      if (window.innerWidth < 1024) {
+        document.getElementById("visor-acta")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
       setFotoPesos({
         original: body.procesamiento?.peso_original_kb ?? null,
         final: body.procesamiento?.peso_final_kb ?? null,
@@ -330,7 +349,6 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setSubiendoFoto(false);
-      if (fotoRef.current) fotoRef.current.value = "";
     }
   };
 
@@ -449,7 +467,19 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="grid scroll-mt-6 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+      {/* Columna izquierda (~60%): visor del acta — dropzone + imagen 80vh
+          con toolbar flotante. La foto se ve AL INSTANTE, sin scroll. */}
+      <VisorActa
+        fotoUrl={fotoUrl}
+        subiendo={subiendoFoto}
+        pesos={fotoPesos}
+        onArchivo={(f) => void subirFoto(f)}
+        onQuitar={() => { setFotoUrl(null); setFotoPesos({ original: null, final: null }); }}
+      />
+
+      {/* Columna derecha (~40%): controles y formulario de digitación */}
+      <div className="min-w-0 space-y-5">
       {/* Encabezado oficial */}
       <div className="rounded-2xl bg-[#E02020] p-5 text-center text-white shadow">
         <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/70">
@@ -521,40 +551,21 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
             {cargando ? "Buscando…" : "Cargar acta"}
           </button>
 
-          {/* Evidencia fotográfica del acta: se sube aquí y se asocia al registrar */}
-          <button onClick={() => fotoRef.current?.click()} disabled={subiendoFoto}
-            className="rounded-lg border-2 border-[#E02020] px-4 py-2 text-sm font-bold text-[#E02020] disabled:opacity-50">
-            {subiendoFoto ? "⏳ Subiendo…" : fotoUrl ? "📷 Cambiar foto" : "📷 Cargar foto del acta (obligatoria)"}
-          </button>
-          <input ref={fotoRef} type="file" accept="image/*" capture="environment" className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) void subirFoto(f); }} />
-
           {plantilla && (
             <p className="text-xs text-slate-500">
               <strong>{plantilla.local.nombre}</strong> · padrón: {plantilla.electores_habiles ?? "—"}
             </p>
           )}
         </div>
-        {fotoUrl && (
-          <div className="mt-3 flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-2">
-            <img src={fotoUrl} alt="Foto del acta cargada"
-              className="h-28 w-auto max-w-[45%] cursor-zoom-in rounded border object-contain"
-              onClick={() => window.open(fotoUrl, "_blank")} />
-            <div className="text-xs text-slate-500">
-              <p className="font-bold text-slate-700">Foto lista ✓</p>
-              <p>Se asociará a esta mesa al registrar la primera elección.</p>
-              <button onClick={() => setFotoUrl(null)}
-                className="mt-1 text-[11px] font-bold text-red-600 hover:underline">
-                Quitar foto
-              </button>
-            </div>
-          </div>
-        )}
         {error && <p className="mt-2 rounded bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{error}</p>}
         {avisos.map((a, i) => (
           <p key={i} className="mt-2 rounded bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">{a}</p>
         ))}
       </section>
+
+      {/* Ancla del scroll tras carga asíncrona: margen superior para no
+          quedar pegada al header (scroll-mt-6). */}
+      <div ref={datosRef} className="scroll-mt-6" />
 
       {checklist && (
         <section className={`rounded-2xl border-2 p-4 ${
@@ -754,6 +765,7 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
           }}
         />
       )}
+      </div>
     </div>
   );
 }

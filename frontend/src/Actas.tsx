@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import type { ActaRecord, CandidateVotes } from "./types";
 import ActaDetailModal from "./components/ActaDetailModal";
@@ -14,6 +14,10 @@ export default function Actas() {
   const [actaToEdit, setActaToEdit] = useState<ActaRecord | null>(null);
   const [mostrarOficial, setMostrarOficial] = useState(false);
   const [mesaCargar, setMesaCargar] = useState<string | undefined>(undefined);
+  /* Scroll automático al formulario cuando se abre (botón "Cargar" de la
+     tabla o "📋 Acta ONPE"): el ref apunta a la tarjeta contenedora y
+     scroll-mt-6 guarda el margen bajo el header fijo. */
+  const formRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(() => {
     api
@@ -23,6 +27,14 @@ export default function Actas() {
   }, []);
 
   useEffect(load, [load]);
+
+  /* El scroll corre SOLO cuando el formulario ya está montado en el DOM
+     (después del render de mostrarOficial), nunca antes de existir. */
+  useEffect(() => {
+    if (mostrarOficial) {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [mostrarOficial, mesaCargar]);
 
   const approve = async (a: ActaRecord) => {
     const district = a.votos_distrital.map(
@@ -90,7 +102,10 @@ export default function Actas() {
       {error && <div className="error">Error: {error}</div>}
 
       {mostrarOficial && (
-        <div className="mb-8 rounded-2xl border-2 border-[#E02020] bg-slate-50 p-6">
+        <div
+          ref={formRef}
+          className="mb-8 scroll-mt-6 rounded-2xl border-2 border-[#E02020] bg-slate-50 p-6"
+        >
           <FormularioActaElectoral
             key={mesaCargar ?? "oficial"}
             mesaInicial={mesaCargar}
