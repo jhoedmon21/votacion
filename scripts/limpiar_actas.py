@@ -15,22 +15,44 @@ Seguridad:
   * Exige --si para ejecutar; sin el flag solo imprime el plan (dry-run).
 
 Uso (desde backend/):
-  ./venv/Scripts/python.exe ../scripts/limpiar_actas.py            # dry-run
-  ./venv/Scripts/python.exe ../scripts/limpiar_actas.py --si       # ejecutar
+  Windows:  venv\Scripts\python.exe ..\scripts\limpiar_actas.py --si
+  Linux:    venv/bin/python3 ../scripts/limpiar_actas.py --si
+Toma la conexion de DATABASE_URL en backend/.env (o la local por defecto).
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
 
 import psycopg2
 
-DB = dict(host="localhost", dbname="computo_arequipa", user="postgres",
-          password="Areq2026!pg")
+
+def _conexion() -> dict:
+    """Lee DATABASE_URL de backend/.env (server); si no existe, usa la
+    conexion local por defecto de la maquina de desarrollo."""
+    env = Path(__file__).resolve().parent.parent / "backend" / ".env"
+    if env.exists():
+        for linea in env.read_text(encoding="utf-8").splitlines():
+            if linea.strip().startswith("DATABASE_URL="):
+                url = linea.split("=", 1)[1].strip()
+                m = re.match(
+                    r"postgres(?:ql)?(?:\+\w+)?://([^:]+):([^@]*)@([^:/]+):?(\d+)?/(\w+)",
+                    url,
+                )
+                if m:
+                    u, p, h, port, db = m.groups()
+                    return dict(host=h or "localhost", port=int(port or 5432),
+                                dbname=db, user=u, password=p)
+    return dict(host="localhost", dbname="computo_arequipa", user="postgres",
+                password="Areq2026!pg")
+
+
+DB = _conexion()
 
 # Tablas de digitacion que se vacian por completo.
 TRUNCAR = [
