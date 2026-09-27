@@ -694,18 +694,15 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     _apply_votes(db, table.id, "regional", payload.votos_regional)
 
     # Pie por columna (norma ONPE) + consolidado histórico de respaldo.
-    _pie_niveles = {
-        f"blancos_{n}": getattr(payload, f"blancos_{n}", 0) or 0
-        for n in ("distrital", "provincial", "consejero", "regional")
-    }
-    _pie_niveles.update({
-        f"nulos_{n}": getattr(payload, f"nulos_{n}", 0) or 0
-        for n in ("distrital", "provincial", "consejero", "regional")
-    })
-    _pie_niveles.update({
-        f"impugnados_{n}": getattr(payload, f"impugnados_{n}", 0) or 0
-        for n in ("distrital", "provincial", "consejero", "regional")
-    })
+    # Un campo AUSENTE del payload (PUT parcial: autoguardado, otro modal)
+    # es None y NO debe pisar el valor persistido con cero — así se
+    # borraba el pie ya digitado. Sólo se persiste lo que vino explícito.
+    _pie_niveles: dict[str, int] = {}
+    for _prefijo in ("blancos", "nulos", "impugnados"):
+        for _nivel in ("distrital", "provincial", "consejero", "regional"):
+            _valor = getattr(payload, f"{_prefijo}_{_nivel}", None)
+            if _valor is not None:
+                _pie_niveles[f"{_prefijo}_{_nivel}"] = _valor
     _upsert_metadata(
         db,
         table.id,
