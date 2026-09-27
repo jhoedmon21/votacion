@@ -334,6 +334,8 @@ class V1ActaObservada(BaseModel):
     local: str
     ubigeo: str
     distrito: str
+    # Id de la MESA para abrir la ficha del acta desde el dashboard.
+    acta_id: Optional[int] = None
 
 
 class V1InconsistenciaActa(BaseModel):

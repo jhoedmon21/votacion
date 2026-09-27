@@ -7,6 +7,8 @@ import {
   BarChart3, ClipboardList, HardDrive, IdCard, LayoutDashboard, MapPin, PieChart, ShieldCheck, UserCheck, Users, Vote,
 } from "lucide-react";
 import Actas from "./Actas";
+import ActaDetailModal from "./components/ActaDetailModal";
+import type { ActaRecord } from "./types";
 import CoberturaPanel from "./components/CoberturaPanel";
 import Credenciales from "./components/Credenciales";
 import Dashboard from "./Dashboard";
@@ -169,6 +171,13 @@ export default function ONPEPaucarpataDashboard() {
   } | null>(null);
   /* Almacenamiento: cobertura de foto del acta y ahorro WebP. */
   const [almacen, setAlmacen] = useState<AlmacenStats | null>(null);
+  /* Ficha del acta (ActaDetailModal): se abre desde las alertas del panel. */
+  const [ficha, setFicha] = useState<{ id: number; numeroMesa: string | null } | null>(null);
+  const [fichaActa, setFichaActa] = useState<ActaRecord | null>(null);
+  const abrirFicha = (id: number, numeroMesa: string) => {
+    setFicha({ id, numeroMesa });
+    api.getActa(id).then(setFichaActa).catch(() => setFichaActa(null));
+  };
 
   useEffect(() => {
     fetch("/api/v1/ubigeo/distritos", {
@@ -387,6 +396,12 @@ export default function ONPEPaucarpataDashboard() {
     : 0;
   const processed = summary.processed_tables ?? 0;
   const observed = summary.review_tables ?? 0;
+  /* Actas CONTABILIZADAS cuya suma no cuadra con la cabecera (el backend
+     ya las descuenta de processed_tables): datos erróneos visibles. */
+  const inconsistentes: Array<{
+    acta_id: number; numero_mesa: string; distrito: string; local: string;
+    suma_votos: number; total_votantes: number; tipo: string; mensaje: string;
+  }> = summary.actas_inconsistentes ?? [];
   const pending = Math.max(0, (summary.total_tables ?? 0) - processed - observed);
   const progressPct = summary.progress_pct ?? 0;
 
@@ -476,12 +491,29 @@ export default function ONPEPaucarpataDashboard() {
       {/* MAIN CONTENT: dos secciones separadas — Votos y Personeros */}
       {!algunaVista && (
         <div className="space-y-6">
-          {/* ALERTAS OPERATIVAS */}
-          {(observed > 0 || (coberturaResumen?.rojos ?? 0) > 0) && (
+          {/* ALERTAS OPERATIVAS: cada alerta clicable lleva al acta o sección */}
+          {(observed > 0 || inconsistentes.length > 0 || (coberturaResumen?.rojos ?? 0) > 0) && (
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-3.5">
               <span className="text-sm font-black uppercase tracking-wider text-amber-800">
                 ⚠ Requiere atención
               </span>
+              {inconsistentes.length > 0 && inconsistentes.slice(0, 3).map((i) => (
+                <button
+                  key={`inc-${i.acta_id}`}
+                  onClick={() => abrirFicha(i.acta_id, i.numero_mesa)}
+                  title="Abrir la ficha del acta"
+                  className="text-xs font-bold text-red-700 underline decoration-red-400 underline-offset-2 hover:text-red-900"
+                >
+                  🚨 Mesa {i.numero_mesa}: {i.tipo === "EXCEDE_PADRON"
+                    ? `declara ${i.total_votantes} votantes > ${i.suma_votos ? "" : ""}padrón`
+                    : `suma ${i.suma_votos} ≠ votantes ${i.total_votantes || "—"}`} →
+                </button>
+              ))}
+              {inconsistentes.length > 3 && (
+                <span className="text-[11px] font-bold text-red-700">
+                  …y {inconsistentes.length - 3} más
+                </span>
+              )}
               {observed > 0 && (
                 <button
                   onClick={onShowActas}
@@ -1134,6 +1166,14 @@ export default function ONPEPaucarpataDashboard() {
           <CoberturaPanel />
           </>
           )}
+
+      {ficha && (
+        <ActaDetailModal
+          acta={fichaActa}
+          numeroMesa={fichaActa ? null : ficha.numeroMesa}
+          onClose={() => { setFicha(null); setFichaActa(null); }}
+        />
+      )}
 
           {/* BARRA DE ESTADO */}
           <footer className="mt-8 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-2xl border border-slate-200 bg-white px-6 py-4 text-xs text-slate-500 shadow-xs">

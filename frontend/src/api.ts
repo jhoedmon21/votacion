@@ -196,6 +196,13 @@ async function errorMessage(res: Response, fallback: string): Promise<string> {
     if (body && typeof body.detail === "string") {
       return `${fallback}: ${body.detail}`;
     }
+    if (body && typeof body.detail === "object" && body.detail !== null) {
+      // Rechazos de integridad (409 R0/R1/R2): el backend manda { mensaje, ... }.
+      const d = body.detail as { mensaje?: string; suma?: number; votantes?: number };
+      const extra = d.suma != null && d.votantes != null
+        ? ` (suma ${d.suma} vs votantes ${d.votantes})` : "";
+      return `${d.mensaje ?? fallback}${extra}`;
+    }
   } catch {
     // non-JSON error body — fall through to the status line
   }

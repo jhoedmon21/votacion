@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import (alcance_ubigeos, es_rol_global, requerir_rol,
                            usuario_actual, validar_alcance_venue,
                            venues_en_alcance)
-from app.core.database import get_db
+from app.core.database import SessionLocal, get_db
 from app.core.models import (ActaMetadata, ActaRechazo, ConsejeroCandidate,
                              DistrictCandidate, ProvincialCandidate, Record,
                              RegionalCandidate, ROLES_SISTEMA, Table, Usuario, Venue)
@@ -928,6 +928,16 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
     table.ocr_confidence = payload.ocr_confidence
     table.image_url = payload.image_url
 
+    # Nivel cuyo pie escribe el registro: el que traiga votos digitados
+    # (el modal rápido digita DISTRITAL; el formulario por pestañas, el activo).
+    _nivel_digitado = next(
+        (_n for _n, _l in (("distrital", payload.votos_distrital),
+                           ("provincial", payload.votos_provincial),
+                           ("consejero", payload.votos_consejero),
+                           ("regional", payload.votos_regional)) if _l),
+        None,
+    )
+
     _apply_votes(db, table.id, "district", payload.votos_distrital)
     _apply_votes(db, table.id, "provincial", payload.votos_provincial)
     _apply_votes(db, table.id, "consejero", payload.votos_consejero)
@@ -941,30 +951,111 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
         votos_impugnados=payload.votos_impugnados,
         total_electores=payload.total_electores,
         total_votantes=payload.total_votantes,
+        # Pie POR COLUMNA: el registro digitó un solo nivel (el formulario
+        # envía su pie como votos_blancos/nulos/impugnados) — se guarda también
+        # en la columna de ese nivel para el cuadre por columna del detalle.
+        **({f"blancos_{_n}": payload.votos_blancos for _n in _nivel_digitado} if _nivel_digitado else {}),
+        **({f"nulos_{_n}": payload.votos_nulos for _n in _nivel_digitado} if _nivel_digitado else {}),
+        **({f"impugnados_{_n}": payload.votos_impugnados for _n in _nivel_digitado} if _nivel_digitado else {}),
     )
 
-    # Misma regla que en PUT: CADA columna cuadra independientemente contra
-    # los votantes (cabecera); la referencia es la columna mayor, no la suma
-    # de niveles (el mismo elector vota en todas las columnas del papel).
+    # Misma regla BLOQUEANTE que en PUT: CADA columna cuadra independientemente
+    # contra los votantes (cabecera); la referencia es la columna mayor, no la
+    # suma de niveles (el mismo elector vota en todas las columnas del papel).
+    # Un acta descuadrada NO se registra: se rechaza con 409 y el formulario
+    # muestra el mensaje interactivo para corregir los números (regla del
+    # cliente: la sumatoria DEBE coincidir con los votantes ANTES de guardar).
     votantes = payload.total_votantes or 0
-    suma_total = max(
-        sum(v.votes for v in (payload.votos_distrital or [])),
-        sum(v.votes for v in (payload.votos_provincial or [])),
-        sum(v.votes for v in (payload.votos_consejero or [])),
-        sum(v.votes for v in (payload.votos_regional or [])),
-    ) + (payload.votos_blancos or 0) + (payload.votos_nulos or 0) + (payload.votos_impugnados or 0)
+
+    def _pie_nivel(nivel: str) -> int:
+        return ((getattr(payload, f"blancos_{nivel}", 0) or 0)
+                + (getattr(payload, f"nulos_{nivel}", 0) or 0)
+                + (getattr(payload, f"impugnados_{nivel}", 0) or 0))
+
+    pie_generico = ((payload.votos_blancos or 0) + (payload.votos_nulos or 0)
+                    + (payload.votos_impugnados or 0))
+    # Cada columna activa = votos + SU pie. Si el nivel digitado no trae pie
+    # específico, se usa el genérico del formulario (así lo envían el modal
+    # rápido y el formulario por pestañas).
+    sumas_columna: dict[str, int] = {}
+    for _clave, _nivel, _lista in (
+        ("district", "distrital", payload.votos_distrital),
+        ("provincial", "provincial", payload.votos_provincial),
+        ("consejero", "consejero", payload.votos_consejero),
+        ("regional", "regional", payload.votos_regional),
+    ):
+        if not _lista:
+            continue
+        pie = _pie_nivel(_nivel)
+        if pie == 0 and _nivel == _nivel_digitado:
+            pie = pie_generico
+        sumas_columna[_clave] = sum(v.votes for v in _lista) + pie
+    activas = {k: s for k, s in sumas_columna.items() if s > 0}
+    suma_total = max(activas.values()) if activas else 0
+    # R2 SIEMPRE contra el padrón REAL de la mesa (tables.electores_habiles,
+    # fuente ONPE), no contra el valor que traiga el formulario.
     excede_padron = bool(
-        payload.total_electores and votantes > payload.total_electores
+        (table.electores_habiles or 0) and votantes > table.electores_habiles
     )
+    acta_vacia = votantes == 0 and suma_total == 0
     descuadrada = votantes > 0 and votantes != suma_total
+
+    def _rechazo(regla: str, mensaje: str, detalle: dict) -> HTTPException:
+        # Log de rechazos en SU PROPIA sesión: la del request tiene cambios a
+        # medias (records de _apply_votes) y hacer commit aquí los persistía
+        # incompletos. Nunca rompe el rechazo.
+        try:
+            with SessionLocal() as log_db:
+                log_db.add(ActaRechazo(
+                    numero_mesa=table.numero_mesa, tipo_eleccion="REGISTRO",
+                    regla=regla, mensaje=(mensaje or "")[:400],
+                    usuario_email=usuario.email,
+                ))
+                log_db.commit()
+        except Exception:  # noqa: BLE001
+            logger.warning("No se pudo registrar el rechazo de acta (%s)", regla)
+        return HTTPException(status_code=409, detail={"mensaje": mensaje, **detalle})
+
+    if acta_vacia:
+        raise _rechazo(
+            "R0_ACTA_VACIA",
+            "ACTA VACÍA: no se registró ningún voto (todo en ceros). Verifique "
+            "contra el acta física y digite los totales reales antes de guardar.",
+            {"regla": "R0_ACTA_VACIA"},
+        )
     if excede_padron or descuadrada:
-        table.processed = False
-        table.requires_review = True
-        table.status = "requires_review"
-    else:
-        table.processed = True
-        table.requires_review = False
-        table.status = "processed"
+        # Detalle por columna: ningún nivel puede superar a los votantes que
+        # sufragaron (el mismo elector vota todas las columnas del papel).
+        _niveles = {
+            "Distrital": activas.get("district", 0),
+            "Provincial": activas.get("provincial", 0),
+            "Consejeros": activas.get("consejero", 0),
+            "Regional": activas.get("regional", 0),
+        }
+        _imposibles = [f"{n} ({s})" for n, s in _niveles.items() if s > votantes]
+        mensaje = (
+            f"IMPOSIBLE: {', '.join(_imposibles)} supera(n) los votantes que "
+            f"sufragaron ({votantes}). Corrige esos números o el total de votantes."
+            if _imposibles
+            else "NO COINCIDEN LOS DATOS: la columna con más votos más blancos/"
+                 f"nulos/impugnados ({suma_total}) no cuadra con el total de "
+                 f"votantes ({votantes}). Corrige los números antes de guardar."
+        )
+        raise _rechazo(
+            "R2_TOPE_ELECTORES" if excede_padron else "R1_SUMA_VOTOS",
+            mensaje,
+            {
+                "regla": "R2_TOPE_ELECTORES" if excede_padron else "R1_SUMA_VOTOS",
+                "diferencia": votantes - suma_total,
+                "suma": suma_total,
+                "votantes": votantes,
+            },
+        )
+
+    # Si llegó aquí, la acta cuadra por columna contra la cabecera: NORMAL.
+    table.processed = True
+    table.requires_review = False
+    table.status = "processed"
     db.flush()
 
     db.commit()

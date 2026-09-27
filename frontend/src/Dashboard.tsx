@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { sesionGuardada } from "./api";
+import { api, sesionGuardada } from "./api";
+import type { ActaRecord } from "./types";
+import ActaDetailModal from "./components/ActaDetailModal";
 import ChoroplethMap from "./components/ChoroplethMap";
 
 /* ==================================================================== *
@@ -32,6 +34,8 @@ interface ActaObservada {
   local: string;
   ubigeo: string;
   distrito: string;
+  /* Id de la mesa: presente para abrir la ficha con un clic. */
+  acta_id?: number | null;
 }
 
 interface EscanoConsejero {
@@ -127,6 +131,17 @@ export default function Dashboard() {
   /* Organización seleccionada en el ranking (resalta sus barras/detalle). */
   const [orgSel, setOrgSel] = useState<string | null>(null);
   const [ahora, setAhora] = useState(() => Date.now());
+  /* Ficha del acta (ActaDetailModal): se abre desde las listas de
+     inconsistencias y de observadas con un clic. */
+  const [ficha, setFicha] = useState<{ id: number; numeroMesa: string | null } | null>(null);
+  const [fichaActa, setFichaActa] = useState<ActaRecord | null>(null);
+  const abrirFicha = (id: number, numeroMesa: string) => {
+    setFicha({ id, numeroMesa });
+    api.getActa(id).then(setFichaActa).catch(() => {
+      // Sin detalle, la ficha igual abre con los datos de la mesa.
+      setFichaActa(null);
+    });
+  };
 
   const cargar = useCallback(async (n: string, u: string) => {
     setCargando(true);
@@ -256,19 +271,23 @@ export default function Dashboard() {
               </div>
               <ul className="mt-3 space-y-1.5">
                 {resumen.inconsistencias!.slice(0, 6).map((i) => (
-                  <li key={`${i.acta_id}-${i.tipo}`}
-                    className={`rounded-lg border px-3 py-2 text-xs ${
-                      i.tipo === "EXCEDE_PADRON"
-                        ? "border-red-300 bg-red-50 text-red-800"
-                        : "border-amber-200 bg-white text-amber-900"
-                    }`}>
-                    <span className="font-mono font-black">{i.numero_mesa}</span>
-                    {" "}
-                    <span className="font-semibold">{i.distrito || i.local}</span>
-                    {" — "}{i.mensaje}
-                    <span className="ml-1 font-mono">
-                      (suma {i.suma_votos} vs votantes {i.total_votantes || "—"})
-                    </span>
+                  <li key={`${i.acta_id}-${i.tipo}`}>
+                    <button
+                      onClick={() => abrirFicha(i.acta_id, i.numero_mesa)}
+                      title="Abrir la ficha del acta"
+                      className={`w-full rounded-lg border px-3 py-2 text-left text-xs transition hover:shadow-sm ${
+                        i.tipo === "EXCEDE_PADRON"
+                          ? "border-red-300 bg-red-50 text-red-800 hover:border-red-400"
+                          : "border-amber-200 bg-white text-amber-900 hover:border-amber-400"
+                      }`}>
+                      <span className="font-mono font-black underline decoration-dotted underline-offset-2">{i.numero_mesa}</span>
+                      {" "}
+                      <span className="font-semibold">{i.distrito || i.local}</span>
+                      {" — "}{i.mensaje}
+                      <span className="ml-1 font-mono">
+                        (suma {i.suma_votos} vs votantes {i.total_votantes || "—"})
+                      </span>
+                    </button>
                   </li>
                 ))}
                 {(resumen.inconsistencias?.length ?? 0) > 6 && (
@@ -580,8 +599,16 @@ export default function Dashboard() {
                   </thead>
                   <tbody>
                     {resumen.observadas.map((o) => (
-                      <tr key={o.numero_mesa} className="border-t border-slate-100">
-                        <td className="py-1.5 pr-2 font-mono font-bold text-slate-800">{o.numero_mesa}</td>
+                      <tr key={o.numero_mesa}
+                        className={`border-t border-slate-100 ${
+                          o.acta_id ? "cursor-pointer hover:bg-slate-50" : ""}`}
+                        onClick={() => o.acta_id && abrirFicha(o.acta_id, o.numero_mesa)}
+                        title={o.acta_id ? "Abrir la ficha del acta" : undefined}>
+                        <td className="py-1.5 pr-2 font-mono font-bold text-slate-800">
+                          {o.acta_id
+                            ? <span className="underline decoration-dotted underline-offset-2">{o.numero_mesa}</span>
+                            : o.numero_mesa}
+                        </td>
                         <td className="py-1.5 pr-2">{o.local}</td>
                         <td className="py-1.5 pr-2 text-slate-500">{o.distrito || o.ubigeo}</td>
                       </tr>
@@ -592,6 +619,14 @@ export default function Dashboard() {
             )}
           </section>
         </>
+      )}
+
+      {ficha && (
+        <ActaDetailModal
+          acta={fichaActa}
+          numeroMesa={fichaActa ? null : ficha.numeroMesa}
+          onClose={() => { setFicha(null); setFichaActa(null); }}
+        />
       )}
     </div>
   );

@@ -29,11 +29,11 @@ interface Props {
 
 type Checklist = Awaited<ReturnType<typeof api.checklist>>;
 
-const NIVELES: Array<{ clave: "distrital" | "provincial" | "consejero" | "regional"; titulo: string }> = [
-  { clave: "regional", titulo: "Regional (gobernador y vice)" },
-  { clave: "consejero", titulo: "Consejeros Regionales (por provincia)" },
-  { clave: "provincial", titulo: "Provincial (alcalde provincial)" },
-  { clave: "distrital", titulo: "Distrital (alcalde)" },
+const NIVELES: Array<{ clave: "distrital" | "provincial" | "consejero" | "regional"; titulo: string; tituloCorto: string }> = [
+  { clave: "regional", titulo: "Regional (gobernador y vice)", tituloCorto: "Regional" },
+  { clave: "consejero", titulo: "Consejeros Regionales (por provincia)", tituloCorto: "Consejeros" },
+  { clave: "provincial", titulo: "Provincial (alcalde provincial)", tituloCorto: "Provincial" },
+  { clave: "distrital", titulo: "Distrital (alcalde)", tituloCorto: "Distrital" },
 ];
 
 const suma = (filas: RankingEntry[] | undefined) =>
@@ -96,11 +96,39 @@ export default function ActaDetailModal({
     consejero: acta?.votos_consejero ?? [],
     regional: acta?.votos_regional ?? [],
   };
-  const votosValidos = suma(votos.distrital);
-  const emitidos = votosValidos + (acta?.votos_blancos ?? 0) + (acta?.votos_nulos ?? 0)
+  /* Norma ONPE por columna: cada nivel tiene su PROPIO pie (blancos/nulos/
+     impugnados) y cuadra INDEPENDIENTEMENTE con los votantes de la cabecera.
+     Los "emitidos" son los de la COLUMNA MAYOR, nunca la suma de niveles
+     (el mismo elector vota en todas las columnas del papel). */
+  const aAny = (acta ?? {}) as unknown as Record<string, number | null | undefined>;
+  const pieConsolidado = (acta?.votos_blancos ?? 0) + (acta?.votos_nulos ?? 0)
     + (acta?.votos_impugnados ?? 0);
+  const otrosDe = (nivel: string, validos: number) => {
+    const b = aAny[`blancos_${nivel}`];
+    const nu = aAny[`nulos_${nivel}`];
+    const im = aAny[`impugnados_${nivel}`];
+    if (b != null || nu != null || im != null) {
+      const pie = (b ?? 0) + (nu ?? 0) + (im ?? 0);
+      if (pie > 0) return pie;
+      // Pie por columna en ceros (actas sin pie digitado): la columna con
+      // votos usa el consolidado histórico como respaldo.
+      return validos > 0 ? pieConsolidado : 0;
+    }
+    return validos > 0 ? pieConsolidado : 0;
+  };
+  const columnas = NIVELES.map((n) => {
+    const validos = suma(votos[n.clave]);
+    return {
+      clave: n.clave, titulo: n.tituloCorto,
+      total: validos + otrosDe(n.clave, validos),
+      activa: validos + otrosDe(n.clave, validos) > 0,
+    };
+  });
+  const emitidos = Math.max(0, ...columnas.filter((c) => c.activa).map((c) => c.total));
   const hayVotos = emitidos > 0;
   const participacion = electores && electores > 0 ? (100 * emitidos) / electores : 0;
+  const votantesCabecera = aAny.total_votantes ?? null;
+  const validosMayor = Math.max(0, ...NIVELES.map((n) => suma(votos[n.clave])));
 
   const ESTILO: Record<string, string> = {
     REGISTRADA: "bg-emerald-100 text-emerald-800",
@@ -292,6 +320,24 @@ export default function ActaDetailModal({
                   <dd className="font-mono font-bold text-slate-800">{num(emitidos)}</dd>
                 </div>
                 <div className="flex gap-2">
+                  <dt className="w-28 shrink-0 text-slate-400">Votantes (cabecera)</dt>
+                  <dd className={`font-mono font-bold ${
+                    votantesCabecera != null && hayVotos && votantesCabecera !== emitidos
+                      ? "text-red-600" : "text-slate-800"}`}>
+                    {votantesCabecera != null ? num(votantesCabecera) : "—"}
+                  </dd>
+                </div>
+                {votantesCabecera != null && hayVotos && votantesCabecera !== emitidos && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-bold text-red-700">
+                    DESCUADRE: la suma por columna ({num(emitidos)}) no coincide con los votantes declarados ({num(votantesCabecera)}). Corrija el acta (Editar) o verifique el papel físico.
+                  </div>
+                )}
+                {votantesCabecera != null && electores != null && votantesCabecera > electores && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-bold text-red-700">
+                    IMPOSIBLE (R2): los votantes ({num(votantesCabecera)}) superan los electores hábiles ({num(electores)}).
+                  </div>
+                )}
+                <div className="flex gap-2">
                   <dt className="w-28 shrink-0 text-slate-400">Participación</dt>
                   <dd className="font-mono font-bold text-slate-800">
                     {electores ? `${participacion.toFixed(1)}%` : "—"}
@@ -318,7 +364,7 @@ export default function ActaDetailModal({
                   ["Blancos", acta?.votos_blancos ?? 0],
                   ["Nulos", acta?.votos_nulos ?? 0],
                   ["Impugnados", acta?.votos_impugnados ?? 0],
-                  ["Válidos (distrital)", votosValidos],
+                  ["Válidos (columna mayor)", validosMayor],
                 ] as const).map(([et, v]) => (
                   <div key={et} className="rounded-xl bg-slate-50 p-3 text-center">
                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">{et}</p>

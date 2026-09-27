@@ -10,6 +10,7 @@ from app.core.models import (ActaMetadata, AsignacionPersonero, ConsejeroCandida
                              DistrictCandidate, ProvincialCandidate, Record,
                              RegionalCandidate, Table, Usuario, Venue)
 from app.core.orden_cedula import BLOQUE_DESCONOCIDO, bloque_y_posicion
+from app.core.ubigeo_catalogo import UBIGEO_DISTRITO
 from app.core.ubigeo import NIVELES, ubigeo_de_nivel, ubigeos_de_nivel
 from app.services.processor import ensure_seed_data
 
@@ -59,16 +60,87 @@ def summary(scope: str = "district", ubigeo: str | None = None,
     )
     venues = venues_ok.all()
     venues_ids = [v.id for v in venues]
-    processed_tables = (
+    procesadas_rows = (
         db.query(Table)
         .filter(Table.processed == True, Table.venue_id.in_(venues_ids))  # noqa: E712
-        .count()
+        .all()
     )
     review_tables = (
         db.query(Table)
         .filter(Table.requires_review == True, Table.venue_id.in_(venues_ids))  # noqa: E712
         .count()
     )
+
+    # Integridad por acta (regla ONPE): la columna mayor + su pie (blancos/
+    # nulos/impugnados) debe cuadrar con los VOTANTES de la cabecera y estos
+    # no pueden superar los electores hábiles. Lo que no cuadra se lista como
+    # INCONSISTENTE y sale del conteo de contabilizadas: el dashboard no
+    # puede presumir un acta con datos erróneos.
+    pids_all = [t.id for t in procesadas_rows]
+    sumas_nivel = (
+        db.query(Record.table_id, Record.candidate_type, func.sum(Record.votes))
+        .filter(Record.table_id.in_(pids_all))
+        .group_by(Record.table_id, Record.candidate_type).all()
+    ) if pids_all else []
+    sumas: dict[int, dict[str, int]] = {}
+    for tid, nivel, s in sumas_nivel:
+        sumas.setdefault(tid, {})[nivel] = int(s or 0)
+    metas = ({m.table_id: m for m in db.query(ActaMetadata)
+              .filter(ActaMetadata.table_id.in_(pids_all)).all()}
+             if pids_all else {})
+    venue_nombre = {v.id: v for v in venues}
+
+    def _otros_pie(meta, nivel: str) -> int:
+        b = getattr(meta, f"blancos_{nivel}", 0) or 0
+        nul = getattr(meta, f"nulos_{nivel}", 0) or 0
+        i = getattr(meta, f"impugnados_{nivel}", 0) or 0
+        if b + nul + i == 0:  # actas viejas sin pie por columna: consolidado
+            b, nul, i = (meta.votos_blancos or 0, meta.votos_nulos or 0,
+                         meta.votos_impugnados or 0)
+        return b + nul + i
+
+    inconsistentes: list[dict] = []
+    contabilizadas_validas = 0
+    for t in procesadas_rows:
+        m = metas.get(t.id)
+        vot = int(m.total_votantes or 0) if m else 0
+        hab = t.electores_habiles or 0
+        por_nivel = sumas.get(t.id, {})
+        suma_acta = max(
+            (v + _otros_pie(m, nivel) for nivel, v in por_nivel.items()),
+            default=0,
+        ) if m else max(por_nivel.values(), default=0)
+        tipo = ""
+        diferencia = 0
+        if hab and vot > hab:
+            tipo, diferencia = "EXCEDE_PADRON", vot - hab
+        elif vot == 0 and suma_acta > 0:
+            tipo, diferencia = "SIN_VOTANTES", suma_acta
+        elif vot > 0 and suma_acta != vot:
+            tipo, diferencia = "DESCUADRE", suma_acta - vot
+        if not tipo:
+            contabilizadas_validas += 1
+            continue
+        vinfo = venue_nombre.get(t.venue_id)
+        if tipo == "EXCEDE_PADRON":
+            mensaje = (f"Declara {vot} votantes, más que sus {hab} electores "
+                       "hábiles. IMPOSIBLE: revise el acta.")
+        elif tipo == "SIN_VOTANTES":
+            mensaje = (f"Registra {suma_acta} votos pero sin cabecera de "
+                       "votantes. Complete el total de votantes.")
+        else:
+            mensaje = (f"Registra {suma_acta} votos emitidos pero su cabecera "
+                       f"declara {vot} votantes (diferencia {diferencia:+d}). "
+                       "DATOS ERRÓNEOS: corrija el acta.")
+        inconsistentes.append({
+            "acta_id": t.id, "numero_mesa": t.numero_mesa,
+            "local": vinfo.name if vinfo else "",
+            "distrito": UBIGEO_DISTRITO.get((vinfo.ubigeo if vinfo else "") or "", ""),
+            "suma_votos": suma_acta, "total_votantes": vot,
+            "electores_habiles": hab, "diferencia": diferencia,
+            "tipo": tipo, "mensaje": mensaje,
+        })
+    processed_tables = contabilizadas_validas
 
     # La oferta electoral es la del ámbito, no la de toda la región: la misma
     # organización compite en decenas de distritos, así que el ranking se ciñe
@@ -134,6 +206,7 @@ def summary(scope: str = "district", ubigeo: str | None = None,
         "total_tables": total_tables,
         "processed_tables": processed_tables,
         "review_tables": review_tables,
+        "actas_inconsistentes": inconsistentes,
         "progress_pct": round((processed_tables / total_tables * 100), 1) if total_tables else 0,
         "ranking": ranking,
         "scope": scope,

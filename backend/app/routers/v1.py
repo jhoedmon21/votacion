@@ -704,6 +704,7 @@ def resumen(tipo_eleccion: str = Query("DISTRITAL"),
 
     obs_lista = sorted( 
         ({"numero_mesa": t.numero_mesa,
+          "acta_id": t.id,
           "local": venue_por_id.get(t.venue_id).name
           if venue_por_id.get(t.venue_id) else "",
           "ubigeo": venue_por_id.get(t.venue_id).ubigeo

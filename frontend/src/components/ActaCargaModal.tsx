@@ -29,6 +29,9 @@ export default function ActaCargaModal({ mesa, onClose, onSaved }: {
   const [blancos, setBlancos] = useState(0);
   const [nulos, setNulos] = useState(0);
   const [impugnados, setImpugnados] = useState(0);
+  /* Votantes que sufragaron (cabecera del acta): la suma DEBE cuadrar con
+     esta cifra antes de guardar (regla ONPE por columna). */
+  const [votantes, setVotantes] = useState(0);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [confianza, setConfianza] = useState(1.0);
   const [fotoNombre, setFotoNombre] = useState<string | null>(null);
@@ -54,6 +57,7 @@ export default function ActaCargaModal({ mesa, onClose, onSaved }: {
         if (col?.votos_blancos != null) setBlancos(col.votos_blancos);
         if (col?.votos_nulos != null) setNulos(col.votos_nulos);
         if (col?.votos_impugnados != null) setImpugnados(col.votos_impugnados);
+        if (col?.total_votantes_papel != null) setVotantes(col.total_votantes_papel);
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setCargando(false));
@@ -63,6 +67,17 @@ export default function ActaCargaModal({ mesa, onClose, onSaved }: {
   const totalEmitidos = totalOrgs + blancos + nulos + impugnados;
   const habiles = plantilla?.electores_habiles ?? null;
   const excedePadron = habiles != null && habiles > 0 && totalEmitidos > habiles;
+  /* Integridad antes de guardar: la columna digitada (votos + B/N/I) debe
+     cuadrar EXACTAMENTE con los votantes declarados en la cabecera, y la
+     cabecera no puede superar el padrón real (R2). */
+  const descuadre = votantes > 0 && totalEmitidos !== votantes;
+  const vacia = votantes === 0 && totalEmitidos === 0;
+  const bloqueado = excedePadron || descuadre || vacia;
+  const motivoBloqueo = vacia
+    ? "ACTA VACÍA: digite los votos del papel y el total de votantes."
+    : excedePadron
+      ? `IMPOSIBLE: ${totalEmitidos} supera los ${habiles} electores hábiles del padrón.`
+      : `NO COINCIDEN: la suma (${totalEmitidos}) debe ser igual a los votantes (${votantes}). Diferencia: ${totalEmitidos - votantes > 0 ? "+" : ""}${totalEmitidos - votantes}.`;
 
   const setVoto = (numero: number, v: number) =>
     setOrgs((prev) => prev.map((o) =>
@@ -99,6 +114,7 @@ export default function ActaCargaModal({ mesa, onClose, onSaved }: {
         await api.updateActa(acta.id, {
           votos_distrital: votos, votos_blancos: blancos,
           votos_nulos: nulos, votos_impugnados: impugnados,
+          total_votantes: votantes,
           ...(imageUrl ? { image_url: imageUrl } : {}),
           verified: true,
         });
@@ -109,6 +125,7 @@ export default function ActaCargaModal({ mesa, onClose, onSaved }: {
           votos_blancos: blancos, votos_nulos: nulos,
           votos_impugnados: impugnados, image_url: imageUrl,
           ocr_confidence: confianza, total_electores: habiles,
+          total_votantes: votantes,
           verified: true,
         });
         setOk(`Acta ${mesa} cargada correctamente.`);
@@ -204,11 +221,29 @@ export default function ActaCargaModal({ mesa, onClose, onSaved }: {
                     </label>
                   ))}
                 </div>
-                <p className={`mt-2 font-mono text-xs ${excedePadron ? "font-black text-red-600" : "text-slate-500"}`}>
+                {/* Cabecera del acta: votantes que sufragaron (obligatoria). */}
+                <div className="mt-3">
+                  <label className="text-[11px] font-black uppercase text-slate-500">
+                    Votantes que Sufragaron (cabecera del acta)
+                    <input type="number" min={0} value={votantes}
+                      onChange={(e) => setVotantes(Math.max(0, Number(e.target.value) || 0))}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-right font-mono font-black text-slate-800" />
+                  </label>
+                </div>
+                <p className={`mt-2 font-mono text-xs ${
+                  excedePadron || descuadre || vacia
+                    ? "font-black text-red-600" : "text-slate-500"}`}>
                   Total emitidos: {totalEmitidos}
+                  {votantes > 0 && ` vs votantes: ${votantes}`}
                   {habiles != null && ` / ${habiles} hábiles`}
                   {excedePadron && " ⚠ supera el padrón"}
+                  {descuadre && " ⚠ no cuadra con los votantes"}
                 </p>
+                {bloqueado && (
+                  <p className="mt-2 rounded-xl bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
+                    {motivoBloqueo}
+                  </p>
+                )}
               </section>
 
               {/* 3 · Guardar */}
@@ -217,7 +252,7 @@ export default function ActaCargaModal({ mesa, onClose, onSaved }: {
                   className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-bold text-slate-600">
                   Cancelar
                 </button>
-                <button onClick={() => void guardar()} disabled={guardando || excedePadron}
+                <button onClick={() => void guardar()} disabled={guardando || bloqueado}
                   className="rounded-xl bg-[#e31837] px-6 py-2.5 text-sm font-black uppercase tracking-wider text-white hover:bg-[#c11230] disabled:opacity-50">
                   {guardando ? "Guardando…" : "💾 Guardar acta"}
                 </button>
