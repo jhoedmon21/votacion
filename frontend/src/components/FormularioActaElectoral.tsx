@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ColumnaActa, OrgColumna, PlantillaActa } from "./ActaIngresoForm";
 import { sesionGuardada } from "../api";
+import { ModalActaVacia, ModalVotosInusuales } from "./ModalesDigitacion";
 
 /* ==================================================================== *
  *  FormularioActaElectoral — Captura de votos, Provincia de Arequipa
@@ -98,7 +99,8 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
   /* R6 — Advertencia de concentración atípica (>90% de los votos válidos en
      una organización): exige reconfirmar contra el acta física. */
   const [avisoAtipico, setAvisoAtipico] = useState<string | null>(null);
-  const [confirmacionActaFisica, setConfirmacionActaFisica] = useState(false);
+  /* R0 — Bloqueo por acta vacía (todo en ceros): modal rojo centrado. */
+  const [bloqueoVacia, setBloqueoVacia] = useState(false);
   const [avisos, setAvisos] = useState<string[]>([]);
   const [checklist, setChecklist] = useState<Checklist | null>(null);
   const [localizando, setLocalizando] = useState(false);
@@ -369,6 +371,11 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
           setAvisoAtipico(det.mensaje ?? "Votos inusuales en esta mesa.");
           return;
         }
+        if (typeof det === "object" && det !== null && det.regla === "R0_ACTA_VACIA") {
+          // R0 — Acta vacía: modal rojo de bloqueo.
+          setBloqueoVacia(true);
+          return;
+        }
         setError(typeof det === "string" ? det
           : typeof det === "object" && det?.mensaje ? det.mensaje
           : `Error ${res.status}`);
@@ -544,36 +551,6 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
           </div>
         )}
         {error && <p className="mt-2 rounded bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{error}</p>}
-        {/* R6 — Doble confirmación de concentración atípica */}
-        {avisoAtipico && (
-          <div className="mt-2 rounded-xl border-2 border-amber-400 bg-amber-50 p-4">
-            <p className="text-sm font-black text-amber-800">⚠ {avisoAtipico}</p>
-            <label className="mt-3 flex items-start gap-2 text-xs font-bold text-amber-900">
-              <input
-                type="checkbox"
-                checked={confirmacionActaFisica}
-                onChange={(e) => setConfirmacionActaFisica(e.target.checked)}
-                className="mt-0.5 h-4 w-4"
-              />
-              Validado manualmente con acta física: los números coinciden con el papel.
-            </label>
-            <div className="mt-3 flex gap-2">
-              <button
-                disabled={!confirmacionActaFisica || enviando}
-                onClick={() => void registrar(true)}
-                className="rounded-xl bg-amber-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-amber-700 disabled:opacity-40"
-              >
-                Confirmar y registrar
-              </button>
-              <button
-                onClick={() => { setAvisoAtipico(null); setConfirmacionActaFisica(false); }}
-                className="rounded-xl border border-amber-300 bg-white px-4 py-2 text-xs font-black text-amber-800 hover:bg-amber-100"
-              >
-                Revisar digitación
-              </button>
-            </div>
-          </div>
-        )}
         {avisos.map((a, i) => (
           <p key={i} className="mt-2 rounded bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">{a}</p>
         ))}
@@ -742,6 +719,40 @@ export default function FormularioActaElectoral({ onGuardada, onCancelar, mesaIn
             </div>
           </div>
         </>
+      )}
+
+      {/* ===== MODALES EMERGENTES CENTRADOS (prevención de errores) ===== */}
+      {avisoAtipico && (
+        <ModalVotosInusuales
+          mensaje={avisoAtipico}
+          confirmando={enviando}
+          onConfirmar={() => { void registrar(true); }}
+          onRevisar={() => {
+            setAvisoAtipico(null);
+            // Enfoca la casilla del candidato con más votos (revisar dígito).
+            const casillas = [...document.querySelectorAll<HTMLInputElement>(
+              'input[aria-label^="Votos "]')];
+            const mayor = casillas.reduce<{ el: HTMLInputElement | null; v: number }>(
+              (acc, el) => {
+                const v = Number(el.value) || 0;
+                return v > acc.v ? { el, v } : acc;
+              }, { el: null, v: -1 });
+            (mayor.el ?? casillas[0])?.focus();
+            (mayor.el ?? casillas[0])?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}
+        />
+      )}
+      {bloqueoVacia && (
+        <ModalActaVacia
+          onVolverADigitar={() => {
+            setBloqueoVacia(false);
+            // Enfoca la PRIMERA casilla de votación para iniciar la corrección.
+            const primera = document.querySelector<HTMLInputElement>(
+              'input[aria-label^="Votos "]');
+            primera?.focus();
+            primera?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}
+        />
       )}
     </div>
   );

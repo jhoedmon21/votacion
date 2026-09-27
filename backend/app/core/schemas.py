@@ -134,6 +134,10 @@ class ActaUpdatePayload(BaseModel):
     # Votantes que sufragaron (cabecera del acta). Si falta o no cuadra con la
     # suma, el acta se guarda igual pero queda OBSERVADA para revisión.
     total_votantes: Optional[int] = None
+    # R6 (concentración atípica >90%): confirmación del acta física.
+    confirmado_atipico: bool = False
+    # R1 conocido: enviar a Revisión / Acta Observada en vez de guardar.
+    forzar_revision: bool = False
     verified: bool = False
 
 

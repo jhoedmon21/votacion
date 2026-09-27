@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ActaRecord, RankingEntry, CandidateVotes } from "../../types";
 import { api } from "../../api";
+import { ModalVotosInusuales } from "../ModalesDigitacion";
 import { Boton, Input, Card, Alerta } from "../ui";
 
 interface SideBySideDigitizationProps {
@@ -695,29 +696,7 @@ function SideBySideDigitizationInner({
             )}
 
             {/* R6 — Advertencia de concentración atípica con doble confirmación */}
-            {avisoAtipico && (
-              <div className="m-4 rounded-xl border-2 border-amber-400 bg-amber-50 p-4">
-                <p className="text-sm font-black text-amber-800">⚠ {avisoAtipico}</p>
-                <label className="mt-3 flex items-start gap-2 text-xs font-bold text-amber-900">
-                  <input
-                    type="checkbox"
-                    checked={confirmacionActaFisica}
-                    onChange={(e) => setConfirmacionActaFisica(e.target.checked)}
-                    className="mt-0.5 h-4 w-4"
-                  />
-                  Validado manualmente con acta física: los números coinciden con el papel.
-                </label>
-                <div className="mt-3 flex gap-2">
-                  <Boton variante="primario" deshabilitado={!confirmacionActaFisica}
-                    onClick={() => { void handleSave(); }}>
-                    Confirmar y guardar
-                  </Boton>
-                  <Boton variante="borde" onClick={() => { setAvisoAtipico(null); setConfirmacionActaFisica(false); }}>
-                    Revisar dígitación
-                  </Boton>
-                </div>
-              </div>
-            )}
+            {/* R6 — el modal centrado se renderiza al final del árbol */}
 
             <div className="p-4 space-y-6 flex-1">
               {/* METADATOS */}
@@ -935,6 +914,27 @@ function SideBySideDigitizationInner({
           </div>
         </div>
       </div>
+
+      {/* ===== MODAL EMERGENTE CENTRADO (R6, sobre el modal de edición) ===== */}
+      {avisoAtipico && (
+        <ModalVotosInusuales
+          mensaje={avisoAtipico}
+          onConfirmar={() => { setConfirmacionActaFisica(true); void handleSave(); }}
+          onRevisar={() => {
+            setAvisoAtipico(null);
+            setConfirmacionActaFisica(false);
+            const casillas = [...document.querySelectorAll<HTMLInputElement>(
+              'input[aria-label^="Votos "]')];
+            const mayor = casillas.reduce<{ el: HTMLInputElement | null; v: number }>(
+              (acc, el) => {
+                const v = Number(el.value) || 0;
+                return v > acc.v ? { el, v } : acc;
+              }, { el: null, v: -1 });
+            (mayor.el ?? casillas[0])?.focus();
+            (mayor.el ?? casillas[0])?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}
+        />
+      )}
     </div>
   );
 }

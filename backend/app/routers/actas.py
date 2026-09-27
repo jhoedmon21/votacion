@@ -10,9 +10,10 @@ from app.core.auth import (alcance_ubigeos, es_rol_global, requerir_rol,
                            usuario_actual, validar_alcance_venue,
                            venues_en_alcance)
 from app.core.database import SessionLocal, get_db
-from app.core.models import (ActaMetadata, ActaRechazo, ConsejeroCandidate,
-                             DistrictCandidate, ProvincialCandidate, Record,
-                             RegionalCandidate, ROLES_SISTEMA, Table, Usuario, Venue)
+from app.core.models import (ActaMetadata, ActaRechazo, AsignacionPersonero,
+                             ConsejeroCandidate, DistrictCandidate,
+                             ProvincialCandidate, Record, RegionalCandidate,
+                             ROLES_SISTEMA, Table, Usuario, Venue)
 from app.core.schemas import (ActaParseResult, ActaUpdate, ActaUpdatePayload,
                               ActaValidacionIn)
 from app.core.ubigeo import candidatos_del_ambito, ubigeo_de_nivel
@@ -79,6 +80,25 @@ def _ranking(db: Session, table_id: int, candidate_type: str) -> list[dict]:
     return ranking
 
 
+def _digitador_de_mesa(db: Session, mesa_id: int) -> str | None:
+    """Nombre del personero TITULAR más reciente de la mesa (digitador)."""
+    from sqlalchemy import desc as _desc
+
+    asig = (
+        db.query(AsignacionPersonero)
+        .filter(AsignacionPersonero.mesa_id == mesa_id,
+                AsignacionPersonero.tipo == "TITULAR")
+        .order_by(AsignacionPersonero.created_at.desc(), _desc(AsignacionPersonero.id))
+        .first()
+    )
+    if asig is None:
+        return None
+    u = db.query(Usuario).filter(Usuario.id == asig.usuario_id).first()
+    if u is None:
+        return None
+    return f"{u.nombres} {u.apellidos}".strip() or u.email
+
+
 def _serialize_acta(db: Session, table: Table) -> dict:
     """Full acta payload shared by the review list, detail and save endpoints."""
     venue = db.query(Venue).filter(Venue.id == table.venue_id).first()
@@ -123,6 +143,17 @@ def _serialize_acta(db: Session, table: Table) -> dict:
         "blancos_regional": meta.blancos_regional if meta else 0,
         "nulos_regional": meta.nulos_regional if meta else 0,
         "impugnados_regional": meta.impugnados_regional if meta else 0,
+        # Bloque de auditoría de la ficha: quién digitó, cuándo y qué
+        # incidencias del sistema quedaron registradas para esta mesa.
+        "digitador": _digitador_de_mesa(db, table.id),
+        "actualizada_en": (table.updated_at.isoformat() if table.updated_at else None),
+        "incidencias": [
+            {"regla": r.regla, "mensaje": r.mensaje,
+             "fecha": (r.created_at.isoformat() if r.created_at else None)}
+            for r in db.query(ActaRechazo)
+            .filter(ActaRechazo.numero_mesa == table.numero_mesa)
+            .order_by(ActaRechazo.created_at.desc()).limit(6).all()
+        ],
     }
 
 
@@ -148,19 +179,21 @@ def _mesa_con_acta(db: Session, numero_mesa: str | None, clave_tipo: str) -> boo
 
 def _registrar_rechazo(db: Session, *, numero_mesa: str, tipo_eleccion: str,
                        regla: str, mensaje: str, usuario: Usuario | None) -> None:
-    """Deja constancia de un intento de registro rechazado (log R0-R2).
+    """Deja constancia de un intento de registro rechazado (log R0-R6).
 
+    Escribe en SU PROPIA sesión: al llegar aquí el request ya aplicó votos a
+    medias y hacer commit sobre esa sesión los persistiría pese al rechazo.
     Nunca interrumpe el flujo: si el log falla, el rechazo sigue ocurriendo.
     """
     try:
-        db.add(ActaRechazo(
-            numero_mesa=numero_mesa or "?", tipo_eleccion=tipo_eleccion,
-            regla=regla, mensaje=(mensaje or "")[:400],
-            usuario_email=usuario.email if usuario else None,
-        ))
-        db.commit()
+        with SessionLocal() as log_db:
+            log_db.add(ActaRechazo(
+                numero_mesa=numero_mesa or "?", tipo_eleccion=tipo_eleccion,
+                regla=regla, mensaje=(mensaje or "")[:400],
+                usuario_email=usuario.email if usuario else None,
+            ))
+            log_db.commit()
     except Exception:  # noqa: BLE001 — el log no debe romper el rechazo
-        db.rollback()
         logger.warning("No se pudo registrar el rechazo de acta (%s)", regla)
 
 
@@ -802,7 +835,9 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     excede_padron = bool(
         (table.electores_habiles or 0) and votantes > table.electores_habiles
     )
-    descuadrada = votantes > 0 and votantes != suma_total
+    descuadrada = votantes > 0 and any(
+        s != votantes for s in _activas.values()
+    )
     # R0: acta vacía — todo en ceros no es un acta registrable (0 = 0 cuadra,
     # pero nadie digitó los votos del papel).
     acta_vacia = votantes == 0 and suma_total == 0
@@ -881,7 +916,8 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
             "Consejeros": _activas.get("consejero", 0),
             "Regional": _activas.get("regional", 0),
         }
-        _imposibles = [f"{n} ({s})" for n, s in _niveles.items() if s > votantes]
+        _mal = [f"{n} suma {s}" for n, s in _niveles.items()
+                if s != votantes and s > 0]
         if excede_padron:
             mensaje = (
                 f"MESA DESCUADRADA — IMPOSIBLE: los votantes que sufragaron "
@@ -890,18 +926,14 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
                 f"{votantes - (table.electores_habiles or 0)} votos. Verifique "
                 "el acta física."
             )
-        elif _imposibles:
-            mensaje = (
-                f"IMPOSIBLE: {', '.join(_imposibles)} supera(n) los votantes que "
-                f"sufragaron ({votantes}). Corrige esos números o el total de votantes."
-            )
         else:
             mensaje = (
-                "MESA DESCUADRADA — NO COINCIDEN LOS DATOS: la columna con más "
-                "votos más blancos/"
-                f"nulos/impugnados ({suma_total}) no cuadra con el total de "
-                f"votantes ({votantes}); diferencia {votantes - suma_total:+d}. "
-                "Corrige los números antes de guardar."
+                "MESA DESCUADRADA — NO COINCIDEN LOS DATOS: "
+                + (", ".join(_mal) if _mal
+                   else f"la columna mayor suma {suma_total}")
+                + f" y los votantes son {votantes}. Cada columna (con sus "
+                "blancos/nulos/impugnados) debe cuadrar con el total de "
+                "votantes."
             )
         _registrar_rechazo(db, numero_mesa=table.numero_mesa,
                            tipo_eleccion="RECTIFICACION",
@@ -1056,7 +1088,9 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
         (table.electores_habiles or 0) and votantes > table.electores_habiles
     )
     acta_vacia = votantes == 0 and suma_total == 0
-    descuadrada = votantes > 0 and votantes != suma_total
+    # Norma ONPE: CADA columna activa debe cuadrar con los votantes, no solo
+    # la mayor ( Regional 215 + Distrital 185 pasarían el chequeo agregado).
+    descuadrada = votantes > 0 and any(s != votantes for s in activas.values())
 
     def _rechazo(regla: str, mensaje: str, detalle: dict) -> HTTPException:
         # Log de rechazos en SU PROPIA sesión: la del request tiene cambios a
@@ -1126,7 +1160,8 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
             "Consejeros": activas.get("consejero", 0),
             "Regional": activas.get("regional", 0),
         }
-        _imposibles = [f"{n} ({s})" for n, s in _niveles.items() if s > votantes]
+        _mal = [f"{n} suma {s}" for n, s in _niveles.items()
+                if s != votantes and s > 0]
         if excede_padron:
             mensaje = (
                 f"MESA DESCUADRADA — IMPOSIBLE: los votantes que sufragaron "
@@ -1135,18 +1170,14 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
                 f"{votantes - (table.electores_habiles or 0)} votos. Verifique "
                 "el acta física."
             )
-        elif _imposibles:
-            mensaje = (
-                f"IMPOSIBLE: {', '.join(_imposibles)} supera(n) los votantes que "
-                f"sufragaron ({votantes}). Corrige esos números o el total de votantes."
-            )
         else:
             mensaje = (
-                "MESA DESCUADRADA — NO COINCIDEN LOS DATOS: la columna con más "
-                "votos más blancos/"
-                f"nulos/impugnados ({suma_total}) no cuadra con el total de "
-                f"votantes ({votantes}); diferencia {votantes - suma_total:+d}. "
-                "Corrige los números antes de guardar."
+                "MESA DESCUADRADA — NO COINCIDEN LOS DATOS: "
+                + (", ".join(_mal) if _mal
+                   else f"la columna mayor suma {suma_total}")
+                + f" y los votantes son {votantes}. Cada columna (con sus "
+                "blancos/nulos/impugnados) debe cuadrar con el total de "
+                "votantes."
             )
         raise _rechazo(
             "R2_TOPE_ELECTORES" if excede_padron else "R1_SUMA_VOTOS",

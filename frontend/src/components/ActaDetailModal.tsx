@@ -3,6 +3,19 @@ import { api } from "../api";
 import type { ActaRecord, RankingEntry } from "../types";
 import { Alerta, Boton } from "./ui";
 
+/* Incidencias del sistema registradas para esta mesa (log R0-R6). */
+interface Incidencia {
+  regla: string;
+  mensaje: string;
+  fecha: string | null;
+}
+
+type ActaConAuditoria = ActaRecord & {
+  digitador?: string | null;
+  actualizada_en?: string | null;
+  incidencias?: Incidencia[];
+};
+
 /* ==================================================================== *
  *  Ficha de acta / mesa — la vista de "Ver" de la Gestión de Actas.
  *
@@ -42,8 +55,9 @@ const suma = (filas: RankingEntry[] | undefined) =>
 const num = (v: number | null | undefined) => (v ?? 0).toLocaleString("es-PE");
 
 export default function ActaDetailModal({
-  acta, numeroMesa, onClose, onEditar, onCargar,
+  acta: actaBase, numeroMesa, onClose, onEditar, onCargar,
 }: Props) {
+  const acta = actaBase as ActaConAuditoria | null;
   const mesa = acta?.numero_mesa ?? numeroMesa ?? "";
   const [checklist, setChecklist] = useState<Checklist | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -128,77 +142,11 @@ export default function ActaDetailModal({
   const hayVotos = emitidos > 0;
   const participacion = electores && electores > 0 ? (100 * emitidos) / electores : 0;
   const votantesCabecera = aAny.total_votantes ?? null;
-  const validosMayor = Math.max(0, ...NIVELES.map((n) => suma(votos[n.clave])));
 
   const ESTILO: Record<string, string> = {
     REGISTRADA: "bg-emerald-100 text-emerald-800",
     PENDIENTE: "bg-slate-200 text-slate-700",
     OBSERVADA: "bg-amber-100 text-amber-800",
-  };
-
-  const bloqueVotos = (titulo: string, filas: RankingEntry[]) => {
-    const total = suma(filas);
-    return (
-      <div className="rounded-xl border border-slate-200">
-        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-2">
-          <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
-            {titulo}
-          </span>
-          <span className="font-mono text-[11px] font-bold text-[#E02020]">
-            {num(total)} votos
-          </span>
-        </div>
-        {filas.length === 0 ? (
-          <p className="px-3 py-3 text-xs text-slate-400">
-            Sin votos cargados en este nivel.
-          </p>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {filas
-              .slice()
-              .sort((a, b) => b.votes - a.votes)
-              .map((c) => {
-                const pct = total > 0 ? (100 * c.votes) / total : 0;
-                return (
-                  <div key={`${titulo}-${c.candidate_id}`} className="flex items-center gap-3 px-3 py-2">
-                    <span
-                      className="w-6 shrink-0 text-center font-mono text-[11px] font-black text-slate-400"
-                      title={`Casita ${c.candidate_id}: la fila de esta organización en la columna del acta`}
-                    >
-                      {c.candidate_id}
-                    </span>
-                    <span
-                      className="h-8 w-8 shrink-0 rounded-lg border border-slate-200 bg-white object-contain p-0.5 text-center text-[10px] font-black leading-[26px] text-white"
-                      style={{ backgroundColor: c.color || "#64748b" }}
-                      title={c.party}
-                    >
-                      {(c.party || "?").charAt(0)}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-xs font-bold text-slate-800">
-                        {c.party || c.name}
-                      </span>
-                      <span className="block truncate text-[11px] text-slate-500">{c.name}</span>
-                      <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                        <span
-                          className="block h-full rounded-full"
-                          style={{ width: `${pct}%`, backgroundColor: c.color || "#E02020" }}
-                        />
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-right font-mono text-xs font-bold tabular-nums text-slate-700">
-                      {num(c.votes)}
-                      <span className="block text-[10px] font-normal text-slate-400">
-                        {pct.toFixed(1)}%
-                      </span>
-                    </span>
-                  </div>
-                );
-              })}
-          </div>
-        )}
-      </div>
-    );
   };
 
   return (
@@ -220,7 +168,11 @@ export default function ActaDetailModal({
             </h2>
           </div>
           <span className={`rounded-full px-3 py-1 text-[11px] font-black ${ESTILO[estado] ?? ESTILO.PENDIENTE}`}>
-            {estado === "REGISTRADA" ? "Registrada" : estado === "OBSERVADA" ? "Observada" : "Pendiente"}
+            {estado === "REGISTRADA"
+              ? "✓ Procesada Normal"
+              : estado === "OBSERVADA"
+                ? "⚠ Observada por Incoherencia"
+                : "En Control de Calidad"}
           </span>
           <button
             onClick={onClose}
@@ -231,149 +183,166 @@ export default function ActaDetailModal({
           </button>
         </div>
 
-        <div className="max-h-[75vh] space-y-4 overflow-y-auto p-5">
+        <div className="max-h-[80vh] space-y-3 overflow-y-auto p-4">
           {aviso && <Alerta tono="aviso">No se pudo cargar la ficha del padrón: {aviso}</Alerta>}
 
-          {/* Evidencia fotográfica */}
-          <section className="rounded-xl border border-slate-200 p-3">
-            <h3 className="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">
-              Evidencia del acta física
-            </h3>
-            {tieneActa && acta?.image_url ? (
-              <div className="text-center">
-                <img
-                  src={acta.image_url}
-                  alt={`Acta de la mesa ${mesa}`}
-                  onClick={() => setFotoGrande(true)}
-                  className="mx-auto max-h-72 cursor-zoom-in rounded-lg border border-slate-200 object-contain"
-                />
-                <div className="mt-2 flex justify-center gap-2">
-                  <Boton variante="suave" onClick={() => setFotoGrande(true)}>
-                    🔍 Ampliar
-                  </Boton>
-                  <a
-                    href={acta.image_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex min-h-[44px] items-center rounded-xl bg-slate-100 px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-200"
-                  >
-                    ↗ Abrir original
-                  </a>
-                </div>
+          {/* ============ A. CABECERA DEL ACTA (un golpe de vista) ============ */}
+          <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-3">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Ubicación</p>
+                <p className="truncate text-xs font-bold text-slate-800">
+                  AREQUIPA › {provincia || "—"} › {distrito || "—"}
+                </p>
+                <p className="truncate text-[11px] text-slate-500">{local || "—"}</p>
               </div>
-            ) : (
-              <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-6 text-center text-xs text-slate-500">
-                {tieneActa
-                  ? "El acta está registrada pero sin foto adjunta."
-                  : "Sin foto: la mesa aún no tiene acta cargada."}
-              </p>
-            )}
-          </section>
-
-          {/* Ubicación y padrón */}
-          <section className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 p-3">
-              <h3 className="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">
-                Ubicación
-              </h3>
-              <dl className="space-y-1 text-xs">
-                <div className="flex gap-2">
-                  <dt className="w-24 shrink-0 text-slate-400">Local</dt>
-                  <dd className="font-bold text-slate-800">{local || "—"}</dd>
+              <div className="min-w-[130px]">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Mesa</p>
+                <p className="font-mono text-lg font-black tabular-nums text-[#E02020]">{mesa}</p>
+              </div>
+              <div className="min-w-[150px] flex-1">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Padrón · Participación</p>
+                <div className="flex items-baseline gap-2 font-mono text-xs font-bold text-slate-800">
+                  <span>{electores ? num(electores) : "—"} hábiles</span>
+                  <span className="text-slate-300">·</span>
+                  <span>{num(emitidos)} votaron</span>
+                  <span className={`text-sm font-black ${participacion >= 100 ? "text-red-600" : "text-emerald-600"}`}>
+                    {electores ? `${participacion.toFixed(1)}%` : "—"}
+                  </span>
                 </div>
-                <div className="flex gap-2">
-                  <dt className="w-24 shrink-0 text-slate-400">Distrito</dt>
-                  <dd className="font-bold text-slate-800">{distrito || "—"}</dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt className="w-24 shrink-0 text-slate-400">Provincia</dt>
-                  <dd className="font-bold text-slate-800">{provincia || "—"}</dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt className="w-24 shrink-0 text-slate-400">Ubigeo</dt>
-                  <dd className="font-mono font-bold text-slate-800">{ubigeo || "—"}</dd>
-                </div>
-                {acta?.latitude != null && acta?.longitude != null && (
-                  <div className="flex gap-2">
-                    <dt className="w-24 shrink-0 text-slate-400">Coordenadas</dt>
-                    <dd className="font-mono text-slate-600">
-                      {acta.latitude.toFixed(5)}, {acta.longitude.toFixed(5)}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 p-3">
-              <h3 className="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">
-                Padrón (tope R2)
-              </h3>
-              <dl className="space-y-1 text-xs">
-                <div className="flex gap-2">
-                  <dt className="w-28 shrink-0 text-slate-400">Electores hábiles</dt>
-                  <dd className="font-mono font-bold text-slate-800">
-                    {electores ? num(electores) : "sin padrón"}
-                  </dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt className="w-28 shrink-0 text-slate-400">Votos emitidos</dt>
-                  <dd className="font-mono font-bold text-slate-800">{num(emitidos)}</dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt className="w-28 shrink-0 text-slate-400">Votantes (cabecera)</dt>
-                  <dd className={`font-mono font-bold ${
-                    votantesCabecera != null && hayVotos && votantesCabecera !== emitidos
-                      ? "text-red-600" : "text-slate-800"}`}>
-                    {votantesCabecera != null ? num(votantesCabecera) : "—"}
-                  </dd>
+                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className={`h-full rounded-full ${participacion >= 100 ? "bg-red-500" : "bg-emerald-500"}`}
+                    style={{ width: `${Math.min(100, participacion)}%` }}
+                  />
                 </div>
                 {votantesCabecera != null && hayVotos && votantesCabecera !== emitidos && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-bold text-red-700">
-                    DESCUADRE: la suma por columna ({num(emitidos)}) no coincide con los votantes declarados ({num(votantesCabecera)}). Corrija el acta (Editar) o verifique el papel físico.
-                  </div>
+                  <p className="mt-1 text-[11px] font-bold text-red-600">
+                    ⚠ Cabecera declara {num(votantesCabecera)} votantes ≠ {num(emitidos)} leídos
+                  </p>
                 )}
                 {votantesCabecera != null && electores != null && votantesCabecera > electores && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-bold text-red-700">
-                    IMPOSIBLE (R2): los votantes ({num(votantesCabecera)}) superan los electores hábiles ({num(electores)}).
-                  </div>
+                  <p className="mt-0.5 text-[11px] font-black text-red-600">
+                    🚫 R2: votantes superan el padrón
+                  </p>
                 )}
-                <div className="flex gap-2">
-                  <dt className="w-28 shrink-0 text-slate-400">Participación</dt>
-                  <dd className="font-mono font-bold text-slate-800">
-                    {electores ? `${participacion.toFixed(1)}%` : "—"}
-                  </dd>
-                </div>
-              </dl>
+              </div>
+              {tieneActa && acta?.image_url && (
+                <button onClick={() => setFotoGrande(true)} title="Ampliar evidencia del acta física"
+                  className="shrink-0 rounded-lg border border-slate-200 shadow-sm transition hover:shadow-md">
+                  <img src={acta.image_url} alt={`Acta ${mesa}`}
+                    className="h-14 w-20 rounded-lg object-cover" />
+                </button>
+              )}
             </div>
           </section>
 
-          {/* Votos */}
-          {hayVotos ? (
-            <section className="space-y-3">
-              <h3 className="flex flex-wrap items-baseline gap-2 text-[11px] font-black uppercase tracking-wider text-slate-500">
-                Votos registrados
-                <span className="text-[10px] font-bold normal-case tracking-normal text-slate-400">
-                  el número es la casita (fila de la columna del acta); se listan de mayor a menor votación
-                </span>
-              </h3>
-              {NIVELES.map((n) => (
-                <div key={n.clave}>{bloqueVotos(n.titulo, votos[n.clave])}</div>
-              ))}
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {([
-                  ["Blancos", acta?.votos_blancos ?? 0],
-                  ["Nulos", acta?.votos_nulos ?? 0],
-                  ["Impugnados", acta?.votos_impugnados ?? 0],
-                  ["Válidos (columna mayor)", validosMayor],
-                ] as const).map(([et, v]) => (
-                  <div key={et} className="rounded-xl bg-slate-50 p-3 text-center">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">{et}</p>
-                    <p className="font-mono text-lg font-black text-slate-800">{num(v)}</p>
+          {/* ============ B. RESUMEN COMPARATIVO SIDE-BY-SIDE ============ */}
+          {hayVotos && (
+            <section className="grid gap-3 lg:grid-cols-2">
+              {NIVELES.map((n) => {
+                const validosNivel = suma(votos[n.clave]);
+                const otros = otrosDe(n.clave, validosNivel);
+                const totalLeidas = validosNivel + otros;
+                const activa = totalLeidas > 0;
+                const descuadre = activa && votantesCabecera != null && votantesCabecera > 0
+                  && totalLeidas !== votantesCabecera;
+                const imposible = activa && votantesCabecera != null
+                  && totalLeidas > votantesCabecera;
+                const maxVotos = Math.max(1, ...votos[n.clave].map((c) => c.votes));
+                return (
+                  <div key={n.clave}
+                    className={`rounded-xl border-2 bg-white ${
+                      !activa ? "border-slate-200 opacity-60"
+                      : descuadre ? (imposible ? "border-red-400" : "border-amber-400")
+                      : "border-emerald-200"}`}>
+                    <div className={`flex items-center justify-between rounded-t-lg px-3 py-1.5 ${
+                      descuadre
+                        ? (imposible ? "bg-red-50" : "bg-amber-50")
+                        : activa ? "bg-emerald-50" : "bg-slate-50"}`}>
+                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-600">
+                        {n.tituloCorto}
+                      </span>
+                      {activa && (
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                          descuadre
+                            ? (imposible ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700")
+                            : "bg-emerald-100 text-emerald-700"}`}>
+                          {descuadre
+                            ? (imposible
+                              ? `🚫 ${num(totalLeidas)} > ${num(votantesCabecera ?? 0)}`
+                              : `⚠ ${num(totalLeidas)} ≠ ${num(votantesCabecera ?? 0)}`)
+                            : `✓ cuadra ${num(votantesCabecera ?? totalLeidas)}`}
+                        </span>
+                      )}
+                    </div>
+                    {!activa ? (
+                      <p className="px-3 py-4 text-center text-xs text-slate-400">Sin votos en este nivel.</p>
+                    ) : (
+                      <>
+                        <div className="max-h-44 divide-y divide-slate-50 overflow-y-auto">
+                          {votos[n.clave]
+                            .slice()
+                            .sort((a, b) => b.votes - a.votes)
+                            .filter((c) => c.votes > 0)
+                            .map((c) => {
+                              const pct = validosNivel > 0 ? (100 * c.votes) / validosNivel : 0;
+                              return (
+                                <div key={`${n.clave}-${c.candidate_id}`} className="flex items-center gap-2 px-3 py-1.5">
+                                  <span className="w-5 shrink-0 text-center font-mono text-[10px] font-black text-slate-400"
+                                    title={`Casita ${c.candidate_id}`}>
+                                    {c.candidate_id}
+                                  </span>
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-[11px] font-bold text-slate-800">
+                                      {c.party || c.name}
+                                    </span>
+                                    {/* Micro-gráfico: barra relativa al líder del nivel */}
+                                    <span className="mt-0.5 block h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                                      <span className="block h-full rounded-full"
+                                        style={{
+                                          width: `${(100 * c.votes) / maxVotos}%`,
+                                          backgroundColor: c.color || "#E02020",
+                                        }} />
+                                    </span>
+                                    {c.name && c.name !== c.party && (
+                                      <span className="block truncate text-[10px] text-slate-400">{c.name}</span>
+                                    )}
+                                  </span>
+                                  <span className="shrink-0 text-right font-mono text-[11px] font-black tabular-nums text-slate-700">
+                                    {num(c.votes)}
+                                    <span className="block text-[9px] font-normal text-slate-400">{pct.toFixed(1)}%</span>
+                                  </span>
+                                </div>
+                              );
+                            })}
+                        </div>
+                        {/* Desglose técnico por columna (B/N/I en gris neutro) */}
+                        <div className="grid grid-cols-5 gap-px border-t border-slate-100 bg-slate-100 text-center">
+                          {([
+                            ["Válidos", validosNivel, "bg-white text-slate-800"],
+                            ["Blancos", aAny[`blancos_${n.clave}`] ?? acta?.votos_blancos ?? 0,
+                              "bg-slate-50 text-slate-500"],
+                            ["Nulos", aAny[`nulos_${n.clave}`] ?? acta?.votos_nulos ?? 0,
+                              "bg-slate-50 text-slate-500"],
+                            ["Impugn.", aAny[`impugnados_${n.clave}`] ?? acta?.votos_impugnados ?? 0,
+                              "bg-slate-50 text-slate-500"],
+                            ["Leídas", totalLeidas, "bg-slate-800 text-white"],
+                          ] as const).map(([et, v, cls]) => (
+                            <div key={et} className={`px-1 py-1.5 ${cls}`}>
+                              <p className="text-[9px] font-black uppercase tracking-wide opacity-70">{et}</p>
+                              <p className="font-mono text-sm font-black tabular-nums">{num(v)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </section>
-          ) : (
+          )}
+          {!hayVotos && (
             <section className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-6 text-center">
               <p className="text-sm font-bold text-slate-600">
                 {tieneActa ? "Acta registrada sin votos cargados" : "Esta mesa no tiene acta registrada"}
@@ -385,6 +354,41 @@ export default function ActaDetailModal({
               </p>
             </section>
           )}
+
+          {/* ============ C. AUDITORÍA Y TRAZABILIDAD ============ */}
+          <section className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
+              <span className="text-slate-400">👤 Digitador:</span>
+              <span className="font-bold text-slate-700">{acta?.digitador || "—"}</span>
+              <span className="text-slate-400">🕒 Registro:</span>
+              <span className="font-mono font-bold text-slate-700">
+                {acta?.actualizada_en
+                  ? new Date(acta.actualizada_en).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "medium" })
+                  : "—"}
+              </span>
+              <span className="font-mono text-slate-400">ubigeo {ubigeo || "—"}</span>
+            </div>
+            {(acta?.incidencias?.length ?? 0) > 0 && (
+              <div className="mt-1.5 border-t border-slate-200 pt-1.5">
+                <p className="text-[10px] font-black uppercase tracking-wider text-amber-600">
+                  ⚠ Incidencias del sistema ({acta!.incidencias!.length})
+                </p>
+                <ul className="mt-0.5 space-y-0.5">
+                  {acta!.incidencias!.slice(0, 3).map((i, idx) => (
+                    <li key={`${i.regla}-${idx}`} className="truncate text-[11px] text-slate-600">
+                      <span className="font-mono font-black text-amber-700">[{i.regla}]</span>{" "}
+                      {i.mensaje}
+                      {i.fecha && (
+                        <span className="ml-1 font-mono text-[10px] text-slate-400">
+                          {new Date(i.fecha).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" })}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
 
           {/* Checklist ONPE */}
           {checklist && checklist.items.length > 0 && (
