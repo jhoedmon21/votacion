@@ -3,6 +3,8 @@ import type { ActaRecord, RankingEntry, CandidateVotes } from "../../types";
 import { api } from "../../api";
 import { ModalVotosInusuales, ModalActaVacia } from "../ModalesDigitacion";
 import { Boton, Input, Card, Alerta } from "../ui";
+import { useCuadreColumnas } from "../../lib/validacionCuadre";
+import { AlertaCuadre, BadgeCuadre } from "../CuadreUI";
 
 interface SideBySideDigitizationProps {
   acta: ActaRecord | null;
@@ -408,20 +410,58 @@ function SideBySideDigitizationInner({
   const provincialSum = formData.votos_provincial.reduce((sum, c) => sum + c.votes, 0);
   const regionalSum = formData.votos_regional.reduce((sum, c) => sum + c.votes, 0);
   const consejeroSum = formData.votos_consejero.reduce((sum, c) => sum + c.votes, 0);
+
+  /* ==================== AUTO-COMPROBACIÓN EN TIEMPO REAL ====================
+     El motor recalcula el cuadre de CADA sección (R1 por columna,
+     norma ONPE) a medida que el digitador edita cualquier casillero —
+     votos por partido, blancos, nulos, impugnados o la cabecera de
+     votantes — y alimenta:
+       · el badge de cada tarjeta (⚠️ 150 ≠ 250 → ✓ cuadra 250),
+       · la alerta con el desglose exacto (Diferencia = Votaron − Leídas),
+       · el resaltado del ORIGEN de la brecha (lista de partidos vs pie). */
+  const cuadres = useCuadreColumnas([
+    { clave: "distrital", nombre: "Distrital (Alcalde)", validos: districtSum,
+      blancos: formData.blancos_distrital, nulos: formData.nulos_distrital,
+      impugnados: formData.impugnados_distrital },
+    { clave: "provincial", nombre: "Provincial (Alcalde)", validos: provincialSum,
+      blancos: formData.blancos_provincial, nulos: formData.nulos_provincial,
+      impugnados: formData.impugnados_provincial },
+    { clave: "consejero", nombre: "Consejeros Regionales", validos: consejeroSum,
+      blancos: formData.blancos_consejero, nulos: formData.nulos_consejero,
+      impugnados: formData.impugnados_consejero },
+    { clave: "regional", nombre: "Regional (Gobernador)", validos: regionalSum,
+      blancos: formData.blancos_regional, nulos: formData.nulos_regional,
+      impugnados: formData.impugnados_regional },
+  ], formData.total_votantes);
+
+  /* Resaltado del origen del descuadre: cuando la columna no cuadra, el
+     motor diagnostica si la brecha proviene de la LISTA DE PARTIDOS
+     (votos válidos) o de los casilleros de BLANCOS/NULOS/IMPUGNADOS;
+     el bloque sospechoso se rodea con un ring ámbar para guiar la
+     vista del digitador mientras digita. */
+  const ringLista = (clave: string) =>
+    cuadres[clave].mensaje && cuadres[clave].origen === "VALIDOS"
+      ? "ring-2 ring-amber-300 bg-amber-50/40 rounded-xl p-1.5"
+      : "";
+  const ringPie = (clave: string) =>
+    cuadres[clave].mensaje && (cuadres[clave].origen === "PIE" || cuadres[clave].origen === "AMBOS")
+      ? "ring-2 ring-amber-300 bg-amber-50/40 rounded-xl px-1.5 pb-1.5"
+      : "";
   /* Resumen POR COLUMNA (regla ONPE): cada nivel del acta debe cuadrar
      independientemente con los votantes que sufragaron — los mismos 200
      electores votan en la columna regional Y en la de consejeros, así que
      sumar ambos niveles (400 vs 200) es un falso descuadre. La
      participación se calcula con la columna mayor (la cabecera del papel). */
-  /* Resumen POR COLUMNA con su propio pie (norma ONPE). */
-  const columnasResumen: Array<{ nombre: string; votos: number; otros: number }> = [
-    { nombre: "Distrital (Alcalde)", votos: districtSum,
+  /* Resumen POR COLUMNA con su propio pie (norma ONPE). La `clave` enlaza
+     cada fila con su resultado del motor de cuadre. */
+  const columnasResumen: Array<{ clave: string; nombre: string; votos: number; otros: number }> = [
+    { clave: "distrital", nombre: "Distrital (Alcalde)", votos: districtSum,
       otros: formData.blancos_distrital + formData.nulos_distrital + formData.impugnados_distrital },
-    { nombre: "Provincial (Alcalde)", votos: provincialSum,
+    { clave: "provincial", nombre: "Provincial (Alcalde)", votos: provincialSum,
       otros: formData.blancos_provincial + formData.nulos_provincial + formData.impugnados_provincial },
-    { nombre: "Consejeros Regionales", votos: consejeroSum,
+    { clave: "consejero", nombre: "Consejeros Regionales", votos: consejeroSum,
       otros: formData.blancos_consejero + formData.nulos_consejero + formData.impugnados_consejero },
-    { nombre: "Regional (Gobernador)", votos: regionalSum,
+    { clave: "regional", nombre: "Regional (Gobernador)", votos: regionalSum,
       otros: formData.blancos_regional + formData.nulos_regional + formData.impugnados_regional },
   ].filter((c) => c.votos + c.otros > 0);
   const totalVotes = columnasResumen.length
@@ -865,12 +905,16 @@ function SideBySideDigitizationInner({
                   <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
                     <span className="w-6 h-6 rounded-full bg-[#10b981] text-white text-xs flex items-center justify-center">2</span>
                     Votos Distritales (Alcalde Distrital) — {districtSum.toLocaleString()} votos
+                    <BadgeCuadre r={cuadres["distrital"]} clase="ml-auto shrink-0" />
                   </h4>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {/* Cuadre en vivo contra el padrón: cuánto falta/sobra y de
+                      dónde proviene la brecha (lista de partidos vs pie B/N/I). */}
+                  <AlertaCuadre r={cuadres["distrital"]} />
+                  <div className={`space-y-2 max-h-64 overflow-y-auto ${ringLista("distrital")}`}>
                     {acta.votos_distrital.map((c, i) => renderVoteRow(c, 'distrital', i))}
                   </div>
                   {/* Pie de la columna (norma ONPE): blancos/nulos/impugnados del nivel */}
-                  <div className="mt-3 pt-3 border-t border-slate-200">
+                  <div className={`mt-3 pt-3 border-t border-slate-200 ${ringPie("distrital")}`}>
                     {renderPieNivel('distrital')}
                   </div>
                 </Card>
@@ -882,12 +926,15 @@ function SideBySideDigitizationInner({
                   <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
                     <span className="w-6 h-6 rounded-full bg-[#8b5cf6] text-white text-xs flex items-center justify-center">3</span>
                     Votos Provinciales (Alcalde Provincial) — {provincialSum.toLocaleString()} votos
+                    <BadgeCuadre r={cuadres["provincial"]} clase="ml-auto shrink-0" />
                   </h4>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {/* Cuadre en vivo contra el padrón */}
+                  <AlertaCuadre r={cuadres["provincial"]} />
+                  <div className={`space-y-2 max-h-64 overflow-y-auto ${ringLista("provincial")}`}>
                     {acta.votos_provincial.map((c, i) => renderVoteRow(c, 'provincial', i))}
                   </div>
                   {/* Pie de la columna (norma ONPE) */}
-                  <div className="mt-3 pt-3 border-t border-slate-200">
+                  <div className={`mt-3 pt-3 border-t border-slate-200 ${ringPie("provincial")}`}>
                     {renderPieNivel('provincial')}
                   </div>
                 </Card>
@@ -899,12 +946,17 @@ function SideBySideDigitizationInner({
                   <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
                     <span className="w-6 h-6 rounded-full bg-[#f59e0b] text-white text-xs flex items-center justify-center">4</span>
                     Votos Regionales (Gobernador Regional) — {regionalSum.toLocaleString()} votos
+                    <BadgeCuadre r={cuadres["regional"]} clase="ml-auto shrink-0" />
                   </h4>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {/* Cuadre en vivo contra el padrón: ej. "Faltan registrar
+                      100 votos en esta categoría para cuadrar con el padrón
+                      (250)" + desglose y origen resaltado. */}
+                  <AlertaCuadre r={cuadres["regional"]} />
+                  <div className={`space-y-2 max-h-64 overflow-y-auto ${ringLista("regional")}`}>
                     {acta.votos_regional.map((c, i) => renderVoteRow(c, 'regional', i))}
                   </div>
                   {/* Pie de la columna (norma ONPE) */}
-                  <div className="mt-3 pt-3 border-t border-slate-200">
+                  <div className={`mt-3 pt-3 border-t border-slate-200 ${ringPie("regional")}`}>
                     {renderPieNivel('regional')}
                   </div>
                 </Card>
@@ -918,12 +970,15 @@ function SideBySideDigitizationInner({
                   <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
                     <span className="w-6 h-6 rounded-full bg-[#0ea5e9] text-white text-xs flex items-center justify-center">C</span>
                     Consejeros Regionales (por provincia) — {consejeroSum.toLocaleString()} votos
+                    <BadgeCuadre r={cuadres["consejero"]} clase="ml-auto shrink-0" />
                   </h4>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {/* Cuadre en vivo contra el padrón */}
+                  <AlertaCuadre r={cuadres["consejero"]} />
+                  <div className={`space-y-2 max-h-64 overflow-y-auto ${ringLista("consejero")}`}>
                     {(acta.votos_consejero ?? []).map((c, i) => renderVoteRowConsejero(c, i))}
                   </div>
                   {/* Pie de la columna (norma ONPE) */}
-                  <div className="mt-3 pt-3 border-t border-slate-200">
+                  <div className={`mt-3 pt-3 border-t border-slate-200 ${ringPie("consejero")}`}>
                     {renderPieNivel('consejero')}
                   </div>
                 </Card>
@@ -939,17 +994,51 @@ function SideBySideDigitizationInner({
                     regional, consejeros) cuadra independientemente contra los
                     votantes que sufragaron — no se suman entre niveles. */}
                 <div className="space-y-2 text-sm">
-                  {columnasResumen.map((c) => (
-                    <div key={c.nombre} className="flex justify-between">
-                      <span className="text-slate-600">
-                        {c.nombre}: {c.votos.toLocaleString()} + {c.otros.toLocaleString()} (B/N/I)
-                      </span>
-                      <span className={`font-mono font-bold ${c.votos + c.otros !== totalVotes ? "text-amber-600" : "text-emerald-700"}`}
-                        title={c.votos + c.otros !== totalVotes ? "Esta columna no cuadra con las demás: verifíquela contra el papel" : "Columna cuadrada"}>
-                        {(c.votos + c.otros).toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
+                  {columnasResumen.map((c) => {
+                    /* Control del resumen: con cabecera digitada cada columna
+                       cuadra contra el PADRÓN (R1, con el faltante exacto);
+                       sin cabecera, la guía suave es contra la columna mayor. */
+                    const r = cuadres[c.clave];
+                    const contraPadron = formData.total_votantes > 0;
+                    const descuadreCol = contraPadron
+                      ? r.estado === "FALTAN" || r.estado === "IMPOSIBLE"
+                      : c.votos + c.otros !== totalVotes;
+                    return (
+                      <div key={c.nombre} className="flex flex-wrap items-baseline justify-between gap-x-2">
+                        <span className="text-slate-600">
+                          {c.nombre}: {c.votos.toLocaleString()} + {c.otros.toLocaleString()} (B/N/I)
+                        </span>
+                        <span
+                          className={`flex items-baseline gap-1.5 font-mono font-bold ${
+                            descuadreCol
+                              ? r.estado === "IMPOSIBLE" ? "text-red-600" : "text-amber-600"
+                              : "text-emerald-700"}`}
+                          title={
+                            contraPadron && r.desglose
+                              ? r.desglose
+                              : descuadreCol
+                                ? "Esta columna no cuadra con las demás: verifíquela contra el papel"
+                                : "Columna cuadrada"
+                          }
+                        >
+                          {(c.votos + c.otros).toLocaleString()}
+                          {contraPadron && r.estado === "FALTAN" && (
+                            <span className="text-[11px] font-black text-amber-700">
+                              · faltan {r.diferenciaAbs.toLocaleString()}
+                            </span>
+                          )}
+                          {contraPadron && r.estado === "IMPOSIBLE" && (
+                            <span className="text-[11px] font-black text-red-700">
+                              · sobran {r.diferenciaAbs.toLocaleString()}
+                            </span>
+                          )}
+                          {contraPadron && r.estado === "CUADRA" && (
+                            <span className="text-[11px] font-black text-emerald-700">· ✓ cuadra</span>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })}
                   <div className="flex justify-between border-t border-slate-200 pt-2 font-medium">
                     <span className="text-slate-800">Emitidos por columna (cada una = votantes):</span>
                     <span className="font-mono font-bold text-lg">{totalVotes.toLocaleString()}</span>

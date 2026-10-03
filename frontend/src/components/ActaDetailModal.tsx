@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { ActaRecord, RankingEntry } from "../types";
 import { Alerta, Boton } from "./ui";
+import { useCuadreColumnas } from "../lib/validacionCuadre";
+import { AlertaCuadre, BadgeCuadre } from "./CuadreUI";
 
 /* Incidencias del sistema registradas para esta mesa (log R0-R6). */
 interface Incidencia {
@@ -167,6 +169,45 @@ export default function ActaDetailModal({
     return () => { vigente = false; };
   }, [acta?.id]);
 
+  /* ==================== MOTOR DE CUADRE (R1 por columna) ====================
+     Vive ANTES del early return: los hooks no pueden llamarse
+     condicionalmente. Con acta null las columnas llegan vacías y el motor
+     sólo devuelve resultados INACTIVA (sin efecto en la ficha). */
+  const aAny = (acta ?? {}) as unknown as Record<string, number | null | undefined>;
+  /* Pie POR COLUMNA resuelto en sus tres componentes (blancos, nulos,
+     impugnados), con el mismo respaldo del resumen tabular: si el nivel no
+     trae pie propio digitado, una columna con votos usa el consolidado
+     histórico; sin votos, el pie es cero (columna inactiva). */
+  const pieDeNivel = (nivel: string, validos: number): { b: number; n: number; i: number } => {
+    const b = aAny[`blancos_${nivel}`];
+    const nu = aAny[`nulos_${nivel}`];
+    const im = aAny[`impugnados_${nivel}`];
+    const piePropio = (b ?? 0) + (nu ?? 0) + (im ?? 0);
+    if ((b != null || nu != null || im != null) && piePropio > 0) {
+      return { b: b ?? 0, n: nu ?? 0, i: im ?? 0 };
+    }
+    return validos > 0
+      ? { b: acta?.votos_blancos ?? 0, n: acta?.votos_nulos ?? 0, i: acta?.votos_impugnados ?? 0 }
+      : { b: 0, n: 0, i: 0 };
+  };
+  const votantesCabecera = aAny.total_votantes ?? null;
+  /* Resultados por nivel: badge (⚠️ 150 ≠ 250 / ✓ cuadra 250), alerta con
+     desglose dinámico (Diferencia = Total_Votaron − Total_Leídas) y
+     diagnóstico de origen (lista de partidos vs pie B/N/I). */
+  const cuadres = useCuadreColumnas(
+    NIVELES.map((n) => {
+      const filas =
+        (acta as unknown as Record<string, RankingEntry[]> | null)?.[`votos_${n.clave}`] ?? [];
+      const validos = suma(filas);
+      const p = pieDeNivel(n.clave, validos);
+      return {
+        clave: n.clave, nombre: n.tituloCorto,
+        validos, blancos: p.b, nulos: p.n, impugnados: p.i,
+      };
+    }),
+    votantesCabecera,
+  );
+
   if (!acta && !numeroMesa) return null;
 
   /* OJO: el listado siempre manda `acta_id` (es el id de la MESA, exista acta
@@ -193,34 +234,17 @@ export default function ActaDetailModal({
      impugnados) y cuadra INDEPENDIENTEMENTE con los votantes de la cabecera.
      Los "emitidos" son los de la COLUMNA MAYOR, nunca la suma de niveles
      (el mismo elector vota en todas las columnas del papel). */
-  const aAny = (acta ?? {}) as unknown as Record<string, number | null | undefined>;
-  const pieConsolidado = (acta?.votos_blancos ?? 0) + (acta?.votos_nulos ?? 0)
-    + (acta?.votos_impugnados ?? 0);
-  const otrosDe = (nivel: string, validos: number) => {
-    const b = aAny[`blancos_${nivel}`];
-    const nu = aAny[`nulos_${nivel}`];
-    const im = aAny[`impugnados_${nivel}`];
-    if (b != null || nu != null || im != null) {
-      const pie = (b ?? 0) + (nu ?? 0) + (im ?? 0);
-      if (pie > 0) return pie;
-      // Pie por columna en ceros (actas sin pie digitado): la columna con
-      // votos usa el consolidado histórico como respaldo.
-      return validos > 0 ? pieConsolidado : 0;
-    }
-    return validos > 0 ? pieConsolidado : 0;
-  };
   const columnas = NIVELES.map((n) => {
-    const validos = suma(votos[n.clave]);
+    const r = cuadres[n.clave];
     return {
       clave: n.clave, titulo: n.tituloCorto,
-      total: validos + otrosDe(n.clave, validos),
-      activa: validos + otrosDe(n.clave, validos) > 0,
+      total: r.totalLeidas,
+      activa: r.estado !== "INACTIVA",
     };
   });
   const emitidos = Math.max(0, ...columnas.filter((c) => c.activa).map((c) => c.total));
   const hayVotos = emitidos > 0;
   const participacion = electores && electores > 0 ? (100 * emitidos) / electores : 0;
-  const votantesCabecera = aAny.total_votantes ?? null;
 
   const ESTILO: Record<string, string> = {
     REGISTRADA: "bg-emerald-100 text-emerald-800",
@@ -320,45 +344,34 @@ export default function ActaDetailModal({
           {hayVotos && (
             <section className="grid gap-3 lg:grid-cols-2">
               {NIVELES.map((n) => {
-                const validosNivel = suma(votos[n.clave]);
-                const otros = otrosDe(n.clave, validosNivel);
-                const totalLeidas = validosNivel + otros;
-                const activa = totalLeidas > 0;
-                const descuadre = activa && votantesCabecera != null && votantesCabecera > 0
-                  && totalLeidas !== votantesCabecera;
-                const imposible = activa && votantesCabecera != null
-                  && totalLeidas > votantesCabecera;
+                /* Resultado del motor de cuadre de esta columna: estado,
+                   badge, alerta con desglose y origen de la brecha. */
+                const r = cuadres[n.clave];
+                const validosNivel = r.validos;
+                const activa = r.estado !== "INACTIVA";
                 const maxVotos = Math.max(1, ...votos[n.clave].map((c) => c.votes));
                 return (
                   <div key={n.clave}
                     className={`rounded-xl border-2 bg-white ${
-                      !activa ? "border-slate-200 opacity-60"
-                      : descuadre ? (imposible ? "border-red-400" : "border-amber-400")
-                      : "border-emerald-200"}`}>
-                    <div className={`flex items-center justify-between rounded-t-lg px-3 py-1.5 ${
-                      descuadre
-                        ? (imposible ? "bg-red-50" : "bg-amber-50")
-                        : activa ? "bg-emerald-50" : "bg-slate-50"}`}>
+                      !activa ? "border-slate-200 opacity-60" : r.bordeClase}`}>
+                    <div className={`flex items-center justify-between gap-2 rounded-t-lg px-3 py-1.5 ${
+                      activa ? r.cabeceraClase : "bg-slate-50"}`}>
                       <span className="text-[11px] font-black uppercase tracking-wider text-slate-600">
                         {n.tituloCorto}
                       </span>
-                      {activa && (
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
-                          descuadre
-                            ? (imposible ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700")
-                            : "bg-emerald-100 text-emerald-700"}`}>
-                          {descuadre
-                            ? (imposible
-                              ? `🚫 ${num(totalLeidas)} > ${num(votantesCabecera ?? 0)}`
-                              : `⚠ ${num(totalLeidas)} ≠ ${num(votantesCabecera ?? 0)}`)
-                            : `✓ cuadra ${num(votantesCabecera ?? totalLeidas)}`}
-                        </span>
-                      )}
+                      <BadgeCuadre r={r} />
                     </div>
                     {!activa ? (
                       <p className="px-3 py-4 text-center text-xs text-slate-400">Sin votos en este nivel.</p>
                     ) : (
                       <>
+                        {/* Alerta de cuadre: "Faltan registrar N votos en esta
+                            categoría para cuadrar con el padrón (250)" con el
+                            desglose exacto y el origen resaltado (lista de
+                            partidos vs blancos/nulos/impugnados). */}
+                        <div className="px-3">
+                          <AlertaCuadre r={r} />
+                        </div>
                         <div className="max-h-44 divide-y divide-slate-50 overflow-y-auto">
                           {votos[n.clave]
                             .slice()
@@ -396,17 +409,16 @@ export default function ActaDetailModal({
                               );
                             })}
                         </div>
-                        {/* Desglose técnico por columna (B/N/I en gris neutro) */}
+                        {/* Desglose técnico por columna (B/N/I en gris neutro).
+                            Usa los mismos valores saneados del motor para que
+                            las partes SIEMPRE sumen la casilla "Leídas". */}
                         <div className="grid grid-cols-5 gap-px border-t border-slate-100 bg-slate-100 text-center">
                           {([
-                            ["Válidos", validosNivel, "bg-white text-slate-800"],
-                            ["Blancos", aAny[`blancos_${n.clave}`] ?? acta?.votos_blancos ?? 0,
-                              "bg-slate-50 text-slate-500"],
-                            ["Nulos", aAny[`nulos_${n.clave}`] ?? acta?.votos_nulos ?? 0,
-                              "bg-slate-50 text-slate-500"],
-                            ["Impugn.", aAny[`impugnados_${n.clave}`] ?? acta?.votos_impugnados ?? 0,
-                              "bg-slate-50 text-slate-500"],
-                            ["Leídas", totalLeidas, "bg-slate-800 text-white"],
+                            ["Válidos", r.validos, "bg-white text-slate-800"],
+                            ["Blancos", r.blancos, "bg-slate-50 text-slate-500"],
+                            ["Nulos", r.nulos, "bg-slate-50 text-slate-500"],
+                            ["Impugn.", r.impugnados, "bg-slate-50 text-slate-500"],
+                            ["Leídas", r.totalLeidas, "bg-slate-800 text-white"],
                           ] as const).map(([et, v, cls]) => (
                             <div key={et} className={`px-1 py-1.5 ${cls}`}>
                               <p className="text-[9px] font-black uppercase tracking-wide opacity-70">{et}</p>
