@@ -40,6 +40,8 @@ from app.core.ubigeo import ubigeo_de_nivel
 from app.core.ubigeo_catalogo import PROVINCIA_NOMBRE, UBIGEO_PROVINCIA
 from app.services.acta_validator import (COLUMNA_PRINCIPAL, ColumnaActa,
                                           validar_acta)
+from app.services.processor import (asignar_pie_acta, obtener_metadata,
+                                    validar_cierre_acta)
 
 logger = logging.getLogger(__name__)
 
@@ -168,11 +170,15 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
     """Registra el acta digitada con validación matemática ONPE.
 
     * Mesa fuera del padrón → 404. Fuera del alcance → 403.
-    * Matemática inconsistente o padrón superado → estado OBSERVADA (409 con
-      hallazgos si además hay duplicidad; si no, 200 con estado OBSERVADA).
+    * BLOQUEANTES (duplicidad R4, tope del padrón R2, negativos, ilegible)
+      → 409 con hallazgos.
+    * Descuadre R1 (Σ votos + blancos + nulos + impugnados ≠ total del
+      papel) → NO se rechaza: el acta se registra OBSERVADA (200) con su
+      nota de descuadre y queda fuera del cómputo hasta que el coordinador
+      la resuelva.
     * ``impugnada=true`` → estado IMPUGNADA.
     * Sólo NORMAL crea votos contabilizados (``records``); OBSERVADA/IMPUGNADA
-      guarda el consolidado en metadata y marca la mesa para revisión.
+      guarda el pie en metadata y marca la mesa para revisión.
     """
     tipo = (payload.tipo_eleccion or "").upper()
     clave = nivel_desde_tipo(tipo)
@@ -285,24 +291,22 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
         table.processed = False
         table.requires_review = True
         table.status = "requires_review"
-        meta_prev = db.query(ActaMetadata).filter(
-            ActaMetadata.table_id == table.id).first()
-        if meta_prev is None:
-            meta_prev = ActaMetadata(table_id=table.id)
-            db.add(meta_prev)
-        meta_prev.votos_blancos = payload.votos_blancos
-        meta_prev.votos_nulos = payload.votos_nulos
-        meta_prev.votos_impugnados = payload.votos_impugnados
-        meta_prev.total_electores = habiles
-        meta_prev.total_votantes = payload.total_emitidos
-        _pie_nivel_rev = {
+        table.observacion = "Enviada a Revisión / Acta Observada (descuadre reconocido)"
+        # Pie POR COLUMNA en las columnas del nivel registrado (único origen
+        # de verdad; el consolidado se reconstruye desde ellas).
+        _nivel_rev = {
             "REGIONAL": "regional", "CONSEJERO": "consejero",
             "PROVINCIAL": "provincial", "DISTRITAL": "distrital",
         }.get(tipo)
-        if _pie_nivel_rev:
-            setattr(meta_prev, f"blancos_{_pie_nivel_rev}", payload.votos_blancos)
-            setattr(meta_prev, f"nulos_{_pie_nivel_rev}", payload.votos_nulos)
-            setattr(meta_prev, f"impugnados_{_pie_nivel_rev}", payload.votos_impugnados)
+        if _nivel_rev:
+            asignar_pie_acta(
+                db, table.id, _nivel_rev,
+                blancos=payload.votos_blancos, nulos=payload.votos_nulos,
+                impugnados=payload.votos_impugnados,
+            )
+        meta_prev = obtener_metadata(db, table.id)
+        meta_prev.total_electores = habiles
+        meta_prev.total_votantes = payload.total_emitidos or 0
         try:
             with SessionLocal() as log_db:
                 log_db.add(ActaRechazo(
@@ -329,18 +333,17 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
             }],
         }
 
-    if not payload.impugnada and (not res.consistente or res.bloqueantes):
+    # Sólo los BLOQUEANTES (duplicidad R4, tope del padrón R2, negativos,
+    # acta en ceros R0) rechazan el registro con 409. El descuadre R1
+    # (suma ≠ total del papel) ya NO: el acta se registra OBSERVADA con su
+    # nota y queda fuera del cómputo hasta que el coordinador la resuelva.
+    if res.bloqueantes:
         bloqueantes = res.bloqueantes or [h for h in res.hallazgos if h.severidad == "BLOQUEANTE"]
-        mensaje = (
-            bloqueantes[0].mensaje
-            if bloqueantes
-            else "NO COINCIDEN LOS DATOS: la suma de votos no cuadra con el "
-                 "total de votos emitidos. Corrige los números antes de guardar."
-        )
+        mensaje = bloqueantes[0].mensaje
         try:  # log de rechazos para el contador del panel (nunca rompe el flujo)
             db.add(ActaRechazo(
                 numero_mesa=payload.numero_mesa, tipo_eleccion=tipo,
-                regla=(bloqueantes[0].regla if bloqueantes else "R1_SUMA_VOTOS"),
+                regla=bloqueantes[0].regla,
                 mensaje=mensaje[:400], usuario_email=usuario.email,
             ))
             db.commit()
@@ -357,10 +360,37 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
 
     if payload.impugnada:
         estado = "IMPUGNADA"
-    elif not res.consistente or res.bloqueantes:
+    elif not res.consistente:
         estado = "OBSERVADA"
     else:
         estado = "NORMAL"
+
+    # Pie POR COLUMNA (norma ONPE), ÚNICO origen de verdad: se persiste en
+    # las columnas del nivel registrado (blancos_{nivel}/…) y el consolidado
+    # histórico (votos_blancos/…) se reconstruye desde ellas — antes se
+    # asignaba dos veces en paralelo y podían divergir.
+    _nivel_pie = {
+        "REGIONAL": "regional", "CONSEJERO": "consejero",
+        "PROVINCIAL": "provincial", "DISTRITAL": "distrital",
+    }.get(tipo)
+    if _nivel_pie:
+        asignar_pie_acta(
+            db, table.id, _nivel_pie,
+            blancos=payload.votos_blancos, nulos=payload.votos_nulos,
+            impugnados=payload.votos_impugnados,
+        )
+    meta = obtener_metadata(db, table.id)
+    meta.total_electores = habiles
+    # Votantes que sufragaron (cabecera): el PUT de rectificación lo necesita
+    # para verificar el cuadre con los valores efectivos.
+    meta.total_votantes = payload.total_emitidos or 0
+    if payload.image_url:
+        table.image_url = payload.image_url
+    # Métricas del procesamiento WebP (las entrega POST /v1/actas/foto).
+    if payload.image_peso_original_kb is not None:
+        meta.image_peso_original_kb = payload.image_peso_original_kb
+    if payload.image_peso_final_kb is not None:
+        meta.image_peso_final_kb = payload.image_peso_final_kb
 
     contabilizada = estado == "NORMAL"
     if contabilizada:
@@ -376,42 +406,34 @@ def registrar(payload: V1RegistrarIn, db: Session = Depends(get_db),
             else:
                 reg.votes = int(v)
                 reg.verified = True
-        table.processed = True
-        table.requires_review = False
-        table.status = "processed"
-    else:
+        # Validación de cierre PRE-COMMIT (R1): con los bloqueantes ya
+        # descartados, fija el estado contabilizado y limpia notas previas.
+        validar_cierre_acta(
+            table,
+            total_validos=votos_validos,
+            votos_blancos=payload.votos_blancos,
+            votos_nulos=payload.votos_nulos,
+            votos_impugnados=payload.votos_impugnados,
+            total_papel=payload.total_emitidos,
+        )
+    elif estado == "IMPUGNADA":
         table.processed = False
         table.requires_review = True
         table.status = "requires_review"
+        _motivo = (payload.motivo_impugnacion or "").strip()
+        table.observacion = (
+            f"Acta impugnada: {_motivo}" if _motivo else "Acta impugnada"
+        )
+    else:  # OBSERVADA — descuadre R1: se registra, pero fuera del cómputo.
+        validar_cierre_acta(
+            table,
+            total_validos=votos_validos,
+            votos_blancos=payload.votos_blancos,
+            votos_nulos=payload.votos_nulos,
+            votos_impugnados=payload.votos_impugnados,
+            total_papel=payload.total_emitidos,
+        )
 
-    meta = db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).first()
-    if meta is None:
-        meta = ActaMetadata(table_id=table.id)
-        db.add(meta)
-    meta.votos_blancos = payload.votos_blancos
-    meta.votos_nulos = payload.votos_nulos
-    meta.votos_impugnados = payload.votos_impugnados
-    meta.total_electores = habiles
-    # Pie POR COLUMNA (norma ONPE): el registro trae el pie del nivel
-    # digitado y se persiste en las columnas de ese nivel.
-    _pie_nivel = {
-        "REGIONAL": "regional", "CONSEJERO": "consejero",
-        "PROVINCIAL": "provincial", "DISTRITAL": "distrital",
-    }.get(tipo)
-    if _pie_nivel:
-        setattr(meta, f"blancos_{_pie_nivel}", payload.votos_blancos)
-        setattr(meta, f"nulos_{_pie_nivel}", payload.votos_nulos)
-        setattr(meta, f"impugnados_{_pie_nivel}", payload.votos_impugnados)
-    # Votantes que sufragaron (cabecera): el PUT de rectificación lo necesita
-    # para verificar el cuadre con los valores efectivos.
-    meta.total_votantes = payload.total_emitidos
-    if payload.image_url:
-        table.image_url = payload.image_url
-    # Métricas del procesamiento WebP (las entrega POST /v1/actas/foto).
-    if payload.image_peso_original_kb is not None:
-        meta.image_peso_original_kb = payload.image_peso_original_kb
-    if payload.image_peso_final_kb is not None:
-        meta.image_peso_final_kb = payload.image_peso_final_kb
     db.commit()
     db.refresh(table)
 

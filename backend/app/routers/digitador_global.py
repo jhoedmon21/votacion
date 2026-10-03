@@ -237,9 +237,12 @@ async def crear_acta_global(
     if meta is None:
         meta = ActaMetadata(table_id=table.id)
         db.add(meta)
-    meta.votos_blancos = payload.votos_blancos
-    meta.votos_nulos = payload.votos_nulos
-    meta.votos_impugnados = payload.votos_impugnados
+    # El pie del Digitador Global no distingue nivel: alimenta el
+    # consolidado (``or 0`` evita NULL); el pie por columna llega con la
+    # digitación/rectificación vía asignar_pie_acta.
+    meta.votos_blancos = payload.votos_blancos or 0
+    meta.votos_nulos = payload.votos_nulos or 0
+    meta.votos_impugnados = payload.votos_impugnados or 0
     if payload.total_electores is not None:
         meta.total_electores = payload.total_electores
     db.flush()
@@ -301,11 +304,11 @@ async def rectificar_acta_global(
         meta = ActaMetadata(table_id=table.id)
         db.add(meta)
     if payload.votos_blancos is not None:
-        meta.votos_blancos = payload.votos_blancos
+        meta.votos_blancos = payload.votos_blancos or 0
     if payload.votos_nulos is not None:
-        meta.votos_nulos = payload.votos_nulos
+        meta.votos_nulos = payload.votos_nulos or 0
     if payload.votos_impugnados is not None:
-        meta.votos_impugnados = payload.votos_impugnados
+        meta.votos_impugnados = payload.votos_impugnados or 0
     if payload.total_electores is not None:
         meta.total_electores = payload.total_electores
     if payload.ocr_confidence is not None:

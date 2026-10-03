@@ -87,6 +87,11 @@ def paso_esquema(dry_run: bool) -> None:
             "nulos_regional": "INTEGER DEFAULT 0",
             "impugnados_regional": "INTEGER DEFAULT 0",
         },
+        "tables": {
+            # Nota de cierre del acta (regla R1): el descuadre entre la
+            # suma digitada y el total del papel (validar_cierre_acta).
+            "observacion": "TEXT",
+        },
         "consejero_candidates": {
             # Por si el despliegue viene de una base anterior al nivel.
             "sort_order": "INTEGER DEFAULT 0",

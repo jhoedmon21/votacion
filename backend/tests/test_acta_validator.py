@@ -59,6 +59,12 @@ def test_acta_consistente():
 
 
 def test_r1_suma_no_cuadra():
+    """R1 es ADVERTENCIA: el acta se envía y se registra, pero OBSERVADA.
+
+    El descuadre contra el papel no bloquea el envío (el acta queda fuera
+    del cómputo hasta que el coordinador la resuelva); los bloqueantes de
+    verdad (R2/R4/negativos) sí responden 409 en los endpoints.
+    """
     alcalde = ColumnaActa(
         columna="ALCALDE",
         votos={"0": 100, "1": 60, "2": 40},
@@ -71,19 +77,29 @@ def test_r1_suma_no_cuadra():
 
     assert resultado.consistente is False
     assert resultado.estado_sugerido == "OBSERVADA"
-    assert resultado.puede_enviar is False
+    assert resultado.puede_enviar is True      # ADVERTENCIA: no bloquea
     assert resultado.diferencia == 13
-    reglas = [h.regla for h in resultado.bloqueantes]
-    assert "R1_SUMA_VOTOS" in reglas
+    assert resultado.descuadres == [
+        {"columna": "ALCALDE", "total_votantes": 230, "suma": 217,
+         "diferencia": 13}
+    ], resultado.descuadres
+    assert any(
+        h.regla == "R1_SUMA_VOTOS" and h.severidad == "ADVERTENCIA"
+        for h in resultado.hallazgos
+    )
+    permitido, _ = puede_contabilizar(resultado)
+    assert permitido is False
 
 
-def test_r1_descuadre_en_columna_secundaria_bloquea():
+def test_r1_descuadre_en_columna_secundaria_observa():
     """Regresión: la regla R1 se evalúa POR COLUMNA del acta.
 
-    El papel es un único documento con dos cómputos independientes (alcalde y
-    regidores). Antes, un acta con la columna de alcalde cuadrada y la de
+    El papel es un único documento con dos cómputos independientes (alcalde
+    y regidores). Antes, un acta con la columna de alcalde cuadrada y la de
     regidores descuadrada se daba por consistente y `puede_contabilizar`
-    autorizaba el envío; la base la habría terminado rechazando en el trigger.
+    autorizaba la contabilización; la base la habría rechazado. Hoy el
+    descuadre en cualquiera deja el acta OBSERVADA (no contabilizable
+    hasta resolverse), aunque el envío no se bloquea.
     """
     alcalde = ColumnaActa(
         columna="ALCALDE",
@@ -100,7 +116,7 @@ def test_r1_descuadre_en_columna_secundaria_bloquea():
     assert resultado.diferencia == 0, "la columna principal sí cuadra"
     assert resultado.consistente is False, "basta que una columna descuadre"
     assert resultado.estado_sugerido == "OBSERVADA"
-    assert resultado.puede_enviar is False
+    assert resultado.puede_enviar is True       # ADVERTENCIA: se registra
     assert resultado.descuadres == [
         {"columna": "REGIDORES", "total_votantes": 200, "suma": 40, "diferencia": 160}
     ], resultado.descuadres
@@ -166,12 +182,18 @@ def test_votos_negativos_bloquean():
 # ---------------------------------------------------------------------------
 # Evidencia, duplicidad y estado del acta
 # ---------------------------------------------------------------------------
-def test_foto_ausente_avisa_pero_no_bloquea():
+def test_foto_ausente_bloquea():
+    """R5 estricta: sin la foto del acta física no hay registro.
+
+    La política R5 de los endpoints de registro (/movil y /v1/actas/registrar)
+    exige la fotografía como evidencia ANTES de guardar: el validador la
+    marca BLOQUEANTE para que el formulario móvil no habilite el envío.
+    """
     alcalde, regidores = acta_distrital_consistente()
     resultado = validar_acta("DISTRITAL", 250, [alcalde, regidores], foto_presente=False)
 
-    assert resultado.puede_enviar is True
-    assert resultado.estado_sugerido == "DIGITADA"
+    assert resultado.puede_enviar is False
+    assert resultado.estado_sugerido == "OBSERVADA"
     assert any(h.regla == "R5_FOTO_AUSENTE" for h in resultado.hallazgos)
 
 

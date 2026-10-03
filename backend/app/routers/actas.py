@@ -19,7 +19,11 @@ from app.core.schemas import (ActaParseResult, ActaUpdate, ActaUpdatePayload,
 from app.core.ubigeo import candidatos_del_ambito, ubigeo_de_nivel
 from app.core.ubigeo_catalogo import UBIGEO_DISTRITO, UBIGEO_PROVINCIA
 from app.services.acta_validator import ColumnaActa, validar_acta
-from app.services.processor import ensure_seed_data, save_acta
+from app.services.processor import (CLAVE_A_NIVEL, NIVELES_ACTA,
+                                    asignar_pie_acta, ensure_seed_data,
+                                    obtener_metadata, save_acta,
+                                    sincronizar_consolidado_pie,
+                                    validar_cierre_acta)
 from app.services.storage import storage_service
 from app.services.vision import parse_acta
 
@@ -121,6 +125,8 @@ def _serialize_acta(db: Session, table: Table) -> dict:
         "distrito": UBIGEO_DISTRITO.get((venue.ubigeo if venue else None) or "", ""),
         "provincia": UBIGEO_PROVINCIA.get((venue.ubigeo if venue else None) or "", ""),
         "electores_habiles": table.electores_habiles,
+        # Nota de cierre (R1): el descuadre contra el papel, si lo hay.
+        "observacion": table.observacion,
         "votos_distrital": _ranking(db, table.id, "district"),
         "votos_provincial": _ranking(db, table.id, "provincial"),
         "votos_consejero": _ranking(db, table.id, "consejero"),
@@ -305,14 +311,26 @@ def _verificar_venue_en_alcance(db: Session, usuario: Usuario, venue_id: int | N
 
 
 def _upsert_metadata(db: Session, table_id: int, **fields) -> ActaMetadata:
-    """Create or update the non-candidate metadata of an acta."""
-    meta = db.query(ActaMetadata).filter(ActaMetadata.table_id == table_id).first()
-    if meta is None:
-        meta = ActaMetadata(table_id=table_id)
-        db.add(meta)
+    """Create or update the non-candidate metadata of an acta.
+
+    Sólo acepta columnas REALES de ``acta_metadata``: un ``setattr`` con un
+    nombre inexistente crea un atributo Python transitorio que SQLAlchemy
+    nunca persiste (y encubre bugs del llamador). El pie de votos por nivel
+    NO pasa por aquí: usa ``services.processor.asignar_pie_acta``, el único
+    punto de escritura del pie y su consolidado.
+    """
+    validas = {
+        c.name for c in ActaMetadata.__table__.columns
+        if c.name not in ("id", "table_id", "created_at", "updated_at")
+    }
+    meta = obtener_metadata(db, table_id)
     for key, value in fields.items():
-        if value is not None:
-            setattr(meta, key, value)
+        if value is None:
+            continue
+        if key not in validas:
+            logger.warning("_upsert_metadata: campo ignorado %r (no es columna)", key)
+            continue
+        setattr(meta, key, value)
     return meta
 
 
@@ -523,13 +541,12 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
         firmas_completas=payload.firmas_completas,
     )
 
-    # Puerta de la regla de negocio: los BLOQUEANTES (duplicidad, tope del
-    # padrón, negativos, ilegible) rechazan el envío con 409. El descuadre
-    # R1 (suma ≠ votantes) TAMBIÉN RECHAZA: los datos deben cuadrar antes de
-    # guardar (regla del cliente); el formulario muestra el mensaje
-    # interactivo con la diferencia para corregir los números.
-    if resultado.bloqueantes or any(
-            h.regla == "R1_SUMA_VOTOS" for h in resultado.hallazgos):
+    # Puerta de la regla de negocio: sólo los BLOQUEANTES (duplicidad, tope
+    # del padrón, negativos, ilegible) rechazan el envío con 409. El descuadre
+    # R1 (suma ≠ votantes) NO se rechaza: el acta se registra tal cual está
+    # el papel y queda OBSERVADA (requires_review) con su nota de descuadre
+    # — fuera del cómputo hasta que el coordinador la resuelva.
+    if resultado.bloqueantes:
         raise HTTPException(
             status_code=409,
             detail={
@@ -546,17 +563,6 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
     # El padrón digitado queda en la mesa (fija el tope R2 de la plantilla).
     if payload.electores_habiles:
         table.electores_habiles = payload.electores_habiles
-    # Descuadre R1 (suma ≠ votantes): se registra pero queda OBSERVADA —
-    # fuera del cómputo hasta que el coordinador la resuelva.
-    descuadrada = any(h.regla == "R1_SUMA_VOTOS" for h in resultado.hallazgos)
-    if descuadrada:
-        table.processed = False
-        table.requires_review = True
-        table.status = "requires_review"
-    else:
-        table.processed = True
-        table.requires_review = False
-        table.status = "processed"
     table.ocr_confidence = None  # digitación manual, sin OCR
     db.flush()
 
@@ -629,19 +635,54 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
                 registro.votes = int(votos)
                 registro.verified = True
 
+    # Pie POR COLUMNA (norma ONPE), único origen de verdad: el pie del
+    # papel se persiste en las columnas del nivel correspondiente y el
+    # consolidado histórico se reconstruye desde ellas (asignar_pie_acta).
+    # El acta regional trae DOS columnas: GOBERNADOR_VICE (nivel regional)
+    # y CONSEJEROS (nivel consejero) — antes el pie de consejeros se perdía.
     principal = next(
         (c for c in payload.columnas if c.columna.upper() == columna_principal), None
     )
-    meta = db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).first()
-    if meta is None:
-        meta = ActaMetadata(table_id=table.id)
-        db.add(meta)
-    if principal is not None:
-        meta.votos_blancos = principal.votos_blancos
-        meta.votos_nulos = principal.votos_nulos
-        meta.votos_impugnados = principal.votos_impugnados
+    meta = obtener_metadata(db, table.id)
+    if payload.electores_habiles:
         meta.total_electores = payload.electores_habiles
-        meta.total_votantes = principal.total_votantes
+    if principal is not None:
+        meta.total_votantes = principal.total_votantes or 0
+        nivel_principal = CLAVE_A_NIVEL[clave_tipo]
+        asignar_pie_acta(
+            db, table.id, nivel_principal,
+            blancos=principal.votos_blancos, nulos=principal.votos_nulos,
+            impugnados=principal.votos_impugnados,
+        )
+    secundaria = next(
+        (c for c in payload.columnas
+         if c.columna.upper() == "CONSEJEROS" and clave_tipo == "regional"),
+        None,
+    )
+    if secundaria is not None:
+        asignar_pie_acta(
+            db, table.id, "consejero",
+            blancos=secundaria.votos_blancos, nulos=secundaria.votos_nulos,
+            impugnados=secundaria.votos_impugnados,
+            sincronizar=False,  # el consolidado sigue a la columna principal
+        )
+
+    # Validación de cierre PRE-COMMIT (R1): la suma física de cada columna
+    # contra el total del papel. Un descuadre no rechaza: el acta queda
+    # OBSERVADA con la nota para el coordinador, sin duplicar contadores.
+    columnas_cierre: list[dict] = []
+    for col in (principal, secundaria):
+        if col is None:
+            continue
+        columnas_cierre.append({
+            "nombre": col.columna.upper(),
+            "validos": sum(int(v) for v in col.votos.values()),
+            "blancos": col.votos_blancos or 0,
+            "nulos": col.votos_nulos or 0,
+            "impugnados": col.votos_impugnados or 0,
+            "papel": col.total_votantes or 0,
+        })
+    cierre = validar_cierre_acta(table, columnas=columnas_cierre)
 
     db.commit()
     db.refresh(table)
@@ -650,6 +691,7 @@ def registrar_acta_movil(payload: ActaValidacionIn, db: Session = Depends(get_db
         "acta_id": table.id,
         "numero_mesa": table.numero_mesa,
         "estado": table.status,
+        "cuadre": cierre,
         "validacion": resultado.to_dict(),
         "organizaciones_no_mapeadas": no_mapeados,
     }
@@ -777,6 +819,7 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         "processed": bool(table.processed),
         "requires_review": bool(table.requires_review),
         "ocr_confidence": table.ocr_confidence, "image_url": table.image_url,
+        "observacion": table.observacion,
         "votos_blancos": meta_prev.votos_blancos if meta_prev else 0,
         "votos_nulos": meta_prev.votos_nulos if meta_prev else 0,
         "votos_impugnados": meta_prev.votos_impugnados if meta_prev else 0,
@@ -820,25 +863,75 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     _apply_votes(db, table.id, "consejero", payload.votos_consejero)
     _apply_votes(db, table.id, "regional", payload.votos_regional)
 
-    # Pie por columna (norma ONPE) + consolidado histórico de respaldo.
-    # Un campo AUSENTE del payload (PUT parcial: autoguardado, otro modal)
-    # es None y NO debe pisar el valor persistido con cero — así se
-    # borraba el pie ya digitado. Sólo se persiste lo que vino explícito.
-    _pie_niveles: dict[str, int] = {}
-    for _prefijo in ("blancos", "nulos", "impugnados"):
-        for _nivel in ("distrital", "provincial", "consejero", "regional"):
-            _valor = getattr(payload, f"{_prefijo}_{_nivel}", None)
-            if _valor is not None:
-                _pie_niveles[f"{_prefijo}_{_nivel}"] = _valor
+    # ---- Pie por columna (norma ONPE): ÚNICO origen de verdad ----
+    # Resolución EFECTIVA por nivel antes de persistir: lo explícito del
+    # payload; si el nivel se digitó sin pie propio (modal rápido que envía
+    # el consolidado), ese consolidado ES su pie; un nivel ausente conserva
+    # el persistido (un PUT parcial no pisa con ceros lo ya digitado).
+    # La validación y la persistencia usan ESTOS mismos números: antes el
+    # cuadre se validaba con unos valores y se persistían otros.
+    # obtener_metadata (con flush) evita duplicar filas de metadata cuando
+    # el PUT parcial ya la creó más arriba sin flush (autoflush=False).
+    _meta_efectiva = obtener_metadata(db, table.id)
+
+    def _pie_persistido(nivel: str) -> tuple[int, int, int]:
+        if _meta_efectiva is None:
+            return 0, 0, 0
+        b = getattr(_meta_efectiva, f"blancos_{nivel}", 0) or 0
+        n = getattr(_meta_efectiva, f"nulos_{nivel}", 0) or 0
+        i = getattr(_meta_efectiva, f"impugnados_{nivel}", 0) or 0
+        if b + n + i == 0:  # acta histórica sin pie por columna
+            b = _meta_efectiva.votos_blancos or 0
+            n = _meta_efectiva.votos_nulos or 0
+            i = _meta_efectiva.votos_impugnados or 0
+        return b, n, i
+
+    _genericos = (payload.votos_blancos, payload.votos_nulos,
+                  payload.votos_impugnados)
+    _hay_generico = any(v is not None for v in _genericos)
+    _digitados_sin_pie = [
+        nivel for nivel, lista in (
+            ("distrital", payload.votos_distrital),
+            ("provincial", payload.votos_provincial),
+            ("consejero", payload.votos_consejero),
+            ("regional", payload.votos_regional),
+        )
+        if lista and all(getattr(payload, f"{_p}_{nivel}") is None
+                         for _p in ("blancos", "nulos", "impugnados"))
+    ]
+
+    _pie: dict[str, tuple[int, int, int]] = {}
+    _pie_a_persistir: dict[str, tuple[int, int, int]] = {}
+    for _nivel in NIVELES_ACTA:
+        _b = getattr(payload, f"blancos_{_nivel}", None)
+        _n = getattr(payload, f"nulos_{_nivel}", None)
+        _i = getattr(payload, f"impugnados_{_nivel}", None)
+        if _b is None and _n is None and _i is None:
+            if (_hay_generico and len(_digitados_sin_pie) == 1
+                    and _nivel == _digitados_sin_pie[0]):
+                # Modal rápido: el pie del formulario es el pie del nivel
+                # digitado (contrato histórico del payload).
+                _b, _n, _i = _genericos
+            else:
+                _pie[_nivel] = _pie_persistido(_nivel)
+                continue  # nivel ausente: se conserva el pie persistido
+        _pie[_nivel] = (_b or 0, _n or 0, _i or 0)
+        _pie_a_persistir[_nivel] = _pie[_nivel]
+
+    # Persistencia del pie por nivel (única vía: asignar_pie_acta). El
+    # consolidado histórico se RECONSTRUYE desde las columnas por nivel —
+    # nunca se asigna en paralelo desde el payload (doble escritura).
+    for _nivel, (_b, _n, _i) in _pie_a_persistir.items():
+        asignar_pie_acta(db, table.id, _nivel, blancos=_b, nulos=_n,
+                         impugnados=_i, sincronizar=False)
+    if _pie_a_persistir:
+        sincronizar_consolidado_pie(db, obtener_metadata(db, table.id))
+
     _upsert_metadata(
         db,
         table.id,
-        votos_blancos=payload.votos_blancos,
-        votos_nulos=payload.votos_nulos,
-        votos_impugnados=payload.votos_impugnados,
         total_electores=payload.total_electores,
         total_votantes=payload.total_votantes,
-        **_pie_niveles,
     )
 
     # La suma de votos debe cuadrar contra los VOTANTES que sufragaron
@@ -847,9 +940,6 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     # coordinador. R2 (más votantes que electores) sí bloquea.
     # Integridad sobre los valores EFECTIVOS (payload si viene; si no, los
     # ya persistidos): en un PUT parcial los campos ausentes no son cero.
-    _meta_efectiva = (
-        db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).first()
-    )
 
     def _suma_nivel(lista_payload, tipo: str) -> int:
         """Suma del nivel: la del payload si viene; si no, la persistida."""
@@ -869,26 +959,11 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     )
     # Regla ONPE por COLUMNA: cada nivel tiene su propio pie (blancos,
     # nulos, impugnados) y cuadra independientemente con los votantes de la
-    # cabecera. El payload trae el pie por nivel; si no viene un nivel, se
-    # usa el consolidado histórico para compatibilidad.
+    # cabecera. El pie EFECTIVO ya quedó resuelto por nivel en ``_pie``.
     def _otros_de(nivel: str, lista_payload) -> int:
-        """Blancos+nulos+impugnados del nivel (payload, metadata o consolidado)."""
-        b = getattr(payload, f"blancos_{nivel}", None)
-        nul = getattr(payload, f"nulos_{nivel}", None)
-        i = getattr(payload, f"impugnados_{nivel}", None)
-        if b is None and nul is None and i is None:
-            # Nivel no enviado: usar su pie persistido (o el consolidado).
-            if _meta_efectiva is not None:
-                b = getattr(_meta_efectiva, f"blancos_{nivel}", 0) or 0
-                nul = getattr(_meta_efectiva, f"nulos_{nivel}", 0) or 0
-                i = getattr(_meta_efectiva, f"impugnados_{nivel}", 0) or 0
-                if b + nul + i == 0:
-                    b = _meta_efectiva.votos_blancos or 0
-                    nul = _meta_efectiva.votos_nulos or 0
-                    i = _meta_efectiva.votos_impugnados or 0
-                return b + nul + i
-            return 0
-        return (b or 0) + (nul or 0) + (i or 0)
+        """Blancos+nulos+impugnados efectivos del nivel (resueltos arriba)."""
+        _b, _n, _i = _pie.get(nivel, (0, 0, 0))
+        return _b + _n + _i
 
     def _nivel_activo(tipo: str, lista_payload) -> bool:
         """El nivel participa del cuadre si fue enviado (con oferta) o ya
@@ -932,17 +1007,9 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
     excede_padron = bool(
         (table.electores_habiles or 0) and votantes > table.electores_habiles
     )
-    descuadrada = votantes > 0 and any(
-        s != votantes for s in _activas.values()
-    )
     # R0: acta vacía — todo en ceros no es un acta registrable (0 = 0 cuadra,
     # pero nadie digitó los votos del papel).
     acta_vacia = votantes == 0 and suma_total == 0
-    # R7 — cabecera en ceros con votos colgados: un guardado parcial (p. ej.
-    # el autoguardado) que borra la cabecera sin borrar TODOS los niveles
-    # deja votantes=0 con votos persistidos. 0 != suma_total: es incoherente
-    # y se bloquea (el 409 detiene el commit del estado a medias).
-    cabecera_cero_con_votos = votantes == 0 and suma_total > 0
 
     # R6 — Concentración atípica (>90% de los votos válidos de una columna
     # en una sola organización): exige reconfirmación contra el acta física.
@@ -984,6 +1051,11 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         table.processed = False
         table.requires_review = True
         table.status = "requires_review"
+        table.observacion = (
+            f"Enviada a Revisión (control de calidad): {motivo_edicion}"
+            if motivo_edicion
+            else "Enviada a Revisión (control de calidad)"
+        )
         db.flush()
         db.commit()
         db.refresh(table)
@@ -1005,75 +1077,57 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
             },
         )
 
-    if cabecera_cero_con_votos:
-        _registrar_rechazo(db, numero_mesa=table.numero_mesa,
-                           tipo_eleccion="RECTIFICACION", regla="R7_CABECERA_CERO",
-                           mensaje=f"votantes=0 con suma={suma_total}",
-                           usuario=usuario)
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "mensaje": (
-                    "MESA INCOHERENTE: la cabecera declara 0 votantes pero hay "
-                    f"{suma_total} votos digitados. Digite el total de votantes "
-                    "de la cabecera del acta (o corrija los votos) antes de guardar."
-                ),
-                "regla": "R7_CABECERA_CERO",
-                "suma": suma_total,
-            },
-        )
-
-    # Regla del cliente: los datos DEBEN cuadrar para guardar. Un acta con
-    # la suma descuadrada (o con votantes por encima del padrón) no se
-    # rectifica: se rechaza con 409 y el modal muestra el mensaje
-    # interactivo para corregir los números.
-    if excede_padron or descuadrada:
-        # Detalle por columna: ningún nivel puede superar a los votantes que
-        # sufragaron (el mismo elector vota todas las columnas del papel).
-        _niveles = {
-            "Distrital": _activas.get("district", 0),
-            "Provincial": _activas.get("provincial", 0),
-            "Consejeros": _activas.get("consejero", 0),
-            "Regional": _activas.get("regional", 0),
-        }
-        _mal = [f"{n} suma {s}" for n, s in _niveles.items()
-                if s != votantes and s > 0]
-        if excede_padron:
-            mensaje = (
-                f"MESA DESCUADRADA — IMPOSIBLE: los votantes que sufragaron "
-                f"({votantes}) superan los electores hábiles del padrón "
-                f"({table.electores_habiles}); excedente de "
-                f"{votantes - (table.electores_habiles or 0)} votos. Verifique "
-                "el acta física."
-            )
-        else:
-            mensaje = (
-                "MESA DESCUADRADA — NO COINCIDEN LOS DATOS: "
-                + (", ".join(_mal) if _mal
-                   else f"la columna mayor suma {suma_total}")
-                + f" y los votantes son {votantes}. Cada columna (con sus "
-                "blancos/nulos/impugnados) debe cuadrar con el total de "
-                "votantes."
-            )
+    # R2 (más votantes que electores hábiles) es físicamente IMPOSIBLE: es
+    # el único descuadre que sigue rechazándose con 409 — un acta así no se
+    # registra ni observa: se corrige contra el papel.
+    if excede_padron:
         _registrar_rechazo(db, numero_mesa=table.numero_mesa,
                            tipo_eleccion="RECTIFICACION",
-                           regla="R2_TOPE_ELECTORES" if excede_padron else "R1_SUMA_VOTOS",
+                           regla="R2_TOPE_ELECTORES",
                            mensaje=f"suma={suma_total} vs votantes={votantes}",
                            usuario=usuario)
         raise HTTPException(
             status_code=409,
             detail={
-                "mensaje": mensaje,
+                "mensaje": (
+                    f"MESA DESCUADRADA — IMPOSIBLE: los votantes que sufragaron "
+                    f"({votantes}) superan los electores hábiles del padrón "
+                    f"({table.electores_habiles}); excedente de "
+                    f"{votantes - (table.electores_habiles or 0)} votos. Verifique "
+                    "el acta física."
+                ),
                 "diferencia": votantes - suma_total,
                 "suma": suma_total,
                 "votantes": votantes,
             },
         )
 
-    if payload.verified:
-        table.processed = True
-        table.requires_review = False
-        table.status = "processed"
+    # Validación de cierre PRE-COMMIT (R1/R7, norma ONPE): la suma física
+    # de cada columna activa (votos válidos + SU pie) contra los votantes
+    # del papel. Un descuadre NO rechaza: los contadores ya persistidos se
+    # conservan tal cual y el acta queda OBSERVADA con la nota del descuadre
+    # para el coordinador. La promoción a contabilizada sólo ocurre con
+    # ``verified`` (rectificación final del flujo).
+    _etiqueta_cierre = {"district": "Distrital", "provincial": "Provincial",
+                        "consejero": "Consejeros", "regional": "Regional"}
+    columnas_cierre: list[dict] = []
+    for _clave, (_votos_nivel, _otros_nivel, _lista) in _columnas.items():
+        if not _nivel_activo(_clave, _lista):
+            continue
+        _nivel = CLAVE_A_NIVEL[_clave]
+        _b, _n, _i = _pie.get(_nivel, (0, 0, 0))
+        columnas_cierre.append({
+            "nombre": _etiqueta_cierre[_clave],
+            "validos": _votos_nivel,
+            "blancos": _b, "nulos": _n, "impugnados": _i,
+            "papel": votantes,
+        })
+    cierre = validar_cierre_acta(
+        table,
+        total_papel=votantes,
+        columnas=columnas_cierre or None,
+        marcar_procesada=payload.verified,
+    )
     db.flush()
 
     # Auditoría UNIVERSAL (append-only, atómica con el acta): toda edición
@@ -1086,6 +1140,7 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
         "processed": bool(table.processed),
         "requires_review": bool(table.requires_review),
         "ocr_confidence": table.ocr_confidence, "image_url": table.image_url,
+        "observacion": table.observacion,
         "votos_blancos": meta_new.votos_blancos if meta_new else 0,
         "votos_nulos": meta_new.votos_nulos if meta_new else 0,
         "votos_impugnados": meta_new.votos_impugnados if meta_new else 0,
@@ -1114,7 +1169,9 @@ async def update_acta(acta_id: int, payload: ActaUpdatePayload,
             resumen={"total_mesas": total, "actas_normales": proc,
                      "avance_pct": round(100.0 * proc / total, 2) if total else 0.0},
         )
-    return _serialize_acta(db, table)
+    respuesta = _serialize_acta(db, table)
+    respuesta["cuadre"] = cierre
+    return respuesta
 
 
 @router.post("")
@@ -1157,28 +1214,52 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
     _apply_votes(db, table.id, "consejero", payload.votos_consejero)
     _apply_votes(db, table.id, "regional", payload.votos_regional)
 
+    # Pie POR COLUMNA (norma ONPE), único origen de verdad: el formulario
+    # digita UN nivel y envía su pie como votos_blancos/nulos/impugnados
+    # (los campos por nivel de ActaUpdate son default 0, no None), así que
+    # el pie del nivel digitado es el del formulario salvo que traiga pie
+    # específico. El consolidado se reconstruye desde las columnas por
+    # nivel. Antes la asignación iteraba los CARACTERES del nombre del
+    # nivel (blancos_d, blancos_i, …) creando atributos fantasma que
+    # SQLAlchemy nunca persistía.
+    for _nivel, _lista in (("distrital", payload.votos_distrital),
+                           ("provincial", payload.votos_provincial),
+                           ("consejero", payload.votos_consejero),
+                           ("regional", payload.votos_regional)):
+        if not _lista:
+            continue
+        _b = getattr(payload, f"blancos_{_nivel}", 0) or 0
+        _n = getattr(payload, f"nulos_{_nivel}", 0) or 0
+        _i = getattr(payload, f"impugnados_{_nivel}", 0) or 0
+        if _b + _n + _i == 0 and _nivel == _nivel_digitado:
+            _b = payload.votos_blancos or 0
+            _n = payload.votos_nulos or 0
+            _i = payload.votos_impugnados or 0
+        asignar_pie_acta(db, table.id, _nivel, blancos=_b, nulos=_n,
+                         impugnados=_i,
+                         sincronizar=_nivel == _nivel_digitado)
+
+    if _nivel_digitado is None and (
+        payload.votos_blancos or payload.votos_nulos or payload.votos_impugnados
+    ):
+        # Sin nivel digitado no hay columna a la que pertenezca el pie: se
+        # alimenta sólo el consolidado (mismo criterio que el flujo OCR).
+        _meta_sin_nivel = obtener_metadata(db, table.id)
+        _meta_sin_nivel.votos_blancos = payload.votos_blancos or 0
+        _meta_sin_nivel.votos_nulos = payload.votos_nulos or 0
+        _meta_sin_nivel.votos_impugnados = payload.votos_impugnados or 0
+
     _upsert_metadata(
         db,
         table.id,
-        votos_blancos=payload.votos_blancos,
-        votos_nulos=payload.votos_nulos,
-        votos_impugnados=payload.votos_impugnados,
         total_electores=payload.total_electores,
         total_votantes=payload.total_votantes,
-        # Pie POR COLUMNA: el registro digitó un solo nivel (el formulario
-        # envía su pie como votos_blancos/nulos/impugnados) — se guarda también
-        # en la columna de ese nivel para el cuadre por columna del detalle.
-        **({f"blancos_{_n}": payload.votos_blancos for _n in _nivel_digitado} if _nivel_digitado else {}),
-        **({f"nulos_{_n}": payload.votos_nulos for _n in _nivel_digitado} if _nivel_digitado else {}),
-        **({f"impugnados_{_n}": payload.votos_impugnados for _n in _nivel_digitado} if _nivel_digitado else {}),
     )
 
-    # Misma regla BLOQUEANTE que en PUT: CADA columna cuadra independientemente
-    # contra los votantes (cabecera); la referencia es la columna mayor, no la
-    # suma de niveles (el mismo elector vota en todas las columnas del papel).
-    # Un acta descuadrada NO se registra: se rechaza con 409 y el formulario
-    # muestra el mensaje interactivo para corregir los números (regla del
-    # cliente: la sumatoria DEBE coincidir con los votantes ANTES de guardar).
+    # Misma regla de cierre que en PUT: CADA columna cuadra independientemente
+    # contra los votantes de la cabecera. Un descuadre R1 ya no rechaza: el
+    # acta se registra OBSERVADA con su nota (fuera del cómputo hasta que
+    # el coordinador la resuelva). R0/R2 siguen siendo bloqueantes.
     votantes = payload.total_votantes or 0
 
     def _pie_nivel(nivel: str) -> int:
@@ -1206,18 +1287,12 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
         sumas_columna[_clave] = sum(v.votes for v in _lista) + pie
     activas = {k: s for k, s in sumas_columna.items() if s > 0}
     suma_total = max(activas.values()) if activas else 0
-    # R7 — cabecera en ceros con votos colgados (misma regla que en PUT): un
-    # guardado parcial no puede dejar votantes=0 con votos digitados.
-    cabecera_cero_con_votos = votantes == 0 and suma_total > 0
     # R2 SIEMPRE contra el padrón REAL de la mesa (tables.electores_habiles,
     # fuente ONPE), no contra el valor que traiga el formulario.
     excede_padron = bool(
         (table.electores_habiles or 0) and votantes > table.electores_habiles
     )
     acta_vacia = votantes == 0 and suma_total == 0
-    # Norma ONPE: CADA columna activa debe cuadrar con los votantes, no solo
-    # la mayor ( Regional 215 + Distrital 185 pasarían el chequeo agregado).
-    descuadrada = votantes > 0 and any(s != votantes for s in activas.values())
 
     def _rechazo(regla: str, mensaje: str, detalle: dict) -> HTTPException:
         # Log de rechazos en SU PROPIA sesión: la del request tiene cambios a
@@ -1266,6 +1341,7 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
         table.processed = False
         table.requires_review = True
         table.status = "requires_review"
+        table.observacion = "Enviada a Revisión (control de calidad)"
         db.flush()
         db.commit()
         db.refresh(table)
@@ -1278,61 +1354,67 @@ async def create_acta(payload: ActaUpdate, db: Session = Depends(get_db),
             "contra el acta física y digite los totales reales antes de guardar.",
             {"regla": "R0_ACTA_VACIA"},
         )
-    if cabecera_cero_con_votos:
+    # R2 (votantes > padrón) es físicamente imposible: sigue bloqueando.
+    if excede_padron:
         raise _rechazo(
-            "R7_CABECERA_CERO",
-            "MESA INCOHERENTE: la cabecera declara 0 votantes pero hay "
-            f"{suma_total} votos digitados. Digite el total de votantes de la "
-            "cabecera del acta antes de guardar.",
-            {"regla": "R7_CABECERA_CERO", "suma": suma_total},
-        )
-    if excede_padron or descuadrada:
-        # Detalle por columna: ningún nivel puede superar a los votantes que
-        # sufragaron (el mismo elector vota todas las columnas del papel).
-        _niveles = {
-            "Distrital": activas.get("district", 0),
-            "Provincial": activas.get("provincial", 0),
-            "Consejeros": activas.get("consejero", 0),
-            "Regional": activas.get("regional", 0),
-        }
-        _mal = [f"{n} suma {s}" for n, s in _niveles.items()
-                if s != votantes and s > 0]
-        if excede_padron:
-            mensaje = (
-                f"MESA DESCUADRADA — IMPOSIBLE: los votantes que sufragaron "
-                f"({votantes}) superan los electores hábiles del padrón "
-                f"({table.electores_habiles}); excedente de "
-                f"{votantes - (table.electores_habiles or 0)} votos. Verifique "
-                "el acta física."
-            )
-        else:
-            mensaje = (
-                "MESA DESCUADRADA — NO COINCIDEN LOS DATOS: "
-                + (", ".join(_mal) if _mal
-                   else f"la columna mayor suma {suma_total}")
-                + f" y los votantes son {votantes}. Cada columna (con sus "
-                "blancos/nulos/impugnados) debe cuadrar con el total de "
-                "votantes."
-            )
-        raise _rechazo(
-            "R2_TOPE_ELECTORES" if excede_padron else "R1_SUMA_VOTOS",
-            mensaje,
+            "R2_TOPE_ELECTORES",
+            f"MESA DESCUADRADA — IMPOSIBLE: los votantes que sufragaron "
+            f"({votantes}) superan los electores hábiles del padrón "
+            f"({table.electores_habiles}); excedente de "
+            f"{votantes - (table.electores_habiles or 0)} votos. Verifique "
+            "el acta física.",
             {
-                "regla": "R2_TOPE_ELECTORES" if excede_padron else "R1_SUMA_VOTOS",
+                "regla": "R2_TOPE_ELECTORES",
                 "diferencia": votantes - suma_total,
                 "suma": suma_total,
                 "votantes": votantes,
             },
         )
 
-    # Si llegó aquí, la acta cuadra por columna contra la cabecera: NORMAL.
-    table.processed = True
-    table.requires_review = False
-    table.status = "processed"
+    # Validación de cierre PRE-COMMIT (R1/R7, norma ONPE): la suma física
+    # de cada columna activa contra los votantes del papel. Un descuadre NO
+    # rechaza: el acta queda OBSERVADA con la nota del descuadre, sin
+    # duplicar contadores (los votos y el pie ya se persistieron UNA vez).
+    _etiqueta_cierre = {"district": "Distrital", "provincial": "Provincial",
+                        "consejero": "Consejeros", "regional": "Regional"}
+    columnas_cierre: list[dict] = []
+    for _clave, _nivel, _lista in (
+        ("district", "distrital", payload.votos_distrital),
+        ("provincial", "provincial", payload.votos_provincial),
+        ("consejero", "consejero", payload.votos_consejero),
+        ("regional", "regional", payload.votos_regional),
+    ):
+        if not _lista:
+            continue
+        _b, _n, _i = (
+            (getattr(payload, f"blancos_{_nivel}", None) or 0),
+            (getattr(payload, f"nulos_{_nivel}", None) or 0),
+            (getattr(payload, f"impugnados_{_nivel}", None) or 0),
+        )
+        if _b + _n + _i == 0 and _nivel == _nivel_digitado:
+            _b, _n, _i = (payload.votos_blancos or 0, payload.votos_nulos or 0,
+                          payload.votos_impugnados or 0)
+        columnas_cierre.append({
+            "nombre": _etiqueta_cierre[_clave],
+            "validos": sum(v.votes for v in _lista),
+            "blancos": _b, "nulos": _n, "impugnados": _i,
+            "papel": votantes,
+        })
+    cierre = validar_cierre_acta(
+        table,
+        votos_blancos=payload.votos_blancos,
+        votos_nulos=payload.votos_nulos,
+        votos_impugnados=payload.votos_impugnados,
+        total_papel=votantes,
+        columnas=columnas_cierre or None,
+    )
     db.flush()
 
     db.commit()
     db.refresh(table)
 
-    # Return the created acta in the same shape as the review list
-    return _serialize_acta(db, table)
+    # Return the created acta in the same shape as the review list, con el
+    # diagnóstico del cierre (detalle del descuadre, si lo hay).
+    respuesta = _serialize_acta(db, table)
+    respuesta["cuadre"] = cierre
+    return respuesta

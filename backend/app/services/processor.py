@@ -1,16 +1,233 @@
 """Data persistence service — insert parsed actas into the database."""
 import logging
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.models import (ActaMetadata, AsignacionPersonero, ConsejeroCandidate,
-                             DistrictCandidate, ProvincialCandidate, Record,
-                             RegionalCandidate, ROLES_SISTEMA, Table, Usuario, Venue)
+                              DistrictCandidate, ProvincialCandidate, Record,
+                              RegionalCandidate, ROLES_SISTEMA, Table, Usuario, Venue)
 from app.core.schemas import ActaParseResult
 from app.core.ubigeo import candidatos_del_ambito, ubigeo_de_nivel
 
 logger = logging.getLogger(__name__)
+
+# Niveles de elección del acta (pie por columna, norma ONPE) y su clave en
+# ``records.candidate_type``.
+NIVELES_ACTA = ("distrital", "provincial", "consejero", "regional")
+CLAVE_A_NIVEL = {
+    "district": "distrital",
+    "provincial": "provincial",
+    "consejero": "consejero",
+    "regional": "regional",
+}
+
+
+def obtener_metadata(db: Session, table_id: int) -> ActaMetadata:
+    """Metadata del acta, creándola si no existe (sin commit).
+
+    Hace ``flush`` antes de buscar: la sesión corre con ``autoflush=False``
+    y una metadata recién agregada en el mismo request (aún sin flush) no
+    sería visible para la query — se crearía una fila DUPLICADA por mesa.
+    """
+    db.flush()
+    meta = db.query(ActaMetadata).filter(ActaMetadata.table_id == table_id).first()
+    if meta is None:
+        meta = ActaMetadata(table_id=table_id)
+        db.add(meta)
+    return meta
+
+
+def asignar_pie_acta(
+    db: Session,
+    table_id: int,
+    nivel: str,
+    *,
+    blancos: int | None,
+    nulos: int | None,
+    impugnados: int | None,
+    sincronizar: bool = True,
+) -> ActaMetadata:
+    """ÚNICO punto de escritura del pie (blancos/nulos/impugnados) de un nivel.
+
+    El origen de verdad son las columnas por nivel del acta
+    (``blancos_distrital`` … ``impugnados_regional``): el consolidado
+    histórico (``votos_blancos`` …) se RECONSTRUYE desde ellas en
+    ``sincronizar_consolidado_pie`` — nunca se asigna dos veces desde el
+    payload. Los ``None`` se normalizan a 0 para que la aritmética de
+    cuadre nunca opere contra NULL.
+
+    ``sincronizar=False`` permite asignar varios niveles (p. ej. el PUT
+    multi-nivel) y reconstruir el consolidado UNA sola vez al final.
+    """
+    if nivel not in NIVELES_ACTA:
+        raise ValueError(f"Nivel de acta inválido: {nivel!r}")
+    meta = obtener_metadata(db, table_id)
+    setattr(meta, f"blancos_{nivel}", blancos or 0)
+    setattr(meta, f"nulos_{nivel}", nulos or 0)
+    setattr(meta, f"impugnados_{nivel}", impugnados or 0)
+    if sincronizar:
+        sincronizar_consolidado_pie(db, meta, nivel_referencia=nivel)
+    return meta
+
+
+def sincronizar_consolidado_pie(
+    db: Session, meta: ActaMetadata, nivel_referencia: str | None = None
+) -> None:
+    """Reconstruye el consolidado histórico desde el pie por columna.
+
+    * ``nivel_referencia``: consolidado = pie de esa columna (la que se
+      acaba de registrar — p. ej. el nivel de la elección del formulario).
+    * Sin referencia (PUT multi-nivel): consolidado = pie de la COLUMNA
+      MAYOR (la de más votos válidos persistidos), que es la que resume la
+      cabecera del papel.
+    * Si ningún nivel tiene pie (> 0), se CONSERVA el consolidado previo:
+      actas históricas que sólo trajeron el consolidado no se borran.
+    """
+    if meta is None:
+        return
+    if nivel_referencia is not None:
+        meta.votos_blancos = getattr(meta, f"blancos_{nivel_referencia}") or 0
+        meta.votos_nulos = getattr(meta, f"nulos_{nivel_referencia}") or 0
+        meta.votos_impugnados = getattr(meta, f"impugnados_{nivel_referencia}") or 0
+        return
+
+    tiene_pie = any(
+        (getattr(meta, f"blancos_{n}") or 0)
+        + (getattr(meta, f"nulos_{n}") or 0)
+        + (getattr(meta, f"impugnados_{n}") or 0)
+        > 0
+        for n in NIVELES_ACTA
+    )
+    if not tiene_pie:
+        return  # legacy: sin pie por columna se mantiene el consolidado
+
+    db.flush()  # ver los records pendientes de la sesión antes de medir
+    mayor, mayor_suma = NIVELES_ACTA[0], -1
+    for nivel in NIVELES_ACTA:
+        suma = (
+            db.query(func.coalesce(func.sum(Record.votes), 0))
+            .filter(
+                Record.table_id == meta.table_id,
+                Record.candidate_type == next(
+                    c for c, n in CLAVE_A_NIVEL.items() if n == nivel
+                ),
+            )
+            .scalar()
+        )
+        if int(suma or 0) > mayor_suma:
+            mayor, mayor_suma = nivel, int(suma or 0)
+    meta.votos_blancos = getattr(meta, f"blancos_{mayor}") or 0
+    meta.votos_nulos = getattr(meta, f"nulos_{mayor}") or 0
+    meta.votos_impugnados = getattr(meta, f"impugnados_{mayor}") or 0
+
+
+def validar_cierre_acta(
+    table: Table,
+    *,
+    total_validos: int = 0,
+    votos_blancos: int | None = None,
+    votos_nulos: int | None = None,
+    votos_impugnados: int | None = None,
+    total_papel: int | None = None,
+    columnas: list[dict] | None = None,
+    marcar_procesada: bool = True,
+) -> dict:
+    """Validación de cierre previa al ``db.commit()`` (regla R1, norma ONPE).
+
+    Compara la suma física calculada de una columna del acta
+
+        Σ votos válidos de organizaciones + blancos + nulos + impugnados
+
+    contra el total de ciudadanos que votaron impreso en el papel
+    (``total_papel``). Un descuadre NO rechaza el acta: se registra tal
+    cual está el papel, queda OBSERVADA (``requires_review=True``, fuera
+    del cómputo) y la observación documenta la diferencia para el
+    coordinador. Los contadores se persisten UNA sola vez — esta función
+    sólo fija el estado de la mesa, nunca toca la metadata de votos.
+
+    ``columnas`` (opcional) permite validar varias columnas del mismo
+    papel (p. ej. GOBERNADOR_VICE y CONSEJEROS del acta regional): cada
+    dict trae ``nombre``, ``validos``, ``blancos``, ``nulos``,
+    ``impugnados`` y ``papel``. Si una sola columna descuadra, el acta
+    completa queda observada. Sin ``columnas`` se usa la columna principal
+    con los kwargs individuales (firma del caso simple).
+
+    ``marcar_procesada=False`` (PUT sin ``verified``: autoguardado) deja
+    el estado previo intacto cuando la suma CUADRA; el descuadre siempre
+    observa.
+
+    Devuelve el diagnóstico: ``cuadra``, ``suma_calculada``,
+    ``total_papel``, ``diferencia`` y ``descuadres`` por columna.
+    """
+    descuadres: list[dict] = []
+    if columnas is None:
+        columnas = [
+            {
+                "nombre": "",
+                "validos": total_validos or 0,
+                "blancos": votos_blancos or 0,
+                "nulos": votos_nulos or 0,
+                "impugnados": votos_impugnados or 0,
+                "papel": total_papel or 0,
+            }
+        ]
+    for col in columnas:
+        suma_calculada = (
+            (col.get("validos") or 0)
+            + (col.get("blancos") or 0)
+            + (col.get("nulos") or 0)
+            + (col.get("impugnados") or 0)
+        )
+        papel = col.get("papel") or 0
+        if suma_calculada != papel:
+            descuadres.append(
+                {
+                    "columna": col.get("nombre") or "",
+                    "suma_calculada": suma_calculada,
+                    "total_papel": papel,
+                    "diferencia": papel - suma_calculada,
+                }
+            )
+
+    principal = columnas[0] if columnas else {
+        "validos": 0, "blancos": 0, "nulos": 0, "impugnados": 0, "papel": 0
+    }
+    suma_calculada = (
+        (principal.get("validos") or 0)
+        + (principal.get("blancos") or 0)
+        + (principal.get("nulos") or 0)
+        + (principal.get("impugnados") or 0)
+    )
+    total_papel = principal.get("papel") or 0
+
+    if descuadres:
+        detalle = " | ".join(
+            (
+                f"Columna {d['columna']}: " if d["columna"] else ""
+            )
+            + f"Suma calculada ({d['suma_calculada']}) difiere del total del papel ({d['total_papel']})"
+            for d in descuadres
+        )
+        table.requires_review = True
+        table.status = "requires_review"
+        table.processed = False
+        table.observacion = f"Descuadre: {detalle}"
+    else:
+        table.observacion = None
+        if marcar_procesada:
+            table.requires_review = False
+            table.status = "processed"
+            table.processed = True
+
+    return {
+        "cuadra": not descuadres,
+        "suma_calculada": suma_calculada,
+        "total_papel": total_papel,
+        "diferencia": total_papel - suma_calculada,
+        "descuadres": descuadres,
+    }
 
 
 def ensure_seed_data(db: Session) -> None:
@@ -178,17 +395,15 @@ def save_acta(db: Session, result: ActaParseResult, image_url: str) -> Table:
 
     meta = db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).first()
     if meta is None:
-        meta = ActaMetadata(
-            table_id=table.id,
-            votos_blancos=result.votos_blancos,
-            votos_nulos=result.votos_nulos,
-            votos_impugnados=result.votos_impugnados,
-        )
+        meta = ActaMetadata(table_id=table.id)
         db.add(meta)
-    else:
-        meta.votos_blancos = result.votos_blancos
-        meta.votos_nulos = result.votos_nulos
-        meta.votos_impugnados = result.votos_impugnados
+    # El OCR no distingue el nivel del pie: sin columna por nivel conocida
+    # sólo se alimenta el consolidado (``or 0`` evita NULL en la aritmética
+    # de cuadre). El pie por columna llega con la digitación/rectificación
+    # vía ``asignar_pie_acta``, que reconstruye este consolidado.
+    meta.votos_blancos = result.votos_blancos or 0
+    meta.votos_nulos = result.votos_nulos or 0
+    meta.votos_impugnados = result.votos_impugnados or 0
 
     db.commit()
     db.refresh(table)

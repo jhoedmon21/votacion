@@ -123,6 +123,10 @@ class Table(Base):
     status = Column(String, default="pending")
     ocr_confidence = Column(Float)
     image_url = Column(String)
+    # Nota de cierre del acta (regla R1): p. ej. el descuadre entre la suma
+    # digitada y el total del papel. La escribe la validación de cierre
+    # (``services.processor.validar_cierre_acta``); la limpia cuando cuadra.
+    observacion = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     venue = relationship("Venue", back_populates="tables")
@@ -204,10 +208,13 @@ class ActaMetadata(Base):
     __tablename__ = "acta_metadata"
     id = Column(Integer, primary_key=True, index=True)
     table_id = Column(Integer, ForeignKey("tables.id"), nullable=False)
-    # Totales históricos (compatibilidad): consolidado del acta. La regla ONPE
-    # real es POR COLUMNA (cada nivel tiene su pie con blancos/nulos/
-    # impugnados); las columnas *_distrital/_provincial/_consejero/_regional
-    # son la fuente de la validación por columna.
+    # Consolidado histórico DERIVADO, no un segundo origen de verdad: lo
+    # reconstruye ``services.processor.sincronizar_consolidado_pie`` a partir
+    # del pie por columna, así no puede divergir ni sumarse dos veces. La
+    # regla ONPE real es POR COLUMNA (cada nivel tiene su pie con blancos/
+    # nulos/impugnados); las columnas *_distrital/_provincial/_consejero/
+    # _regional son la fuente de la validación por columna. Los endpoints
+    # NO deben asignar estos campos directamente.
     votos_blancos = Column(Integer, default=0)
     votos_nulos = Column(Integer, default=0)
     votos_impugnados = Column(Integer, default=0)
