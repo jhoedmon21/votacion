@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api } from "../api";
+import { api, esRolGlobal, sesionGuardada } from "../api";
 import type { ActaEstado, ActaRecord, DistritoOpt, LocalOpt,
   ProvinciaOpt, ResumenStatus } from "../types";
 import ActaDetailModal from "./ActaDetailModal";
 import ActaEditModal from "./ActaEditModal";
+import EditarElectoresHabilesModal from "./EditarElectoresHabilesModal";
 
 /* ==================================================================== *
  *  Gestión de Actas — búsqueda, filtros en cascada y KPIs en vivo.
@@ -101,6 +102,10 @@ export default function GestionActas({ onCargarMesa }: {
      (fila PENDIENTE): así "Ver" siempre sirve, antes y después de cargar. */
   const [detalle, setDetalle] = useState<{ acta: ActaRecord | null; mesa: string } | null>(null);
   const [editarActa, setEditarActa] = useState<ActaRecord | null>(null);
+  /* Ventana de electores hábiles (padrón): null = cerrada, "" = vacía (el
+     usuario escribe la mesa) o viene pre-cargada desde una fila. */
+  const [padronMesa, setPadronMesa] = useState<string | null>(null);
+  const esGlobal = esRolGlobal(sesionGuardada()?.usuario.rol);
 
   /* Catálogo de provincias (una vez). */
   useEffect(() => {
@@ -230,12 +235,23 @@ export default function GestionActas({ onCargarMesa }: {
         <h3 className="text-sm font-black uppercase tracking-wider text-[#E02020]">
           Gestión de actas por territorio
         </h3>
-        <button
-          onClick={() => void cargar()}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
-        >
-          ↻ Actualizar
-        </button>
+        <div className="flex items-center gap-2">
+          {esGlobal && (
+            <button
+              onClick={() => setPadronMesa("")}
+              title="Editar la cantidad de electores hábiles de una mesa (la reinicia a PENDIENTE)"
+              className="rounded-lg border border-[#E02020] bg-white px-3 py-1.5 text-xs font-black text-[#E02020] hover:bg-red-50"
+            >
+              👥 Electores hábiles
+            </button>
+          )}
+          <button
+            onClick={() => void cargar()}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+          >
+            ↻ Actualizar
+          </button>
+        </div>
       </div>
 
       {/* Barra de filtros en cascada */}
@@ -392,6 +408,13 @@ export default function GestionActas({ onCargarMesa }: {
                             )}
                           </>
                         )}
+                        {esGlobal && (
+                          <button onClick={() => setPadronMesa(f.numero_mesa)}
+                            title="Editar electores hábiles de la mesa (reinicia el acta)"
+                            className="rounded-lg bg-amber-100 px-2.5 py-1.5 text-[11px] font-bold text-amber-800 hover:bg-amber-200">
+                            👥
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -446,6 +469,13 @@ export default function GestionActas({ onCargarMesa }: {
           acta={editarActa}
           onClose={() => setEditarActa(null)}
           onSave={() => { setEditarActa(null); void cargar(); }}
+        />
+      )}
+      {esGlobal && padronMesa !== null && (
+        <EditarElectoresHabilesModal
+          mesaInicial={padronMesa || null}
+          onClose={() => setPadronMesa(null)}
+          onGuardado={() => void cargar()}
         />
       )}
     </div>

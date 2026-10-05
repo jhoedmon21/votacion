@@ -417,6 +417,17 @@ export const api = {
     request<{ acta: ActaRecord; auditoria_id: number; realtime: unknown }>(
       `/digitador/actas/${id}`, { method: "PATCH", body: JSON.stringify(payload) }
     ),
+  /* Editar electores hábiles por N° de mesa: el backend resuelve el id en
+     `tables`, actualiza el padrón, resetea la mesa a PENDIENTE y borra sus
+     records + acta_metadata (reset completo del acta). */
+  digitadorPadronMesa: (payload: { numero_mesa: string; electores_habiles: number; motivo?: string }) =>
+    request<{
+      mesa: ActaRecord & { electores_habiles: number | null };
+      antes: Record<string, unknown>;
+      eliminados: { records: number; acta_metadata: number };
+      auditoria_id: number;
+      realtime: unknown;
+    }>(`/digitador/mesas/padron`, { method: "POST", body: JSON.stringify(payload) }),
   digitadorAuditoria: (actaId: number) =>
     request<Array<{
       id: number; accion: string; usuario_email: string; ip: string | null;

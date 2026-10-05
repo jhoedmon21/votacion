@@ -24,7 +24,7 @@ from app.core.models import (ActaAuditoriaGlobal, ActaMetadata, ConsejeroCandida
                               DistrictCandidate, ProvincialCandidate, Record,
                               RegionalCandidate, Table, Usuario, Venue)
 from app.core.schemas import (ActaAuditoriaOut, DigitadorActaCrearIn,
-                               DigitadorActaRectificarIn)
+                               DigitadorActaRectificarIn, DigitadorPadronMesaIn)
 from app.core.ubigeo import candidatos_del_ambito, ubigeo_de_nivel
 from app.services import dashboard_events as bus
 from app.services.auditoria_actas import (ip_de_request,
@@ -346,6 +346,100 @@ async def rectificar_acta_global(
                 ip_de_request(request))
     return {"acta": _serializar_acta(db, table),
             "auditoria_id": auditoria.id, "realtime": realtime}
+
+
+# ---------------------------------------------------------------------------
+# PADRÓN — editar electores hábiles de una mesa y reiniciar su acta
+# ---------------------------------------------------------------------------
+
+@router.post("/mesas/padron")
+async def editar_padron_mesa(
+    payload: DigitadorPadronMesaIn,
+    request: Request,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(requerir_rol(*ROL_NACIONAL)),
+):
+    """Actualiza ``tables.electores_habiles`` por N° de mesa y reinicia el acta.
+
+    El cliente manda el número de mesa; aquí se resuelve su id en ``tables``
+    y, en una sola transacción, se ejecuta el equivalente de:
+
+        UPDATE tables SET electores_habiles = :n, processed = 0,
+               requires_review = 0, status = 'pending' WHERE id = :id;
+        DELETE FROM acta_metadata WHERE table_id = :id;
+        DELETE FROM records        WHERE table_id = :id;
+
+    Es decir: la mesa vuelve a PENDIENTE con el nuevo padrón y sin votos ni
+    metadatos de acta. Todo queda en la huella de auditoría (MODIFICAR).
+    """
+    table = db.query(Table).filter(Table.numero_mesa == payload.numero_mesa).first()
+    if table is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Mesa {payload.numero_mesa} no está en el padrón: "
+                   "verifique el número de mesa",
+        )
+
+    antes = {
+        **_snapshot_tabla(table),
+        "electores_habiles": table.electores_habiles,
+        **_snapshot_votos(db, table.id),
+    }
+
+    # UPDATE tables: nuevo padrón + estado PENDIENTE (processed/review a 0).
+    table.electores_habiles = payload.electores_habiles
+    table.processed = False
+    table.requires_review = False
+    table.status = "pending"
+
+    # DELETE de los votos y metadatos del acta de esa mesa.
+    registros = db.query(Record).filter(Record.table_id == table.id).all()
+    metadatos = db.query(ActaMetadata).filter(ActaMetadata.table_id == table.id).all()
+    for fila in registros:
+        db.delete(fila)
+    for fila in metadatos:
+        db.delete(fila)
+    db.flush()
+
+    despues = {
+        **_snapshot_tabla(table),
+        "electores_habiles": table.electores_habiles,
+        **_snapshot_votos(db, table.id),
+        "operacion": "reset_padron",
+        "records_eliminados": len(registros),
+        "acta_metadata_eliminados": len(metadatos),
+    }
+    try:
+        auditoria = registrar_auditoria_acta(
+            db, acta_id=table.id, numero_mesa=table.numero_mesa, accion="MODIFICAR",
+            usuario=usuario, valores_anteriores=antes, valores_nuevos=despues,
+            motivo=payload.motivo or "edición de electores hábiles + reset del acta",
+            request=request,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    db.commit()
+    db.refresh(table)
+
+    realtime = await _emitir_recalculo(
+        db=db, acta_id=table.id, numero_mesa=table.numero_mesa,
+        accion="MODIFICAR", usuario=usuario)
+    logger.info("digitador %s PADRÓN mesa %s (id %s): %s hábiles, %s records y "
+                "%s metadata eliminados, desde %s",
+                usuario.email, table.numero_mesa, table.id,
+                payload.electores_habiles, len(registros), len(metadatos),
+                ip_de_request(request))
+    return {
+        "mesa": {**_serializar_acta(db, table),
+                 "electores_habiles": table.electores_habiles},
+        "antes": antes,
+        "eliminados": {
+            "records": len(registros),
+            "acta_metadata": len(metadatos),
+        },
+        "auditoria_id": auditoria.id,
+        "realtime": realtime,
+    }
 
 
 # ---------------------------------------------------------------------------

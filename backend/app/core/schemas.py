@@ -462,6 +462,23 @@ class DigitadorActaCrearIn(BaseModel):
     motivo: Optional[str] = Field(default=None, max_length=500)
 
 
+class DigitadorPadronMesaIn(BaseModel):
+    """Edición del padrón de una mesa + reinicio de su acta.
+
+    El front manda el N° de mesa (no el id): el endpoint resuelve el id en
+    ``tables`` y aplica, en una sola transacción, el equivalente de:
+
+        UPDATE tables SET electores_habiles = :n, processed = 0,
+               requires_review = 0, status = 'pending' WHERE id = :id;
+        DELETE FROM acta_metadata WHERE table_id = :id;
+        DELETE FROM records        WHERE table_id = :id;
+    """
+
+    numero_mesa: str = Field(min_length=6, max_length=6, pattern=r"^[0-9]{6}$")
+    electores_habiles: int = Field(gt=0)
+    motivo: Optional[str] = Field(default=None, max_length=500)
+
+
 class DigitadorActaRectificarIn(BaseModel):
     """Rectificación parcial de cualquier acta (todos los campos opcionales).
 
